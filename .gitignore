@@ -1,5 +1,4 @@
 .cquery_cache
 invoices
-firmware/target
-simulation/target
+**/target
 **/.idea
