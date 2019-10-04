@@ -24,16 +24,17 @@
 extern crate panic_halt;
 
 pub mod battery;
-pub mod bot;
+//pub mod bot;
 pub mod config;
-pub mod control;
+//pub mod control;
 pub mod motors;
-pub mod navigate;
-pub mod plan;
+//pub mod navigate;
+//pub mod plan;
 pub mod time;
 pub mod uart;
 pub mod vl6180x;
 pub mod mouse;
+pub mod path;
 
 use core::fmt::Write;
 use core::str;
@@ -53,15 +54,17 @@ use crate::uart::Uart;
 use crate::motors::left::{LeftEncoder, LeftMotor};
 use crate::motors::right::{RightEncoder, RightMotor};
 
-use crate::bot::Bot;
+//use crate::bot::Bot;
 use crate::config::BotConfig;
 
-use crate::control::Control;
+//use crate::control::Control;
 
-use crate::plan::Plan;
+//use crate::plan::Plan;
 
-use crate::navigate::LessRandomNavigate;
-use crate::navigate::RandomNavigate;
+use crate::path::PathConfig;
+
+//use crate::navigate::LessRandomNavigate;
+//use crate::navigate::RandomNavigate;
 
 // Setup the master clock out
 pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
@@ -213,17 +216,13 @@ fn main() -> ! {
     }
 
     let config = BotConfig {
-        path_p: 1.0,
-        path_i: 0.0,
-        path_d: 0.0,
-        ticks_per_spin: 2064.03,
-        ticks_per_cell: 1620.0,
-        cell_width: 180.0,
-        cell_offset: 53.0,
-        wall_threshold: 120.0,
-        front_wall_distance: 35.0,
+        path: PathConfig {
+            p: 1.0,
+            i: 0.0,
+            d: 0.0,
+        }
     };
-
+/*
     let bot = Bot::new(
         left_motor,
         left_encoder,
@@ -236,6 +235,7 @@ fn main() -> ! {
     );
 
     let control = Control::new(bot);
+    */
 
     /*
     let navigate = RandomNavigate::new([
@@ -243,11 +243,13 @@ fn main() -> ! {
     ]);
     */
 
+    /*
     let navigate = LessRandomNavigate::new([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     ]);
 
     let mut plan = Plan::new(control, navigate);
+    */
 
     writeln!(uart, "\n\nstart").ignore();
 
@@ -273,11 +275,11 @@ fn main() -> ! {
 
                     let command = args.next();
 
-                    if command == Some(plan.keyword_command()) {
-                        plan.handle_command(&mut uart, args);
-                    } else {
+                    //if command == Some(plan.keyword_command()) {
+                        //plan.handle_command(&mut uart, args);
+                    //} else {
                         writeln!(uart, "Invalid Command!").ignore();
-                    }
+                    //}
                 }
             }
         }
@@ -310,6 +312,7 @@ fn main() -> ! {
 
             green_led.toggle();
 
+            /*
             if plan.control().is_idle() {
                 orange_led.set_low();
             } else {
@@ -321,6 +324,7 @@ fn main() -> ! {
             } else {
                 blue_led.set_low();
             }
+            */
 
             if battery.is_dead() {
                 red_led.set_high();
@@ -328,6 +332,7 @@ fn main() -> ! {
                 red_led.set_low();
             }
 
+            /*
             if left_button.is_low() {
                 plan.go();
             }
@@ -335,11 +340,12 @@ fn main() -> ! {
             if right_button.is_low() {
                 plan.stop();
             }
+            */
 
             last_time = now;
         }
 
-        plan.update(now);
+        //plan.update(now);
         battery.update(now);
     }
 }

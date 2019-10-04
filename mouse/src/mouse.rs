@@ -1,5 +1,7 @@
 use core::f32;
 
+use crate::path::Path;
+
 #[derive(Copy, Clone, Debug)]
 pub struct MouseConfig {
     pub wheel_diameter: f32,
@@ -55,7 +57,8 @@ struct Mouse {
 
 impl Mouse {
     fn update(&mut self, time: u32, left_encoder: f32, right_encoder: f32, left_distance: u8, right_distance: u8, front_distance: u8) -> (f32, f32) {
-        let (angular_power, remaining_segments) = self.path.update();
+        //let (angular_power, remaining_segments) = self.path.update();
+        unimplemented!()
     }
 }
 

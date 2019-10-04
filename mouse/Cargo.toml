@@ -1,0 +1,15 @@
+[package]
+name = "mouse"
+version = "0.1.0"
+authors = ["Timothy Hollabaugh <timothyhollabaugh@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libm = "0.1"
+pid_control = { git = "https://github.com/mbr/pid_control-rs" }
+
+[dependencies.arrayvec]
+version = "0.4"
+default-features = false
