@@ -5,6 +5,7 @@ use pid_control::DerivativeMode;
 use pid_control::PIDController;
 
 use crate::map::Vector;
+use core::borrow::Borrow;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Segment {
@@ -53,7 +54,13 @@ impl Segment {
                         + l1.y,
                 };
 
-                (i - m).magnitude()
+                let cross_product = line.x * mouse.y - mouse.x * line.y;
+
+                if cross_product > 0.0 {
+                    (i - m).magnitude()
+                } else {
+                    -(i - m).magnitude()
+                }
             }
         }
     }
@@ -70,6 +77,7 @@ mod tests {
         Segment::Line(Vector { x: 2.0, y: 2.0 }, Vector { x: 6.0, y: 6.0 });
 
     const MOUSE: Vector = Vector { x: 5.0, y: 3.0 };
+    const MOUSE2: Vector = Vector { x: 3.0, y: 5.0 };
 
     #[test]
     fn segment_line_total_distance() {
@@ -82,6 +90,10 @@ mod tests {
     #[test]
     fn segment_line_distance_from() {
         assert_close(LINE_SEGMENT.distance_from(MOUSE), 1.41421356237);
+    }
+    #[test]
+    fn segment_line_distance_from2() {
+        assert_close(LINE_SEGMENT.distance_from(MOUSE2), -1.41421356237);
     }
 
     fn assert_close2(left: Vector, right: Vector) {
@@ -111,6 +123,13 @@ mod tests {
 pub const PATH_BUF_LEN: usize = 64;
 
 #[derive(Debug)]
+pub struct PathDebug<'a> {
+    pub path: Option<&'a [Segment]>,
+    pub distance_from: Option<f32>,
+    pub distance_along: Option<f32>,
+}
+
+#[derive(Debug)]
 pub struct PathConfig {
     pub p: f32,
     pub i: f32,
@@ -128,6 +147,7 @@ impl Path {
     pub fn new(config: &PathConfig, time: u32) -> Path {
         let mut pid = PIDController::new(config.p as f64, config.i as f64, config.d as f64);
         pid.d_mode = DerivativeMode::OnError;
+        pid.set_limits(-1.0, 1.0);
         Path {
             pid,
             segment_buffer: ArrayVec::new(),
@@ -145,7 +165,18 @@ impl Path {
         Ok(PATH_BUF_LEN - self.segment_buffer.len())
     }
 
-    pub fn update(&mut self, config: &PathConfig, time: u32, position: Vector) -> f32 {
+    pub fn update(
+        &mut self,
+        config: &PathConfig,
+        time: u32,
+        position: Vector,
+    ) -> (f32, bool, PathDebug) {
+        let mut debug = PathDebug {
+            path: None,
+            distance_from: None,
+            distance_along: None,
+        };
+
         self.pid.p_gain = config.p as f64;
         self.pid.i_gain = config.i as f64;
         self.pid.d_gain = config.d as f64;
@@ -160,11 +191,20 @@ impl Path {
         }
 
         // Do pid on the distance from the path
-        if let Some(segment) = self.segment_buffer.first() {
+        let (angular_power, done) = if let Some(segment) = self.segment_buffer.first() {
             let offset = segment.distance_from(position);
-            self.pid.update(offset as f64, delta_time as f64) as f32
+            debug.distance_from = Some(offset);
+            debug.distance_along = Some(segment.distance_along(position));
+            (
+                self.pid.update(offset as f64, delta_time as f64) as f32,
+                false,
+            )
         } else {
-            0.0
-        }
+            (0.0, true)
+        };
+
+        debug.path = Some(self.segment_buffer.as_ref());
+
+        (angular_power, done, debug)
     }
 }

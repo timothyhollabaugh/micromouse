@@ -30,7 +30,7 @@ impl core::ops::Sub for Vector {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Orientation {
     pub position: Vector,
     pub direction: f32,

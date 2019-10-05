@@ -4,6 +4,15 @@ use mouse::config::MouseConfig;
 use mouse::map::Orientation;
 use mouse::map::Vector;
 use mouse::mouse::Mouse;
+use mouse::mouse::MouseDebug;
+use mouse::path::PathDebug;
+
+#[derive(Debug)]
+pub struct SimulationDebug<'a> {
+    pub mouse_debug: MouseDebug<'a>,
+    left_encoder: i32,
+    right_encoder: i32,
+}
 
 pub struct SimulationConfig {
     pub mouse: MouseConfig,
@@ -14,6 +23,7 @@ pub struct SimulationConfig {
 pub struct Simulation {
     mouse: Mouse,
     orientation: Orientation,
+    past_orientations: Vec<Orientation>,
     left_encoder: i32,
     right_encoder: i32,
     time: u32,
@@ -24,16 +34,21 @@ impl Simulation {
         Simulation {
             mouse: Mouse::new(&config.mouse, config.initial_orientation, 0, 0, 0),
             orientation: config.initial_orientation,
+            past_orientations: Vec::new(),
             left_encoder: 0,
             right_encoder: 0,
             time,
         }
     }
 
-    pub fn update(&mut self, config: &SimulationConfig, time: u32) -> Orientation {
+    pub fn update(
+        &mut self,
+        config: &SimulationConfig,
+        time: u32,
+    ) -> (Orientation, &[Orientation], SimulationDebug) {
         let delta_time = time - self.time;
 
-        let (left_power, right_power) =
+        let (left_power, right_power, mouse_debug) =
             self.mouse
                 .update(&config.mouse, time, self.left_encoder, self.right_encoder);
 
@@ -58,6 +73,8 @@ impl Simulation {
 
         let mid_dir = self.orientation.direction + delta_angular / 2.0;
 
+        self.past_orientations.push(self.orientation);
+
         self.orientation = Orientation {
             position: Vector {
                 x: self.orientation.position.x + delta_linear * f32::cos(mid_dir),
@@ -67,6 +84,12 @@ impl Simulation {
             direction: self.orientation.direction + delta_angular,
         };
 
-        self.orientation
+        let debug = SimulationDebug {
+            mouse_debug,
+            left_encoder: self.left_encoder,
+            right_encoder: self.right_encoder,
+        };
+
+        (self.orientation, self.past_orientations.as_ref(), debug)
     }
 }

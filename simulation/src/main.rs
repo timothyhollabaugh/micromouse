@@ -27,7 +27,7 @@ fn main() {
                 },
 
                 path: PathConfig {
-                    p: 1.0,
+                    p: 0.01,
                     i: 0.0,
                     d: 0.0,
                 },
@@ -38,10 +38,13 @@ fn main() {
                 },
             },
 
-            max_speed: 500.0,
+            max_speed: 1.0,
 
             initial_orientation: Orientation {
-                position: Vector { x: 90.0, y: 90.0 },
+                position: Vector {
+                    x: 1000.0,
+                    y: 1000.0,
+                },
                 direction: 0.0,
             },
         },
@@ -49,6 +52,7 @@ fn main() {
         pixels_per_mm: 0.25,
         updates_per_second: 20.0,
         frames_per_second: 20.0,
+        time_scale: 0.05,
     };
 
     gui::run(config);
