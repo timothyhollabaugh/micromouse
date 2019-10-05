@@ -29,7 +29,7 @@ fn main() {
                 path: PathConfig {
                     p: 0.1,
                     i: 0.0,
-                    d: 10000.0,
+                    d: 1000.0,
                 },
 
                 map: MapConfig {
@@ -38,7 +38,7 @@ fn main() {
                 },
             },
 
-            max_speed: 1.0,
+            max_speed: 2.0,
 
             initial_orientation: Orientation {
                 position: Vector {
