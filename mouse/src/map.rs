@@ -1,7 +1,11 @@
-
 use libm::F32Ext;
 
-use crate::mouse::MouseConfig;
+use crate::config::MechanicalConfig;
+
+pub struct MapConfig {
+    pub cell_width: f32,
+    pub wall_width: f32,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vector {
@@ -47,12 +51,17 @@ impl Map {
         }
     }
 
-    pub fn update(&mut self, config: MouseConfig, time: u32, left_encoder: i32, right_encoder: i32) -> Orientation {
+    pub fn update(
+        &mut self,
+        config: &MechanicalConfig,
+        left_encoder: i32,
+        right_encoder: i32,
+    ) -> Orientation {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
-        let delta_linear = config.ticks_to_mm((delta_left + delta_right) as f32 / 2.0);
-        let delta_angular = config.ticks_to_rads((delta_left - delta_right) as f32 / 2.0);
+        let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
+        let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
 
         let mid_dir = self.orientation.direction + delta_angular / 2.0;
 
@@ -70,6 +79,3 @@ impl Map {
         self.orientation
     }
 }
-
-
-

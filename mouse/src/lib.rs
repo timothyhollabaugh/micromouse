@@ -1,5 +1,7 @@
 #![no_std]
 
-mod path;
-mod mouse;
-mod map;
+pub mod config;
+pub mod map;
+pub mod maze;
+pub mod mouse;
+pub mod path;

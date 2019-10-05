@@ -1,14 +1,8 @@
-use core::f32::consts::FRAC_PI_2;
-use core::f32::consts::FRAC_PI_4;
-
-use libm::F32Ext;
-
 use arrayvec::ArrayVec;
-use arrayvec::Array;
 
 use pid_control::Controller;
-use pid_control::PIDController;
 use pid_control::DerivativeMode;
+use pid_control::PIDController;
 
 use crate::map::Vector;
 
@@ -20,7 +14,7 @@ pub enum Segment {
 impl Segment {
     pub fn total_distance(&self) -> f32 {
         match self {
-            &Segment::Line(l1, l2) => (l1 - l2).magnitude()
+            &Segment::Line(l1, l2) => (l1 - l2).magnitude(),
         }
     }
 
@@ -31,8 +25,12 @@ impl Segment {
                 let line = l2 - l1;
 
                 let i = Vector {
-                    x: (mouse.x * line.x * line.x + mouse.y * line.y * line.x) / (line.x * line.x + line.y * line.y) + l1.x,
-                    y: (mouse.x * line.x * line.y + mouse.y * line.y * line.y) / (line.x * line.x + line.y * line.y) + l1.y,
+                    x: (mouse.x * line.x * line.x + mouse.y * line.y * line.x)
+                        / (line.x * line.x + line.y * line.y)
+                        + l1.x,
+                    y: (mouse.x * line.x * line.y + mouse.y * line.y * line.y)
+                        / (line.x * line.x + line.y * line.y)
+                        + l1.y,
                 };
 
                 (i - l1).magnitude()
@@ -47,32 +45,29 @@ impl Segment {
                 let line = l2 - l1;
 
                 let i = Vector {
-                    x: (mouse.x * line.x * line.x + mouse.y * line.y * line.x) / (line.x * line.x + line.y * line.y) + l1.x,
-                    y: (mouse.x * line.x * line.y + mouse.y * line.y * line.y) / (line.x * line.x + line.y * line.y) + l1.y,
+                    x: (mouse.x * line.x * line.x + mouse.y * line.y * line.x)
+                        / (line.x * line.x + line.y * line.y)
+                        + l1.x,
+                    y: (mouse.x * line.x * line.y + mouse.y * line.y * line.y)
+                        / (line.x * line.x + line.y * line.y)
+                        + l1.y,
                 };
 
                 (i - m).magnitude()
             }
         }
     }
-
-    pub fn offset_coords(&self, x: f32, y: f32) -> (f32, f32) {
-        unimplemented!()
-    }
 }
 
+#[cfg(test)]
 mod tests {
     use super::Segment;
     use super::Vector;
-    use core::f32::consts::PI;
-    use libm::F32Ext;
 
     const MAX_DELTA: f32 = 0.000001;
 
-    const LINE_SEGMENT: Segment = Segment::Line(
-        Vector { x: 2.0, y: 2.0 },
-        Vector { x: 6.0, y: 6.0 },
-    );
+    const LINE_SEGMENT: Segment =
+        Segment::Line(Vector { x: 2.0, y: 2.0 }, Vector { x: 6.0, y: 6.0 });
 
     const MOUSE: Vector = Vector { x: 5.0, y: 3.0 };
 
@@ -130,7 +125,7 @@ pub struct Path {
 }
 
 impl Path {
-    pub fn new(config: PathConfig, time: u32) -> Path {
+    pub fn new(config: &PathConfig, time: u32) -> Path {
         let mut pid = PIDController::new(config.p as f64, config.i as f64, config.d as f64);
         pid.d_mode = DerivativeMode::OnError;
         Path {
@@ -150,7 +145,7 @@ impl Path {
         Ok(PATH_BUF_LEN - self.segment_buffer.len())
     }
 
-    pub fn update(&mut self, config: PathConfig, time: u32, position: Vector) -> f32 {
+    pub fn update(&mut self, config: &PathConfig, time: u32, position: Vector) -> f32 {
         self.pid.p_gain = config.p as f64;
         self.pid.i_gain = config.i as f64;
         self.pid.d_gain = config.d as f64;
