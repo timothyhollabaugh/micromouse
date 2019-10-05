@@ -1,6 +1,7 @@
 use core::f32;
 
 use crate::map::Map;
+use crate::map::Orientation;
 use crate::path::Path;
 use crate::path::PathConfig;
 
@@ -67,7 +68,20 @@ struct Mouse {
 }
 
 impl Mouse {
-    fn update(
+    pub fn new(
+        config: Config,
+        orientation: Orientation,
+        time: u32,
+        left_encoder: i32,
+        right_encoder: i32,
+    ) -> Mouse {
+        Mouse {
+            map: Map::new(orientation, left_encoder, right_encoder),
+            path: Path::new(config.path, time),
+        }
+    }
+
+    pub fn update(
         &mut self,
         config: Config,
         time: u32,
