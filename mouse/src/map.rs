@@ -76,6 +76,9 @@ impl Map {
 
         self.orientation = orientation;
 
+        self.left_encoder = left_encoder;
+        self.right_encoder = right_encoder;
+
         self.orientation
     }
 }

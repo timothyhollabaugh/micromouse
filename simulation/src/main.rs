@@ -52,7 +52,7 @@ fn main() {
         pixels_per_mm: 0.25,
         updates_per_second: 20.0,
         frames_per_second: 20.0,
-        time_scale: 0.05,
+        time_scale: 1.0,
     };
 
     gui::run(config);

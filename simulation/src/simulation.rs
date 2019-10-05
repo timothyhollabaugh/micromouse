@@ -12,6 +12,7 @@ pub struct SimulationDebug<'a> {
     pub mouse_debug: MouseDebug<'a>,
     left_encoder: i32,
     right_encoder: i32,
+    orientation: Orientation,
 }
 
 pub struct SimulationConfig {
@@ -84,10 +85,13 @@ impl Simulation {
             direction: self.orientation.direction + delta_angular,
         };
 
+        self.time = time;
+
         let debug = SimulationDebug {
             mouse_debug,
             left_encoder: self.left_encoder,
             right_encoder: self.right_encoder,
+            orientation: self.orientation,
         };
 
         (self.orientation, self.past_orientations.as_ref(), debug)
