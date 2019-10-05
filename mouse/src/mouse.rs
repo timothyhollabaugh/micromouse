@@ -1,7 +1,17 @@
 use core::f32;
 
+use crate::map::Map;
 use crate::path::Path;
+use crate::path::PathConfig;
 
+pub struct Config {
+    pub mouse: MouseConfig,
+    pub path: PathConfig,
+}
+
+/**
+ *  Various physical parameters about the mouse
+ */
 #[derive(Copy, Clone, Debug)]
 pub struct MouseConfig {
     pub wheel_diameter: f32,
@@ -52,13 +62,32 @@ impl MouseConfig {
 }
 
 struct Mouse {
+    map: Map,
     path: Path,
 }
 
 impl Mouse {
-    fn update(&mut self, time: u32, left_encoder: f32, right_encoder: f32, left_distance: u8, right_distance: u8, front_distance: u8) -> (f32, f32) {
-        //let (angular_power, remaining_segments) = self.path.update();
-        unimplemented!()
+    fn update(
+        &mut self,
+        config: Config,
+        time: u32,
+        left_encoder: i32,
+        right_encoder: i32,
+        left_distance: u8,
+        right_distance: u8,
+        front_distance: u8,
+    ) -> (f32, f32) {
+        let linear_power = 1.0;
+
+        let orientation = self
+            .map
+            .update(config.mouse, time, left_encoder, right_encoder);
+
+        let angular_power = self.path.update(config.path, time, orientation.position);
+
+        let left_power = linear_power - angular_power;
+        let right_power = linear_power + angular_power;
+
+        (left_power, right_power)
     }
 }
-

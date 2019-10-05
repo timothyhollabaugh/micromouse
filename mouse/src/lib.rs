@@ -2,3 +2,4 @@
 
 mod path;
 mod mouse;
+mod map;

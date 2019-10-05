@@ -10,28 +10,7 @@ use pid_control::Controller;
 use pid_control::PIDController;
 use pid_control::DerivativeMode;
 
-#[derive(Debug, Copy, Clone)]
-pub struct Vector {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Vector {
-    pub fn magnitude(&self) -> f32 {
-        F32Ext::sqrt(self.x * self.x + self.y * self.y)
-    }
-}
-
-impl core::ops::Sub for Vector {
-    type Output = Vector;
-
-    fn sub(self, other: Vector) -> Vector {
-        Vector {
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-}
+use crate::map::Vector;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Segment {
@@ -147,17 +126,17 @@ pub struct PathConfig {
 pub struct Path {
     pub pid: PIDController,
     pub segment_buffer: ArrayVec<[Segment; PATH_BUF_LEN]>,
-    pub time: f32,
+    pub time: u32,
 }
 
 impl Path {
-    pub fn new(config: PathConfig, now: f32) -> Path {
+    pub fn new(config: PathConfig, time: u32) -> Path {
         let mut pid = PIDController::new(config.p as f64, config.i as f64, config.d as f64);
         pid.d_mode = DerivativeMode::OnError;
         Path {
             pid,
             segment_buffer: ArrayVec::new(),
-            time: now,
+            time,
         }
     }
 
@@ -171,15 +150,21 @@ impl Path {
         Ok(PATH_BUF_LEN - self.segment_buffer.len())
     }
 
-    pub fn update(&mut self, now: f32, position: Vector) -> f32 {
-        let delta_time = now - self.time;
+    pub fn update(&mut self, config: PathConfig, time: u32, position: Vector) -> f32 {
+        self.pid.p_gain = config.p as f64;
+        self.pid.i_gain = config.i as f64;
+        self.pid.d_gain = config.d as f64;
 
+        let delta_time = time - self.time;
+
+        // Check if we are done with the current segment
         if let Some(segment) = self.segment_buffer.first() {
             if segment.distance_along(position) >= segment.total_distance() {
                 self.segment_buffer.pop();
             }
         }
 
+        // Do pid on the distance from the path
         if let Some(segment) = self.segment_buffer.first() {
             let offset = segment.distance_from(position);
             self.pid.update(offset as f64, delta_time as f64) as f32
