@@ -40,7 +40,7 @@ impl GuiConfig {
 fn orientation_transform<T: Transformed + Sized>(orientation: &Orientation, transform: T) -> T {
     transform
         .trans(orientation.position.x as f64, orientation.position.y as f64)
-        .rot_rad(-orientation.direction as f64)
+        .rot_rad(orientation.direction as f64)
 }
 
 pub fn run(config: GuiConfig) {
@@ -87,7 +87,7 @@ pub fn run(config: GuiConfig) {
                         match segment {
                             Segment::Line(l1, l2) => line(
                                 [0.0, 0.0, 1.0, 1.0],
-                                1.0,
+                                2.0,
                                 [l1.x as f64, l1.y as f64, l2.x as f64, l2.y as f64],
                                 transform,
                                 graphics,
@@ -99,11 +99,11 @@ pub fn run(config: GuiConfig) {
                 for orientation in past_orientations {
                     line(
                         [0.0, 0.0, 0.0, 0.5],
-                        1.0,
+                        2.0,
                         [
                             0.0,
                             0.0,
-                            config.simulation.mouse.mechanical.front_offset as f64 / 2.0,
+                            config.simulation.mouse.mechanical.front_offset as f64 / 4.0,
                             1.0,
                         ],
                         orientation_transform(orientation, transform),
@@ -111,6 +111,7 @@ pub fn run(config: GuiConfig) {
                     )
                 }
 
+                /*
                 rectangle(
                     [0.0, 1.0, 0.0, 0.5],
                     [
@@ -135,7 +136,7 @@ pub fn run(config: GuiConfig) {
                     orientation_transform(&debug.mouse_debug.orientation, transform),
                     graphics,
                 );
-
+                */
                 rectangle(
                     [0.0, 1.0, 0.0, 1.0],
                     [

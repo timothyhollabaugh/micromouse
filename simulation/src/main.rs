@@ -27,9 +27,9 @@ fn main() {
                 },
 
                 path: PathConfig {
-                    p: 0.01,
+                    p: 0.1,
                     i: 0.0,
-                    d: 0.0,
+                    d: 10000.0,
                 },
 
                 map: MapConfig {
@@ -42,7 +42,7 @@ fn main() {
 
             initial_orientation: Orientation {
                 position: Vector {
-                    x: 1000.0,
+                    x: 1900.0,
                     y: 1000.0,
                 },
                 direction: 0.0,

@@ -33,16 +33,6 @@ impl Mouse {
         path.add_segments(&[
             Segment::Line(
                 Vector {
-                    x: 1000.0,
-                    y: 1000.0,
-                },
-                Vector {
-                    x: 2000.0,
-                    y: 1000.0,
-                },
-            ),
-            Segment::Line(
-                Vector {
                     x: 2000.0,
                     y: 1000.0,
                 },
@@ -51,28 +41,16 @@ impl Mouse {
                     y: 2000.0,
                 },
             ),
-            /*
             Segment::Line(
                 Vector {
-                    x: 720.0 + 360.0,
-                    y: 720.0 + 360.0,
+                    x: 1900.0,
+                    y: 1000.0,
                 },
                 Vector {
-                    x: 720.0 + 360.0,
-                    y: 720.0 + 90.0,
+                    x: 2000.0,
+                    y: 1000.0,
                 },
             ),
-            Segment::Line(
-                Vector {
-                    x: 720.0 + 360.0,
-                    y: 720.0 + 90.0,
-                },
-                Vector {
-                    x: 720.0 + 90.0,
-                    y: 720.0 + 90.0,
-                },
-            ),
-            */
         ]);
 
         Mouse {

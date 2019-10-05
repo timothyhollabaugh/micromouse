@@ -184,14 +184,14 @@ impl Path {
         let delta_time = time - self.time;
 
         // Check if we are done with the current segment
-        if let Some(segment) = self.segment_buffer.first() {
+        if let Some(segment) = self.segment_buffer.last() {
             if segment.distance_along(position) >= segment.total_distance() {
                 self.segment_buffer.pop();
             }
         }
 
         // Do pid on the distance from the path
-        let (angular_power, done) = if let Some(segment) = self.segment_buffer.first() {
+        let (angular_power, done) = if let Some(segment) = self.segment_buffer.last() {
             let offset = segment.distance_from(position);
             debug.distance_from = Some(offset);
             debug.distance_along = Some(segment.distance_along(position));
