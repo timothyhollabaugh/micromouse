@@ -98,7 +98,7 @@ pub fn run(config: GuiConfig) {
                                 let r = v.magnitude();
 
                                 let t_start = f32::atan2(v.y, v.x);
-                                let t_end = t_start + t;
+                                let t_end = t_start - t;
 
                                 circle_arc(
                                     [0.0, 0.0, 1.0, 1.0],
@@ -134,7 +134,6 @@ pub fn run(config: GuiConfig) {
                     )
                 }
 
-                /*
                 rectangle(
                     [0.0, 1.0, 0.0, 0.5],
                     [
@@ -159,7 +158,6 @@ pub fn run(config: GuiConfig) {
                     orientation_transform(&debug.mouse_debug.orientation, transform),
                     graphics,
                 );
-                */
                 rectangle(
                     [0.0, 1.0, 0.0, 1.0],
                     [

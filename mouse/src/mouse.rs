@@ -1,4 +1,5 @@
 use core::f32;
+use core::f32::consts::FRAC_PI_2;
 
 use crate::config::MouseConfig;
 use crate::map::Map;
@@ -30,40 +31,6 @@ impl Mouse {
     ) -> Mouse {
         let mut path = Path::new(&config.path, time);
 
-        path.add_segments(&[
-            Segment::Line(
-                Vector {
-                    x: 2000.0,
-                    y: 1090.0,
-                },
-                Vector {
-                    x: 2000.0,
-                    y: 2000.0,
-                },
-            ),
-            Segment::Arc(
-                Vector {
-                    x: 1910.0,
-                    y: 1000.0,
-                },
-                Vector {
-                    x: 1910.0,
-                    y: 1090.0,
-                },
-                -core::f32::consts::FRAC_PI_2,
-            ),
-            Segment::Line(
-                Vector {
-                    x: 1000.0,
-                    y: 1000.0,
-                },
-                Vector {
-                    x: 1910.0,
-                    y: 1000.0,
-                },
-            ),
-        ]);
-
         Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
@@ -78,6 +45,94 @@ impl Mouse {
         left_encoder: i32,
         right_encoder: i32,
     ) -> (f32, f32, MouseDebug) {
+        if self.done {
+            self.path.add_segments(&[
+                Segment::Arc(
+                    Vector {
+                        x: 1000.0,
+                        y: 1090.0,
+                    },
+                    Vector {
+                        x: 1090.0,
+                        y: 1090.0,
+                    },
+                    -FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 1000.0,
+                        y: 1910.0,
+                    },
+                    Vector {
+                        x: 1000.0,
+                        y: 1090.0,
+                    },
+                ),
+                Segment::Arc(
+                    Vector {
+                        x: 1090.0,
+                        y: 2000.0,
+                    },
+                    Vector {
+                        x: 1090.0,
+                        y: 1910.0,
+                    },
+                    -FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 1910.0,
+                        y: 2000.0,
+                    },
+                    Vector {
+                        x: 1090.0,
+                        y: 2000.0,
+                    },
+                ),
+                Segment::Arc(
+                    Vector {
+                        x: 2000.0,
+                        y: 1910.0,
+                    },
+                    Vector {
+                        x: 1910.0,
+                        y: 1910.0,
+                    },
+                    -FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 2000.0,
+                        y: 1090.0,
+                    },
+                    Vector {
+                        x: 2000.0,
+                        y: 1910.0,
+                    },
+                ),
+                Segment::Arc(
+                    Vector {
+                        x: 1910.0,
+                        y: 1000.0,
+                    },
+                    Vector {
+                        x: 1910.0,
+                        y: 1090.0,
+                    },
+                    -FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 1090.0,
+                        y: 1000.0,
+                    },
+                    Vector {
+                        x: 1910.0,
+                        y: 1000.0,
+                    },
+                ),
+            ]);
+        }
         let orientation = self
             .map
             .update(&config.mechanical, left_encoder, right_encoder);

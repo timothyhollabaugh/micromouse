@@ -27,9 +27,9 @@ fn main() {
                 },
 
                 path: PathConfig {
-                    p: 0.1,
+                    p: 0.01,
                     i: 0.0,
-                    d: 1000.0,
+                    d: 5000.0,
                 },
 
                 map: MapConfig {
