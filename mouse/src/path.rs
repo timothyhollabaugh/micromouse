@@ -1,3 +1,5 @@
+use libm::F32Ext;
+
 use arrayvec::ArrayVec;
 
 use pid_control::Controller;
@@ -5,17 +7,38 @@ use pid_control::DerivativeMode;
 use pid_control::PIDController;
 
 use crate::map::Vector;
-use core::borrow::Borrow;
 
+/**
+ * A segment of a larger path
+ *
+ * The path following algorithm uses the distance from the path to control steering of the mouse,
+ * and the distance along it with the total distance to determine when the segment is complete.
+ * The distance along may also be used to control forward velocity
+ *
+ * Usually, the segments are arranged so that each one starts at the end of the previous one and
+ * are tangent. This makes the movement nice and smooth. However, it does not have to be for eg.
+ * turning around in place.
+ */
 #[derive(Copy, Clone, Debug)]
 pub enum Segment {
+    /**
+     * A line segment is defined by start and end points.
+     * See https://www.desmos.com/calculator/yve8exartj
+     */
     Line(Vector, Vector),
+
+    /**
+     * An arc is defined by a starting point, center point and an angle in radians
+     * See https://www.desmos.com/calculator/4dcrt6qz4p
+     */
+    Arc(Vector, Vector, f32),
 }
 
 impl Segment {
     pub fn total_distance(&self) -> f32 {
         match self {
             &Segment::Line(l1, l2) => (l1 - l2).magnitude(),
+            &Segment::Arc(s, c, t) => F32Ext::abs(t) * (s - c).magnitude(),
         }
     }
 
@@ -35,6 +58,19 @@ impl Segment {
                 };
 
                 (i - l1).magnitude()
+            }
+
+            &Segment::Arc(s, c, t) => {
+                let v_mouse = m - c;
+                let v_start = s - c;
+
+                let r_mouse = v_mouse.magnitude();
+                let r_start = v_start.magnitude();
+
+                r_start
+                    * F32Ext::acos(
+                        (v_mouse.x * v_start.x + v_mouse.y * v_start.y) / (r_mouse * r_start),
+                    )
             }
         }
     }
@@ -60,6 +96,17 @@ impl Segment {
                     (i - m).magnitude()
                 } else {
                     -(i - m).magnitude()
+                }
+            }
+
+            &Segment::Arc(s, c, t) => {
+                let v_mouse = m - c;
+                let v_start = s - c;
+
+                if t > 0.0 {
+                    v_mouse.magnitude() - v_start.magnitude()
+                } else {
+                    v_start.magnitude() - v_mouse.magnitude()
                 }
             }
         }

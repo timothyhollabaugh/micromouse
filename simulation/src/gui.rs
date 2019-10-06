@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use piston_window::circle_arc;
 use piston_window::clear;
 use piston_window::line;
 use piston_window::rectangle;
@@ -85,13 +86,35 @@ pub fn run(config: GuiConfig) {
                 if let Some(path) = debug.mouse_debug.path_debug.path {
                     for segment in path {
                         match segment {
-                            Segment::Line(l1, l2) => line(
+                            &Segment::Line(l1, l2) => line(
                                 [0.0, 0.0, 1.0, 1.0],
                                 2.0,
                                 [l1.x as f64, l1.y as f64, l2.x as f64, l2.y as f64],
                                 transform,
                                 graphics,
                             ),
+                            &Segment::Arc(s, c, t) => {
+                                let v = s - c;
+                                let r = v.magnitude();
+
+                                let t_start = f32::atan2(v.y, v.x);
+                                let t_end = t_start + t;
+
+                                circle_arc(
+                                    [0.0, 0.0, 1.0, 1.0],
+                                    2.0,
+                                    t_start as f64,
+                                    t_end as f64,
+                                    [
+                                        (c.x - r) as f64,
+                                        (c.y - r) as f64,
+                                        (r * 2.0) as f64,
+                                        (r * 2.0) as f64,
+                                    ],
+                                    transform,
+                                    graphics,
+                                )
+                            }
                         }
                     }
                 }

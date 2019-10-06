@@ -34,20 +34,31 @@ impl Mouse {
             Segment::Line(
                 Vector {
                     x: 2000.0,
-                    y: 1000.0,
+                    y: 1090.0,
                 },
                 Vector {
                     x: 2000.0,
                     y: 2000.0,
                 },
             ),
-            Segment::Line(
+            Segment::Arc(
                 Vector {
-                    x: 1900.0,
+                    x: 1910.0,
                     y: 1000.0,
                 },
                 Vector {
-                    x: 2000.0,
+                    x: 1910.0,
+                    y: 1090.0,
+                },
+                -core::f32::consts::FRAC_PI_2,
+            ),
+            Segment::Line(
+                Vector {
+                    x: 1000.0,
+                    y: 1000.0,
+                },
+                Vector {
+                    x: 1910.0,
                     y: 1000.0,
                 },
             ),

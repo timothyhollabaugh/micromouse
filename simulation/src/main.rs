@@ -42,7 +42,7 @@ fn main() {
 
             initial_orientation: Orientation {
                 position: Vector {
-                    x: 1900.0,
+                    x: 1000.0,
                     y: 1000.0,
                 },
                 direction: 0.0,
