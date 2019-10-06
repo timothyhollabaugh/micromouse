@@ -1,5 +1,7 @@
 use std::f32;
 
+use libm::F32Ext;
+
 use mouse::config::MouseConfig;
 use mouse::map::Orientation;
 use mouse::map::Vector;
@@ -10,9 +12,9 @@ use mouse::path::PathDebug;
 #[derive(Debug)]
 pub struct SimulationDebug<'a> {
     pub mouse_debug: MouseDebug<'a>,
-    left_encoder: i32,
-    right_encoder: i32,
-    orientation: Orientation,
+    pub left_encoder: i32,
+    pub right_encoder: i32,
+    pub orientation: Orientation,
 }
 
 pub struct SimulationConfig {
@@ -42,11 +44,7 @@ impl Simulation {
         }
     }
 
-    pub fn update(
-        &mut self,
-        config: &SimulationConfig,
-        time: u32,
-    ) -> (Orientation, &[Orientation], SimulationDebug) {
+    pub fn update(&mut self, config: &SimulationConfig, time: u32) -> SimulationDebug {
         let delta_time = time - self.time;
 
         let (left_power, right_power, mouse_debug) =
@@ -56,36 +54,16 @@ impl Simulation {
         let left_speed = left_power * config.max_speed;
         let right_speed = right_power * config.max_speed;
 
-        let delta_left = left_speed * delta_time as f32;
-        let delta_right = right_speed * delta_time as f32;
-
-        self.left_encoder += delta_left as i32;
-        self.right_encoder += delta_right as i32;
-
-        let delta_linear = config
+        let delta_left = config
             .mouse
             .mechanical
-            .ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
+            .mm_to_ticks(left_speed * (delta_time as f32 / 1000.0)) as i32;
 
-        let delta_angular = config
+        let delta_right = config
             .mouse
             .mechanical
-            .ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
-
-        let mid_dir = self.orientation.direction + delta_angular / 2.0;
-
-        self.past_orientations.push(self.orientation);
-
-        self.orientation = Orientation {
-            position: Vector {
-                x: self.orientation.position.x + delta_linear * f32::cos(mid_dir),
-                y: self.orientation.position.y + delta_linear * f32::sin(mid_dir),
-            },
-
-            direction: self.orientation.direction + delta_angular,
-        };
-
-        self.time = time;
+            .mm_to_ticks(right_speed * (delta_time as f32 / 1000.0))
+            as i32;
 
         let debug = SimulationDebug {
             mouse_debug,
@@ -94,6 +72,12 @@ impl Simulation {
             orientation: self.orientation,
         };
 
-        (self.orientation, self.past_orientations.as_ref(), debug)
+        self.orientation
+            .update_from_encoders(&config.mouse.mechanical, delta_left, delta_right);
+        self.left_encoder += delta_left;
+        self.right_encoder += delta_right;
+        self.time = time;
+
+        debug
     }
 }

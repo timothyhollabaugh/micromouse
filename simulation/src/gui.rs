@@ -71,10 +71,10 @@ pub fn run(config: GuiConfig) {
                 .as_millis() as f32)
                 * config.time_scale;
 
-            let (orientation, past_orientations, debug) =
-                simulation.update(&config.simulation, time as u32);
+            let debug = simulation.update(&config.simulation, time as u32);
 
-            println!("{:#?}", debug);
+            //println!("{:#?}", debug);
+            //println!("orientations: {}", past_orientations.len());
 
             window.draw_2d(&event, |context, graphics| {
                 clear([1.0; 4], graphics);
@@ -119,23 +119,8 @@ pub fn run(config: GuiConfig) {
                     }
                 }
 
-                for orientation in past_orientations {
-                    line(
-                        [0.0, 0.0, 0.0, 0.5],
-                        2.0,
-                        [
-                            0.0,
-                            0.0,
-                            config.simulation.mouse.mechanical.front_offset as f64 / 4.0,
-                            1.0,
-                        ],
-                        orientation_transform(orientation, transform),
-                        graphics,
-                    )
-                }
-
                 rectangle(
-                    [0.0, 1.0, 0.0, 0.5],
+                    [1.0, 0.0, 0.0, 1.0],
                     [
                         (-config.simulation.mouse.mechanical.length / 2.0) as f64,
                         (-config.simulation.mouse.mechanical.width / 2.0) as f64,
@@ -166,7 +151,7 @@ pub fn run(config: GuiConfig) {
                         config.simulation.mouse.mechanical.length as f64,
                         config.simulation.mouse.mechanical.width as f64,
                     ],
-                    orientation_transform(&orientation, transform),
+                    orientation_transform(&debug.orientation, transform),
                     graphics,
                 );
 
@@ -179,7 +164,7 @@ pub fn run(config: GuiConfig) {
                         config.simulation.mouse.mechanical.front_offset as f64,
                         0.0,
                     ],
-                    orientation_transform(&orientation, transform),
+                    orientation_transform(&debug.orientation, transform),
                     graphics,
                 );
             });

@@ -36,6 +36,24 @@ pub struct Orientation {
     pub direction: f32,
 }
 
+impl Orientation {
+    pub fn update_from_encoders(
+        &mut self,
+        config: &MechanicalConfig,
+        delta_left: i32,
+        delta_right: i32,
+    ) {
+        let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
+        let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
+
+        let mid_dir = self.direction + delta_angular / 2.0;
+
+        self.position.x += delta_linear * F32Ext::cos(mid_dir);
+        self.position.y += delta_linear * F32Ext::sin(mid_dir);
+        self.direction += delta_angular;
+    }
+}
+
 pub struct Map {
     orientation: Orientation,
     left_encoder: i32,
@@ -60,21 +78,8 @@ impl Map {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
-        let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
-        let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
-
-        let mid_dir = self.orientation.direction + delta_angular / 2.0;
-
-        let orientation = Orientation {
-            position: Vector {
-                x: self.orientation.position.x + delta_linear * F32Ext::cos(mid_dir),
-                y: self.orientation.position.y + delta_linear * F32Ext::sin(mid_dir),
-            },
-
-            direction: self.orientation.direction + delta_angular,
-        };
-
-        self.orientation = orientation;
+        self.orientation
+            .update_from_encoders(&config, delta_left, delta_right);
 
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;

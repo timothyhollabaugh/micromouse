@@ -27,9 +27,9 @@ fn main() {
                 },
 
                 path: PathConfig {
-                    p: 0.01,
+                    p: 0.0,
                     i: 0.0,
-                    d: 5000.0,
+                    d: 500.0,
                 },
 
                 map: MapConfig {
@@ -38,7 +38,7 @@ fn main() {
                 },
             },
 
-            max_speed: 2.0,
+            max_speed: 1000.0,
 
             initial_orientation: Orientation {
                 position: Vector {
@@ -50,8 +50,8 @@ fn main() {
         },
 
         pixels_per_mm: 0.25,
-        updates_per_second: 20.0,
-        frames_per_second: 20.0,
+        updates_per_second: 60.0,
+        frames_per_second: 60.0,
         time_scale: 1.0,
     };
 
