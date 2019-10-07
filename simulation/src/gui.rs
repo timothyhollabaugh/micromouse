@@ -54,19 +54,22 @@ pub fn run(config: GuiConfig) {
         .build()
         .unwrap();
 
-    window.set_max_fps(
+    window.set_ups(
         (1000.0 / (config.simulation.millis_per_step as f64) * config.time_scale as f64) as u64,
     );
 
+    window.set_max_fps(50);
+
     let mut simulation = Simulation::new(&config.simulation, 0);
 
+    let mut debug = simulation.update(&config.simulation);
+
     while let Some(event) = window.next() {
+        if let Some(u) = event.update_args() {
+            debug = simulation.update(&config.simulation);
+        }
+
         if let Some(r) = event.render_args() {
-            let debug = simulation.update(&config.simulation);
-
-            //println!("{:#?}", debug);
-            //println!("orientations: {}", past_orientations.len());
-
             window.draw_2d(&event, |context, graphics| {
                 clear([1.0; 4], graphics);
 
@@ -123,19 +126,6 @@ pub fn run(config: GuiConfig) {
                         (-config.simulation.mouse.mechanical.width / 2.0) as f64,
                         config.simulation.mouse.mechanical.length as f64,
                         config.simulation.mouse.mechanical.width as f64,
-                    ],
-                    orientation_transform(&debug.orientation, transform),
-                    graphics,
-                );
-
-                line(
-                    [0.0, 0.0, 0.0, 1.0],
-                    2.0,
-                    [
-                        0.0,
-                        0.0,
-                        config.simulation.mouse.mechanical.front_offset as f64,
-                        0.0,
                     ],
                     orientation_transform(&debug.orientation, transform),
                     graphics,

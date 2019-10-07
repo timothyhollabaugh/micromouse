@@ -171,7 +171,7 @@ pub const PATH_BUF_LEN: usize = 64;
 
 #[derive(Debug)]
 pub struct PathDebug<'a> {
-    pub path: Option<&'a [Segment]>,
+    pub path: Option<&'a ArrayVec<[Segment; PATH_BUF_LEN]>>,
     pub distance_from: Option<f32>,
     pub distance_along: Option<f32>,
 }
@@ -250,7 +250,7 @@ impl Path {
             (0.0, true)
         };
 
-        debug.path = Some(self.segment_buffer.as_ref());
+        debug.path = Some(&self.segment_buffer);
 
         (angular_power, done, debug)
     }

@@ -226,7 +226,7 @@ impl Mouse {
 
         self.done = done;
 
-        let linear_power = if done { 0.0 } else { 0.5 };
+        let linear_power = if done { 0.0 } else { 1.0 };
 
         let left_power = linear_power - angular_power;
         let right_power = linear_power + angular_power;
