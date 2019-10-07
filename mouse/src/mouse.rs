@@ -81,11 +81,95 @@ impl Mouse {
                 ),
                 Segment::Line(
                     Vector {
-                        x: 1910.0,
+                        x: 1210.0,
                         y: 2000.0,
                     },
                     Vector {
                         x: 1090.0,
+                        y: 2000.0,
+                    },
+                ),
+                Segment::Arc(
+                    Vector {
+                        x: 1300.0,
+                        y: 1910.0,
+                    },
+                    Vector {
+                        x: 1210.0,
+                        y: 1910.0,
+                    },
+                    -FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 1300.0,
+                        y: 1590.0,
+                    },
+                    Vector {
+                        x: 1300.0,
+                        y: 1910.0,
+                    },
+                ),
+                Segment::Arc(
+                    Vector {
+                        x: 1390.0,
+                        y: 1500.0,
+                    },
+                    Vector {
+                        x: 1390.0,
+                        y: 1590.0,
+                    },
+                    FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 1610.0,
+                        y: 1500.0,
+                    },
+                    Vector {
+                        x: 1390.0,
+                        y: 1500.0,
+                    },
+                ),
+                Segment::Arc(
+                    Vector {
+                        x: 1700.0,
+                        y: 1590.0,
+                    },
+                    Vector {
+                        x: 1610.0,
+                        y: 1590.0,
+                    },
+                    FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 1700.0,
+                        y: 1910.0,
+                    },
+                    Vector {
+                        x: 1700.0,
+                        y: 1590.0,
+                    },
+                ),
+                Segment::Arc(
+                    Vector {
+                        x: 1790.0,
+                        y: 2000.0,
+                    },
+                    Vector {
+                        x: 1790.0,
+                        y: 1910.0,
+                    },
+                    -FRAC_PI_2,
+                ),
+                Segment::Line(
+                    Vector {
+                        x: 1910.0,
+                        y: 2000.0,
+                    },
+                    Vector {
+                        x: 1790.0,
                         y: 2000.0,
                     },
                 ),

@@ -97,8 +97,15 @@ pub fn run(config: GuiConfig) {
                                 let v = s - c;
                                 let r = v.magnitude();
 
-                                let t_start = f32::atan2(v.y, v.x);
-                                let t_end = t_start - t;
+                                let (t_start, t_end) = if t < 0.0 {
+                                    let t_start = f32::atan2(v.y, v.x);
+                                    let t_end = t_start - t;
+                                    (t_start, t_end)
+                                } else {
+                                    let t_start = f32::atan2(v.y, v.x);
+                                    let t_end = t_start - t;
+                                    (t_end, t_start)
+                                };
 
                                 circle_arc(
                                     [0.0, 0.0, 1.0, 1.0],
