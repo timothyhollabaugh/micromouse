@@ -47,11 +47,11 @@ fn main() {
                 },
                 direction: 0.0,
             },
+
+            millis_per_step: 10,
         },
 
         pixels_per_mm: 0.25,
-        updates_per_second: 60.0,
-        frames_per_second: 60.0,
         time_scale: 1.0,
     };
 

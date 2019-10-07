@@ -4,6 +4,7 @@ use piston_window::circle_arc;
 use piston_window::clear;
 use piston_window::line;
 use piston_window::rectangle;
+use piston_window::AdvancedWindow;
 use piston_window::EventLoop;
 use piston_window::PistonWindow;
 use piston_window::RenderEvent;
@@ -23,8 +24,6 @@ use mouse::map::Orientation;
 pub struct GuiConfig {
     pub simulation: SimulationConfig,
     pub pixels_per_mm: f32,
-    pub updates_per_second: f32,
-    pub frames_per_second: f32,
     pub time_scale: f32,
 }
 
@@ -55,23 +54,15 @@ pub fn run(config: GuiConfig) {
         .build()
         .unwrap();
 
-    window.set_ups(config.updates_per_second as u64);
-    window.set_max_fps(config.frames_per_second as u64);
+    window.set_max_fps(
+        (1000.0 / (config.simulation.millis_per_step as f64) * config.time_scale as f64) as u64,
+    );
 
     let mut simulation = Simulation::new(&config.simulation, 0);
 
-    let start_time = Instant::now();
-
     while let Some(event) = window.next() {
-        if let Some(_u) = event.update_args() {}
-
-        if let Some(_r) = event.render_args() {
-            let time = (std::time::Instant::now()
-                .duration_since(start_time)
-                .as_millis() as f32)
-                * config.time_scale;
-
-            let debug = simulation.update(&config.simulation, time as u32);
+        if let Some(r) = event.render_args() {
+            let debug = simulation.update(&config.simulation);
 
             //println!("{:#?}", debug);
             //println!("orientations: {}", past_orientations.len());
@@ -125,31 +116,6 @@ pub fn run(config: GuiConfig) {
                         }
                     }
                 }
-
-                rectangle(
-                    [1.0, 0.0, 0.0, 1.0],
-                    [
-                        (-config.simulation.mouse.mechanical.length / 2.0) as f64,
-                        (-config.simulation.mouse.mechanical.width / 2.0) as f64,
-                        config.simulation.mouse.mechanical.length as f64,
-                        config.simulation.mouse.mechanical.width as f64,
-                    ],
-                    orientation_transform(&debug.mouse_debug.orientation, transform),
-                    graphics,
-                );
-
-                line(
-                    [0.0, 0.0, 0.0, 1.0],
-                    1.0,
-                    [
-                        0.0,
-                        0.0,
-                        config.simulation.mouse.mechanical.front_offset as f64,
-                        0.0,
-                    ],
-                    orientation_transform(&debug.mouse_debug.orientation, transform),
-                    graphics,
-                );
                 rectangle(
                     [0.0, 1.0, 0.0, 1.0],
                     [
@@ -164,7 +130,7 @@ pub fn run(config: GuiConfig) {
 
                 line(
                     [0.0, 0.0, 0.0, 1.0],
-                    1.0,
+                    2.0,
                     [
                         0.0,
                         0.0,
