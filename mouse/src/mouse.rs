@@ -31,6 +31,17 @@ impl Mouse {
     ) -> Mouse {
         let mut path = Path::new(&config.path, time);
 
+        path.add_segments(&[Segment::Line(
+            Vector {
+                x: 1000.0,
+                y: 1000.0,
+            },
+            Vector {
+                x: 2000.0,
+                y: 1000.0,
+            },
+        )]);
+
         Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
@@ -45,7 +56,7 @@ impl Mouse {
         left_encoder: i32,
         right_encoder: i32,
     ) -> (f32, f32, MouseDebug) {
-        if self.done {
+        if false && self.done {
             self.path.add_segments(&[
                 Segment::Arc(
                     Vector {

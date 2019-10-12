@@ -24,17 +24,18 @@
 extern crate panic_halt;
 
 pub mod battery;
-//pub mod bot;
-pub mod config;
-//pub mod control;
 pub mod motors;
-//pub mod navigate;
-//pub mod plan;
 pub mod time;
 pub mod uart;
 pub mod vl6180x;
-pub mod mouse;
-pub mod path;
+
+use mouse::config::MechanicalConfig;
+use mouse::config::MouseConfig;
+use mouse::map::MapConfig;
+use mouse::map::Orientation;
+use mouse::map::Vector;
+use mouse::mouse::Mouse;
+use mouse::path::PathConfig;
 
 use core::fmt::Write;
 use core::str;
@@ -51,20 +52,10 @@ use crate::time::Time;
 use crate::uart::Command;
 use crate::uart::Uart;
 
+use crate::motors::{Encoder, Motor};
+
 use crate::motors::left::{LeftEncoder, LeftMotor};
 use crate::motors::right::{RightEncoder, RightMotor};
-
-//use crate::bot::Bot;
-use crate::config::BotConfig;
-
-//use crate::control::Control;
-
-//use crate::plan::Plan;
-
-use crate::path::PathConfig;
-
-//use crate::navigate::LessRandomNavigate;
-//use crate::navigate::RandomNavigate;
 
 // Setup the master clock out
 pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
@@ -88,11 +79,10 @@ fn main() -> ! {
 
     let mut uart = Uart::setup(&p.RCC, &mut cp.NVIC, p.USART1, &p.GPIOA);
 
-    let left_motor = LeftMotor::setup(&p.RCC, p.TIM3, &p.GPIOA);
-
+    let mut left_motor = LeftMotor::setup(&p.RCC, p.TIM3, &p.GPIOA);
     let left_encoder = LeftEncoder::setup(&p.RCC, &p.GPIOA, &p.GPIOB, p.TIM2);
 
-    let right_motor = RightMotor::setup(&p.RCC, p.TIM4, &p.GPIOB);
+    let mut right_motor = RightMotor::setup(&p.RCC, p.TIM4, &p.GPIOB);
     let right_encoder = RightEncoder::setup(&p.RCC, &p.GPIOA, p.TIM5);
 
     // Init the hal things
@@ -215,116 +205,66 @@ fn main() -> ! {
         orange_led.toggle();
     }
 
-    let config = BotConfig {
+    let config = MouseConfig {
+        mechanical: MechanicalConfig {
+            wheel_diameter: 32.0,
+            gearbox_ratio: 75.0,
+            ticks_per_rev: 12.0,
+            wheelbase: 77.0,
+            width: 64.0,
+            length: 57.5,
+            front_offset: 40.0,
+        },
+
         path: PathConfig {
-            p: 1.0,
+            p: 0.01,
             i: 0.0,
-            d: 0.0,
-        }
+            d: 1000.0,
+        },
+
+        map: MapConfig {
+            cell_width: 180.0,
+            wall_width: 20.0,
+        },
     };
-/*
-    let bot = Bot::new(
-        left_motor,
-        left_encoder,
-        right_motor,
-        right_encoder,
-        front_distance,
-        left_distance,
-        right_distance,
-        config,
-    );
 
-    let control = Control::new(bot);
-    */
-
-    /*
-    let navigate = RandomNavigate::new([
-        15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
-    ]);
-    */
-
-    /*
-    let navigate = LessRandomNavigate::new([
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-    ]);
-
-    let mut plan = Plan::new(control, navigate);
-    */
+    let initial_orientation = Orientation {
+        position: Vector {
+            x: 1000.0,
+            y: 1000.0,
+        },
+        direction: 0.0,
+    };
 
     writeln!(uart, "\n\nstart").ignore();
 
-    let mut last_time: u32 = 0;
+    let mut last_time: u32 = time.now();
 
-    let mut report = false;
+    let mut mouse = Mouse::new(
+        &config,
+        initial_orientation,
+        last_time,
+        left_encoder.count(),
+        right_encoder.count(),
+    );
+
+    let mut last_left = 0;
+    let mut last_right = 0;
 
     loop {
         let now: u32 = time.now();
 
-        if let Ok(line) = uart.read_line() {
-            if let Ok(string) = str::from_utf8(&line) {
-                let string = string.trim_matches(|c| c as u8 == 0).trim();
-                writeln!(uart, ">> {}", string).ignore();
-                if string.starts_with('!') {
-                    writeln!(uart, "Stopping report").ignore();
-                    report = false;
-                } else if string.starts_with('@') {
-                    writeln!(uart, "Starting report").ignore();
-                    report = true;
-                } else {
-                    let mut args = string.split_whitespace();
-
-                    let command = args.next();
-
-                    //if command == Some(plan.keyword_command()) {
-                        //plan.handle_command(&mut uart, args);
-                    //} else {
-                        writeln!(uart, "Invalid Command!").ignore();
-                    //}
-                }
-            }
-        }
-
-        if now - last_time >= 20u32 {
-            if report {
-                writeln!(
-                    uart,
-                    "{}",
-                    now,
-                    //plan.x_pos(),
-                    //plan.y_pos(),
-                    //plan.direction(),
-                    //plan.control().bot().left_pos(),
-                    //plan.control().bot().right_pos(),
-                    //control.bot().left_velocity(),
-                    //control.bot().right_velocity(),
-                    //control.bot().left_power(),
-                    //control.bot().right_power(),
-                    //plan.control().bot().linear_pos(),
-                    //plan.control().bot().spin_pos(),
-                    //plan.control().bot().linear_velocity(),
-                    //plan.control().bot().spin_velocity(),
-                    //plan.control().bot().left_distance(),
-                    //plan.control().bot().front_distance(),
-                    //plan.control().bot().right_distance(),
-                )
-                .ignore();
-            }
-
+        if now - last_time >= 10u32 {
             green_led.toggle();
 
-            /*
-            if plan.control().is_idle() {
-                orange_led.set_low();
-            } else {
-                orange_led.set_high();
-            }
+            let left = left_encoder.count();
+            let right = right_encoder.count();
 
-            if plan.is_win() {
-                blue_led.set_high();
-            } else {
-                blue_led.set_low();
-            }
-            */
+            let (left_power, right_power, debug) =
+                mouse.update(&config, now, left, right);
+
+            right_motor.change_power((right_power * 10000.0 / 8.0) as i32);
+            left_motor.change_power((left_power * 10000.0 / 8.0) as i32);
 
             if battery.is_dead() {
                 red_led.set_high();
@@ -332,20 +272,19 @@ fn main() -> ! {
                 red_led.set_low();
             }
 
-            /*
-            if left_button.is_low() {
-                plan.go();
-            }
+            let d_left = left - last_left;
+            let d_right = right - last_right;
 
-            if right_button.is_low() {
-                plan.stop();
-            }
-            */
+            let v_left = config.mechanical.ticks_to_mm(d_left as f32)
+                / (now - last_time) as f32;
+            let v_right = config.mechanical.ticks_to_mm(d_right as f32)
+                / (now - last_time) as f32;
+
+            writeln!(uart, "{}\t{}", v_left, v_right);
 
             last_time = now;
         }
 
-        //plan.update(now);
         battery.update(now);
     }
 }
