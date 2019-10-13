@@ -5,6 +5,7 @@ use crate::config::MouseConfig;
 use crate::map::Map;
 use crate::map::Orientation;
 use crate::map::Vector;
+use crate::path;
 use crate::path::Path;
 use crate::path::PathDebug;
 use crate::path::Segment;
@@ -31,17 +32,6 @@ impl Mouse {
     ) -> Mouse {
         let mut path = Path::new(&config.path, time);
 
-        path.add_segments(&[Segment::Line(
-            Vector {
-                x: 1000.0,
-                y: 1000.0,
-            },
-            Vector {
-                x: 2000.0,
-                y: 1000.0,
-            },
-        )]);
-
         Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
@@ -56,177 +46,16 @@ impl Mouse {
         left_encoder: i32,
         right_encoder: i32,
     ) -> (f32, f32, MouseDebug) {
-        if false && self.done {
-            self.path.add_segments(&[
-                Segment::Arc(
-                    Vector {
-                        x: 1000.0,
-                        y: 1090.0,
-                    },
-                    Vector {
-                        x: 1090.0,
-                        y: 1090.0,
-                    },
-                    -FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 1000.0,
-                        y: 1910.0,
-                    },
-                    Vector {
-                        x: 1000.0,
-                        y: 1090.0,
-                    },
-                ),
-                Segment::Arc(
-                    Vector {
-                        x: 1090.0,
-                        y: 2000.0,
-                    },
-                    Vector {
-                        x: 1090.0,
-                        y: 1910.0,
-                    },
-                    -FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 1210.0,
-                        y: 2000.0,
-                    },
-                    Vector {
-                        x: 1090.0,
-                        y: 2000.0,
-                    },
-                ),
-                Segment::Arc(
-                    Vector {
-                        x: 1300.0,
-                        y: 1910.0,
-                    },
-                    Vector {
-                        x: 1210.0,
-                        y: 1910.0,
-                    },
-                    -FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 1300.0,
-                        y: 1590.0,
-                    },
-                    Vector {
-                        x: 1300.0,
-                        y: 1910.0,
-                    },
-                ),
-                Segment::Arc(
-                    Vector {
-                        x: 1390.0,
-                        y: 1500.0,
-                    },
-                    Vector {
-                        x: 1390.0,
-                        y: 1590.0,
-                    },
-                    FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 1610.0,
-                        y: 1500.0,
-                    },
-                    Vector {
-                        x: 1390.0,
-                        y: 1500.0,
-                    },
-                ),
-                Segment::Arc(
-                    Vector {
-                        x: 1700.0,
-                        y: 1590.0,
-                    },
-                    Vector {
-                        x: 1610.0,
-                        y: 1590.0,
-                    },
-                    FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 1700.0,
-                        y: 1910.0,
-                    },
-                    Vector {
-                        x: 1700.0,
-                        y: 1590.0,
-                    },
-                ),
-                Segment::Arc(
-                    Vector {
-                        x: 1790.0,
-                        y: 2000.0,
-                    },
-                    Vector {
-                        x: 1790.0,
-                        y: 1910.0,
-                    },
-                    -FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 1910.0,
-                        y: 2000.0,
-                    },
-                    Vector {
-                        x: 1790.0,
-                        y: 2000.0,
-                    },
-                ),
-                Segment::Arc(
-                    Vector {
-                        x: 2000.0,
-                        y: 1910.0,
-                    },
-                    Vector {
-                        x: 1910.0,
-                        y: 1910.0,
-                    },
-                    -FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 2000.0,
-                        y: 1090.0,
-                    },
-                    Vector {
-                        x: 2000.0,
-                        y: 1910.0,
-                    },
-                ),
-                Segment::Arc(
-                    Vector {
-                        x: 1910.0,
-                        y: 1000.0,
-                    },
-                    Vector {
-                        x: 1910.0,
-                        y: 1090.0,
-                    },
-                    -FRAC_PI_2,
-                ),
-                Segment::Line(
-                    Vector {
-                        x: 1090.0,
-                        y: 1000.0,
-                    },
-                    Vector {
-                        x: 1910.0,
-                        y: 1000.0,
-                    },
-                ),
-            ]);
+        if self.done {
+            self.path.add_segments(&path::rounded_rectangle(
+                Vector {
+                    x: 1000.0,
+                    y: 1000.0,
+                },
+                700.0,
+                400.0,
+                100.0,
+            ));
         }
         let orientation = self
             .map

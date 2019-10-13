@@ -1,3 +1,5 @@
+use core::f32::consts::FRAC_PI_2;
+
 use libm::F32Ext;
 
 use arrayvec::ArrayVec;
@@ -7,6 +9,95 @@ use pid_control::DerivativeMode;
 use pid_control::PIDController;
 
 use crate::map::Vector;
+
+pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) -> [Segment; 8] {
+    [
+        Segment::Arc(
+            Vector {
+                x: start.x,
+                y: start.y + radius,
+            },
+            Vector {
+                x: start.x + radius,
+                y: start.y + radius,
+            },
+            -FRAC_PI_2,
+        ),
+        Segment::Line(
+            Vector {
+                x: start.x,
+                y: start.y + height - radius,
+            },
+            Vector {
+                x: start.x,
+                y: start.y + radius,
+            },
+        ),
+        Segment::Arc(
+            Vector {
+                x: start.x + radius,
+                y: start.y + height,
+            },
+            Vector {
+                x: start.x + radius,
+                y: start.y + height - radius,
+            },
+            -FRAC_PI_2,
+        ),
+        Segment::Line(
+            Vector {
+                x: start.x + width - radius,
+                y: start.y + height,
+            },
+            Vector {
+                x: start.x + radius,
+                y: start.y + height,
+            },
+        ),
+        Segment::Arc(
+            Vector {
+                x: start.x + width,
+                y: start.y + height - radius,
+            },
+            Vector {
+                x: start.x + width - radius,
+                y: start.y + height - radius,
+            },
+            -FRAC_PI_2,
+        ),
+        Segment::Line(
+            Vector {
+                x: start.x + width,
+                y: start.y + radius,
+            },
+            Vector {
+                x: start.x + width,
+                y: start.y + height - radius,
+            },
+        ),
+        Segment::Arc(
+            Vector {
+                x: start.x + width - radius,
+                y: start.y,
+            },
+            Vector {
+                x: start.x + width - radius,
+                y: start.y + radius,
+            },
+            -FRAC_PI_2,
+        ),
+        Segment::Line(
+            Vector {
+                x: start.x + radius,
+                y: start.y,
+            },
+            Vector {
+                x: start.x + width - radius,
+                y: start.y,
+            },
+        ),
+    ]
+}
 
 /**
  * A segment of a larger path

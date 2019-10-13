@@ -29,6 +29,8 @@ pub mod time;
 pub mod uart;
 pub mod vl6180x;
 
+use libm::F32Ext;
+
 use mouse::config::MechanicalConfig;
 use mouse::config::MouseConfig;
 use mouse::map::MapConfig;
@@ -217,9 +219,9 @@ fn main() -> ! {
         },
 
         path: PathConfig {
-            p: 0.01,
+            p: 0.00,
             i: 0.0,
-            d: 1000.0,
+            d: 10000.0,
         },
 
         map: MapConfig {
@@ -248,8 +250,7 @@ fn main() -> ! {
         right_encoder.count(),
     );
 
-    let mut last_left = 0;
-    let mut last_right = 0;
+    let mut running = false;
 
     loop {
         let now: u32 = time.now();
@@ -257,30 +258,41 @@ fn main() -> ! {
         if now - last_time >= 10u32 {
             green_led.toggle();
 
-            let left = left_encoder.count();
-            let right = right_encoder.count();
+            if running {
+                let left = left_encoder.count();
+                let right = right_encoder.count();
 
-            let (left_power, right_power, debug) =
-                mouse.update(&config, now, left, right);
+                let (left_power, right_power, debug) =
+                    mouse.update(&config, now, left, right);
 
-            right_motor.change_power((right_power * 10000.0 / 8.0) as i32);
-            left_motor.change_power((left_power * 10000.0 / 8.0) as i32);
+                right_motor.change_power((right_power * 10000.0 / 8.0) as i32);
+                left_motor.change_power((left_power * 10000.0 / 8.0) as i32);
+
+                if F32Ext::abs(debug.path_debug.distance_from.unwrap_or(0.0))
+                    < 20.0
+                {
+                    blue_led.set_high();
+                } else {
+                    blue_led.set_low();
+                }
+            } else {
+                right_motor.change_power(0);
+                left_motor.change_power(0);
+            }
+
+            if left_button.is_low() {
+                running = true;
+            }
+
+            if right_button.is_low() {
+                running = false;
+            }
 
             if battery.is_dead() {
                 red_led.set_high();
             } else {
                 red_led.set_low();
             }
-
-            let d_left = left - last_left;
-            let d_right = right - last_right;
-
-            let v_left = config.mechanical.ticks_to_mm(d_left as f32)
-                / (now - last_time) as f32;
-            let v_right = config.mechanical.ticks_to_mm(d_right as f32)
-                / (now - last_time) as f32;
-
-            writeln!(uart, "{}\t{}", v_left, v_right);
 
             last_time = now;
         }
