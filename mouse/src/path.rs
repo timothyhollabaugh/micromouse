@@ -8,6 +8,7 @@ use pid_control::Controller;
 use pid_control::DerivativeMode;
 use pid_control::PIDController;
 
+use crate::map::Orientation;
 use crate::map::Vector;
 
 pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) -> [Segment; 8] {
@@ -21,7 +22,7 @@ pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) ->
                 x: start.x + radius,
                 y: start.y + radius,
             },
-            -FRAC_PI_2,
+            FRAC_PI_2,
         ),
         Segment::Line(
             Vector {
@@ -42,7 +43,7 @@ pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) ->
                 x: start.x + radius,
                 y: start.y + height - radius,
             },
-            -FRAC_PI_2,
+            FRAC_PI_2,
         ),
         Segment::Line(
             Vector {
@@ -63,7 +64,7 @@ pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) ->
                 x: start.x + width - radius,
                 y: start.y + height - radius,
             },
-            -FRAC_PI_2,
+            FRAC_PI_2,
         ),
         Segment::Line(
             Vector {
@@ -84,7 +85,7 @@ pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) ->
                 x: start.x + width - radius,
                 y: start.y + radius,
             },
-            -FRAC_PI_2,
+            FRAC_PI_2,
         ),
         Segment::Line(
             Vector {
@@ -195,9 +196,9 @@ impl Segment {
                 let v_start = s - c;
 
                 if t > 0.0 {
-                    v_mouse.magnitude() - v_start.magnitude()
-                } else {
                     v_start.magnitude() - v_mouse.magnitude()
+                } else {
+                    v_mouse.magnitude() - v_start.magnitude()
                 }
             }
         }
@@ -307,7 +308,7 @@ impl Path {
         &mut self,
         config: &PathConfig,
         time: u32,
-        position: Vector,
+        orientation: Orientation,
     ) -> (f32, bool, PathDebug) {
         let mut debug = PathDebug {
             path: None,
@@ -323,16 +324,16 @@ impl Path {
 
         // Check if we are done with the current segment
         if let Some(segment) = self.segment_buffer.last() {
-            if segment.distance_along(position) >= segment.total_distance() {
+            if segment.distance_along(orientation.position) >= segment.total_distance() {
                 self.segment_buffer.pop();
             }
         }
 
         // Do pid on the distance from the path
         let (angular_power, done) = if let Some(segment) = self.segment_buffer.last() {
-            let offset = segment.distance_from(position);
+            let offset = segment.distance_from(orientation.position);
             debug.distance_from = Some(offset);
-            debug.distance_along = Some(segment.distance_along(position));
+            debug.distance_along = Some(segment.distance_along(orientation.position));
             (
                 self.pid.update(offset as f64, delta_time as f64) as f32,
                 false,

@@ -61,8 +61,7 @@ impl Mouse {
             .map
             .update(&config.mechanical, left_encoder, right_encoder);
 
-        let (angular_power, done, path_debug) =
-            self.path.update(&config.path, time, orientation.position);
+        let (angular_power, done, path_debug) = self.path.update(&config.path, time, orientation);
 
         self.done = done;
 

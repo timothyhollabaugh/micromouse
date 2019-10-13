@@ -67,6 +67,7 @@ pub fn run(config: GuiConfig) {
     while let Some(event) = window.next() {
         if let Some(u) = event.update_args() {
             debug = simulation.update(&config.simulation);
+            println!("{:#?}", debug);
         }
 
         if let Some(r) = event.render_args() {
@@ -75,7 +76,8 @@ pub fn run(config: GuiConfig) {
 
                 let transform = context
                     .transform
-                    .scale(config.pixels_per_mm as f64, config.pixels_per_mm as f64);
+                    .trans(0.0, (maze_size.1 as f64))
+                    .scale(config.pixels_per_mm as f64, -config.pixels_per_mm as f64);
 
                 if let Some(path) = debug.mouse_debug.path_debug.path {
                     for segment in path {
@@ -93,12 +95,12 @@ pub fn run(config: GuiConfig) {
 
                                 let (t_start, t_end) = if t < 0.0 {
                                     let t_start = f32::atan2(v.y, v.x);
-                                    let t_end = t_start - t;
-                                    (t_start, t_end)
+                                    let t_end = t_start + t;
+                                    (t_end, t_start)
                                 } else {
                                     let t_start = f32::atan2(v.y, v.x);
-                                    let t_end = t_start - t;
-                                    (t_end, t_start)
+                                    let t_end = t_start + t;
+                                    (t_start, t_end)
                                 };
 
                                 circle_arc(
