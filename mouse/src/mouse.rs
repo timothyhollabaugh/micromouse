@@ -78,3 +78,25 @@ impl Mouse {
         (left_power, right_power, debug)
     }
 }
+
+pub struct TestMouse {}
+
+impl TestMouse {
+    pub fn new() -> TestMouse {
+        TestMouse {}
+    }
+
+    pub fn update(
+        &mut self,
+        config: &MouseConfig,
+        time: u32,
+        left_encoder: i32,
+        right_encoder: i32,
+    ) -> (f32, f32) {
+        if time % 10000 <= 5000 {
+            (0.0, 0.0)
+        } else {
+            (1.0, 1.0)
+        }
+    }
+}
