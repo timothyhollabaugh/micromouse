@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:board2-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr USLetter 11000 8500
 encoding utf-8
@@ -177,7 +177,7 @@ Wire Wire Line
 Wire Wire Line
 	3650 5650 4000 5650
 $Comp
-L board2-rescue:Conn_ARM_JTAG_SWD_10-Connector J3
+L Connector:Conn_ARM_JTAG_SWD_10 J3
 U 1 1 5C4439E0
 P 1050 5450
 F 0 "J3" V 600 5900 50  0000 R CNN
@@ -1157,7 +1157,7 @@ F 3 "" H 8150 6250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L board2-rescue:MPU-6500-Sensor_Motion U7
+L Sensor_Motion:MPU-6500 U7
 U 1 1 5CF8B427
 P 8900 5750
 F 0 "U7" H 8500 5200 50  0000 C CNN
@@ -2685,7 +2685,7 @@ $EndComp
 Wire Wire Line
 	9750 1750 9750 1800
 $Comp
-L board2-rescue:Motor_Encoder_Pololu-Motor U5
+L Motor:Motor_Encoder_Pololu U5
 U 1 1 5C471455
 P 9750 3100
 F 0 "U5" H 9450 3400 50  0000 L CNN
@@ -2696,7 +2696,7 @@ F 3 "" H 9750 3100 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L board2-rescue:Motor_Encoder_Pololu-Motor U4
+L Motor:Motor_Encoder_Pololu U4
 U 1 1 5C4713FB
 P 9750 2200
 F 0 "U4" H 9450 2500 50  0000 L CNN
