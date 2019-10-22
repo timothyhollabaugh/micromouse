@@ -5,7 +5,7 @@ mod simulation;
 
 use mouse::config::MechanicalConfig;
 use mouse::config::MouseConfig;
-use mouse::map::{MapConfig, Orientation, Vector};
+use mouse::map::{Direction, MapConfig, Orientation, Vector};
 use mouse::path::PathConfig;
 
 use simulation::SimulationConfig;
@@ -27,9 +27,9 @@ fn main() {
                 },
 
                 path: PathConfig {
-                    p: 0.01,
+                    p: 2.0,
                     i: 0.0,
-                    d: 5000.0,
+                    d: 0.0,
                 },
 
                 map: MapConfig {
@@ -45,7 +45,7 @@ fn main() {
                     x: 1000.0,
                     y: 1000.0,
                 },
-                direction: 0.0,
+                direction: Direction::from(0.0),
             },
 
             millis_per_step: 10,

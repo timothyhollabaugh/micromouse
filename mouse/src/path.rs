@@ -1,4 +1,5 @@
 use core::f32::consts::FRAC_PI_2;
+use core::f32::consts::PI;
 
 use libm::F32Ext;
 
@@ -8,8 +9,11 @@ use pid_control::Controller;
 use pid_control::DerivativeMode;
 use pid_control::PIDController;
 
+use crate::map::Direction;
 use crate::map::Orientation;
 use crate::map::Vector;
+use crate::map::DIRECTION_PI;
+use crate::map::DIRECTION_PI_2;
 
 pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) -> [Segment; 8] {
     [
@@ -120,7 +124,7 @@ pub enum Segment {
     Line(Vector, Vector),
 
     /**
-     * An arc is defined by a starting point, center point and an angle in radians
+     * An arc is defined by a starting point, center point and an direction in radians
      * See https://www.desmos.com/calculator/4dcrt6qz4p
      */
     Arc(Vector, Vector, f32),
@@ -203,6 +207,27 @@ impl Segment {
             }
         }
     }
+
+    pub fn tangent_direction(&self, m: Vector) -> Direction {
+        match self {
+            &Segment::Line(l1, l2) => {
+                let v_line = l2 - l1;
+                Direction::from(F32Ext::atan2(v_line.y, v_line.x))
+            }
+
+            &Segment::Arc(s, c, t) => {
+                let v_mouse = m - c;
+
+                let perpendicular_direction = v_mouse.direction();
+
+                if t >= 0.0 {
+                    perpendicular_direction + DIRECTION_PI_2
+                } else {
+                    perpendicular_direction - DIRECTION_PI_2
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -266,6 +291,9 @@ pub struct PathDebug<'a> {
     pub path: Option<&'a ArrayVec<[Segment; PATH_BUF_LEN]>>,
     pub distance_from: Option<f32>,
     pub distance_along: Option<f32>,
+    pub centered_direction: Option<f32>,
+    pub tangent_direction: Option<Direction>,
+    pub target_direction: Option<Direction>,
 }
 
 #[derive(Debug)]
@@ -314,6 +342,9 @@ impl Path {
             path: None,
             distance_from: None,
             distance_along: None,
+            centered_direction: None,
+            tangent_direction: None,
+            target_direction: None,
         };
 
         self.pid.p_gain = config.p as f64;
@@ -330,17 +361,29 @@ impl Path {
         }
 
         // Do pid on the distance from the path
-        let (angular_power, done) = if let Some(segment) = self.segment_buffer.last() {
+        let (target_direction, done) = if let Some(segment) = self.segment_buffer.last() {
             let offset = segment.distance_from(orientation.position);
+            let tangent_direction = segment.tangent_direction(orientation.position);
+            let target_direction = tangent_direction;
+
             debug.distance_from = Some(offset);
             debug.distance_along = Some(segment.distance_along(orientation.position));
-            (
-                self.pid.update(offset as f64, delta_time as f64) as f32,
-                false,
-            )
+            debug.tangent_direction = Some(tangent_direction);
+            debug.target_direction = Some(target_direction);
+
+            (target_direction, false)
         } else {
-            (0.0, true)
+            (Direction::from(0.0), true)
         };
+
+        let centered_direction = orientation.direction.centered_at(target_direction);
+
+        debug.centered_direction = Some(centered_direction);
+
+        self.pid.set_target(target_direction.into());
+        let angular_power =
+            self.pid
+                .update(centered_direction as f64, delta_time as f64) as f32;
 
         debug.path = Some(&self.segment_buffer);
 

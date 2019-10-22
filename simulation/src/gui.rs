@@ -40,7 +40,7 @@ impl GuiConfig {
 fn orientation_transform<T: Transformed + Sized>(orientation: &Orientation, transform: T) -> T {
     transform
         .trans(orientation.position.x as f64, orientation.position.y as f64)
-        .rot_rad(orientation.direction as f64)
+        .rot_rad(orientation.direction.into())
 }
 
 pub fn run(config: GuiConfig) {
@@ -67,7 +67,33 @@ pub fn run(config: GuiConfig) {
     while let Some(event) = window.next() {
         if let Some(u) = event.update_args() {
             debug = simulation.update(&config.simulation);
-            println!("{:#?}", debug);
+            //println!("{:#?}", debug);
+            println!(
+                "{}, {}, {}, {}, {}, {}, {}, {}, {}",
+                debug.time,
+                debug.mouse_debug.orientation.position.x,
+                debug.mouse_debug.orientation.position.y,
+                debug.mouse_debug.orientation.direction,
+                debug.mouse_debug.path_debug.distance_along.unwrap_or(999.0),
+                debug.mouse_debug.path_debug.distance_from.unwrap_or(999.0),
+                debug
+                    .mouse_debug
+                    .path_debug
+                    .centered_direction
+                    .unwrap_or(999.0),
+                debug
+                    .mouse_debug
+                    .path_debug
+                    .tangent_direction
+                    .map(|d| f32::from(d))
+                    .unwrap_or(0.0),
+                debug
+                    .mouse_debug
+                    .path_debug
+                    .target_direction
+                    .map(|d| f32::from(d))
+                    .unwrap_or(0.0)
+            );
         }
 
         if let Some(r) = event.render_args() {

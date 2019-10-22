@@ -1,6 +1,10 @@
+use core::f32::consts::PI;
+
 use libm::F32Ext;
 
 use crate::config::MechanicalConfig;
+use core::fmt::{Error, Formatter};
+use core::ops::{Add, Div};
 
 pub struct MapConfig {
     pub cell_width: f32,
@@ -17,6 +21,10 @@ impl Vector {
     pub fn magnitude(&self) -> f32 {
         F32Ext::sqrt(self.x * self.x + self.y * self.y)
     }
+
+    pub fn direction(&self) -> Direction {
+        Direction::from(F32Ext::atan2(self.y, self.x))
+    }
 }
 
 impl core::ops::Sub for Vector {
@@ -30,10 +38,84 @@ impl core::ops::Sub for Vector {
     }
 }
 
+/// A direction wrapped to 0 - 2pi
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Direction(f32);
+
+impl Direction {
+    pub(crate) fn centered_at(self, center: Direction) -> f32 {
+        let raw_self = f32::from(self);
+        let raw_center = f32::from(center);
+
+        if raw_self - raw_center > PI {
+            raw_self - 2.0 * PI
+        } else {
+            raw_self
+        }
+    }
+}
+
+impl From<f32> for Direction {
+    fn from(other: f32) -> Direction {
+        Direction((other + 2.0 * PI) % (2.0 * PI))
+    }
+}
+
+impl core::fmt::Display for Direction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<Direction> for f32 {
+    fn from(other: Direction) -> f32 {
+        other.0
+    }
+}
+
+impl From<Direction> for f64 {
+    fn from(other: Direction) -> f64 {
+        other.0 as f64
+    }
+}
+
+impl core::ops::AddAssign for Direction {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = Direction::from(self.0 + rhs.0)
+    }
+}
+
+impl core::ops::Add for Direction {
+    type Output = Direction;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Direction::from(self.0 + rhs.0)
+    }
+}
+
+impl core::ops::Sub for Direction {
+    type Output = Direction;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Direction::from(self.0 - rhs.0)
+    }
+}
+
+impl core::ops::Div<f32> for Direction {
+    type Output = Direction;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Direction::from(self.0 / rhs)
+    }
+}
+
+pub const DIRECTION_PI_2: Direction = Direction(core::f32::consts::FRAC_PI_2);
+pub const DIRECTION_PI: Direction = Direction(core::f32::consts::PI);
+
 #[derive(Copy, Clone, Debug)]
 pub struct Orientation {
     pub position: Vector,
-    pub direction: f32,
+    pub direction: Direction,
 }
 
 impl Orientation {
@@ -44,12 +126,13 @@ impl Orientation {
         delta_right: i32,
     ) {
         let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
-        let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
+        let delta_angular =
+            Direction::from(config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0));
 
         let mid_dir = self.direction + delta_angular / 2.0;
 
-        self.position.x += delta_linear * F32Ext::cos(mid_dir);
-        self.position.y += delta_linear * F32Ext::sin(mid_dir);
+        self.position.x += delta_linear * F32Ext::cos(f32::from(mid_dir));
+        self.position.y += delta_linear * F32Ext::sin(f32::from(mid_dir));
         self.direction += delta_angular;
     }
 }
