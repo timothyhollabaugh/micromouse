@@ -33,6 +33,9 @@ use libm::F32Ext;
 
 use mouse::config::MechanicalConfig;
 use mouse::config::MouseConfig;
+use mouse::config::MOUSE_2019;
+use mouse::config::MOUSE_2020;
+use mouse::map::Direction;
 use mouse::map::MapConfig;
 use mouse::map::Orientation;
 use mouse::map::Vector;
@@ -207,35 +210,14 @@ fn main() -> ! {
         orange_led.toggle();
     }
 
-    let config = MouseConfig {
-        mechanical: MechanicalConfig {
-            wheel_diameter: 32.0,
-            gearbox_ratio: 75.0,
-            ticks_per_rev: 12.0,
-            wheelbase: 77.0,
-            width: 64.0,
-            length: 57.5,
-            front_offset: 40.0,
-        },
-
-        path: PathConfig {
-            p: 0.00,
-            i: 0.0,
-            d: 10000.0,
-        },
-
-        map: MapConfig {
-            cell_width: 180.0,
-            wall_width: 20.0,
-        },
-    };
+    let config = MOUSE_2019;
 
     let initial_orientation = Orientation {
         position: Vector {
             x: 1000.0,
             y: 1000.0,
         },
-        direction: 0.0,
+        direction: Direction::from(0.0),
     };
 
     writeln!(uart, "\n\nstart").ignore();
@@ -255,7 +237,13 @@ fn main() -> ! {
     loop {
         let now: u32 = time.now();
 
-        if now - last_time >= 10u32 {
+        if now - last_time >= 10 {
+            if now - last_time >= 11 {
+                orange_led.set_high();
+            } else {
+                orange_led.set_low();
+            }
+
             green_led.toggle();
 
             if running {
@@ -268,8 +256,8 @@ fn main() -> ! {
                 right_motor.change_power((right_power * 10000.0 / 8.0) as i32);
                 left_motor.change_power((left_power * 10000.0 / 8.0) as i32);
 
-                if F32Ext::abs(debug.path_debug.distance_from.unwrap_or(0.0))
-                    < 20.0
+                if F32Ext::abs(debug.path_debug.distance_from.unwrap_or(9999.0))
+                    < 1.0
                 {
                     blue_led.set_high();
                 } else {
