@@ -35,7 +35,7 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 100.0,
+    p: 10.0,
     i: 0.0,
     d: 0.0,
 };

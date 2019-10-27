@@ -9,3 +9,4 @@ piston_window = "0.81.0"
 rand = "0.6.5"
 mouse = { path = "../mouse" }
 libm = "0.1"
+serialport = "3.3"

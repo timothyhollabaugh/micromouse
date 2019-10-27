@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+use std::io::BufReader;
+
 use piston_window::circle_arc;
 use piston_window::clear;
 use piston_window::line;
@@ -17,6 +19,7 @@ use mouse::maze::WIDTH;
 
 use mouse::path::Segment;
 
+use crate::simulation::RemoteMouse;
 use crate::simulation::Simulation;
 use crate::simulation::SimulationConfig;
 use mouse::map::Orientation;
@@ -60,7 +63,10 @@ pub fn run(config: GuiConfig) {
 
     window.set_max_fps(50);
 
-    let mut simulation = Simulation::new(&config.simulation, 0);
+    //let mut simulation = Simulation::new(&config.simulation, 0);
+
+    let serial = serialport::open("/dev/ttyUSB0").unwrap();
+    let mut simulation = RemoteMouse::new(&config.simulation, BufReader::new(serial));
 
     let mut debug = simulation.update(&config.simulation);
 

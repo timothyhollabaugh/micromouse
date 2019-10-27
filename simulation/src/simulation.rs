@@ -1,8 +1,14 @@
 use std::f32;
 
+use std::io::BufRead;
+
 use libm::F32Ext;
 
+use serialport;
+use serialport::SerialPort;
+
 use mouse::config::MouseConfig;
+use mouse::map::Direction;
 use mouse::map::Orientation;
 use mouse::map::Vector;
 use mouse::mouse::Mouse;
@@ -23,6 +29,62 @@ pub struct SimulationConfig {
     pub max_speed: f32,
     pub initial_orientation: Orientation,
     pub millis_per_step: u32,
+}
+
+pub struct RemoteMouse<R: BufRead> {
+    reader: R,
+    orientation: Orientation,
+}
+
+impl<R: BufRead> RemoteMouse<R> {
+    pub fn new(config: &SimulationConfig, reader: R) -> RemoteMouse<R> {
+        RemoteMouse {
+            reader,
+            orientation: config.initial_orientation,
+        }
+    }
+
+    pub fn update(&mut self, config: &SimulationConfig) -> SimulationDebug {
+        let mut line = String::new();
+
+        self.reader.read_line(&mut line);
+
+        let parts = line
+            .split(',')
+            .map(|s| s.trim())
+            .map(|s| s.parse::<f32>())
+            .collect::<Vec<_>>();
+
+        if let Some(&x) = parts.get(0).and_then(|r| r.as_ref().ok()) {
+            self.orientation.position.x = x;
+        }
+
+        if let Some(&y) = parts.get(1).and_then(|r| r.as_ref().ok()) {
+            self.orientation.position.y = y;
+        }
+
+        if let Some(&d) = parts.get(2).and_then(|r| r.as_ref().ok()) {
+            self.orientation.direction = Direction::from(d);
+        }
+
+        SimulationDebug {
+            mouse_debug: MouseDebug {
+                orientation: self.orientation,
+                path_debug: PathDebug {
+                    path: None,
+                    distance_from: None,
+                    distance_along: None,
+                    centered_direction: None,
+                    tangent_direction: None,
+                    target_direction: None,
+                },
+            },
+            orientation: self.orientation,
+            left_encoder: 0,
+            right_encoder: 0,
+            time: 0,
+        }
+    }
 }
 
 pub struct Simulation {

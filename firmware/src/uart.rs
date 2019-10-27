@@ -30,10 +30,16 @@ static UART: Mutex<RefCell<Option<stm32f405::USART1>>> =
     Mutex::new(RefCell::new(None));
 
 static RX_BUF: Mutex<RefCell<Buffer<[u8; RX_BUFFER_LEN]>>> =
-    Mutex::new(RefCell::new(Buffer { bytes: [0; RX_BUFFER_LEN], len: 0 }));
+    Mutex::new(RefCell::new(Buffer {
+        bytes: [0; RX_BUFFER_LEN],
+        len: 0,
+    }));
 
 static TX_BUF: Mutex<RefCell<Buffer<[u8; TX_BUFFER_LEN]>>> =
-    Mutex::new(RefCell::new(Buffer { bytes: [0; TX_BUFFER_LEN], len: 0 }));
+    Mutex::new(RefCell::new(Buffer {
+        bytes: [0; TX_BUFFER_LEN],
+        len: 0,
+    }));
 
 pub enum TxError {
     BufferFull,
@@ -53,7 +59,7 @@ pub enum RxError {
     NotInitialized,
 }
 
-pub struct Uart { }
+pub struct Uart {}
 
 impl Uart {
     pub fn setup(
@@ -97,7 +103,7 @@ impl Uart {
 
         nvic.enable(interrupt::USART1);
 
-        Uart { }
+        Uart {}
     }
 
     fn add_byte(&mut self, c: u8) -> Result<(), TxError> {
@@ -105,7 +111,7 @@ impl Uart {
             if let Ok(mut buf) = TX_BUF.borrow(cs).try_borrow_mut() {
                 if buf.len < buf.bytes.len() {
                     for i in (1..buf.len).rev() {
-                        buf.bytes[i] = buf.bytes[i-1];
+                        buf.bytes[i] = buf.bytes[i - 1];
                     }
                     buf.bytes[0] = c;
                     buf.len += 1;
@@ -137,13 +143,23 @@ impl Uart {
         Ok(())
     }
 
+    pub fn is_tx_empty(&self) -> bool {
+        cortex_m::interrupt::free(|cs| {
+            if let Ok(mut buf) = TX_BUF.borrow(cs).try_borrow_mut() {
+                buf.len == 0
+            } else {
+                false
+            }
+        })
+    }
+
     pub fn read_byte(&mut self) -> Result<u8, RxError> {
         cortex_m::interrupt::free(|cs| {
             if let Ok(mut buf) = RX_BUF.borrow(cs).try_borrow_mut() {
                 if buf.len > 0 {
                     let c = buf.bytes[0];
                     for i in 1..buf.len {
-                        buf.bytes[i-1] = buf.bytes[i];
+                        buf.bytes[i - 1] = buf.bytes[i];
                     }
                     buf.len -= 1;
                     let len = buf.len;
@@ -161,7 +177,7 @@ impl Uart {
     pub fn read_line(&mut self) -> Result<[u8; RX_BUFFER_LEN], RxError> {
         cortex_m::interrupt::free(|cs| {
             if let Ok(mut buf) = RX_BUF.borrow(cs).try_borrow_mut() {
-                if buf.len > 0 && buf.bytes[buf.len-1] == 0x0A {
+                if buf.len > 0 && buf.bytes[buf.len - 1] == 0x0A {
                     let new_buf = buf.bytes.clone();
                     buf.bytes = [0; RX_BUFFER_LEN];
                     buf.len = 0;
@@ -202,7 +218,8 @@ fn USART1() {
                 if let Ok(mut buf) = TX_BUF.borrow(cs).try_borrow_mut() {
                     if buf.len > 0 {
                         buf.len -= 1;
-                        uart.dr.write(|w| w.dr().bits(buf.bytes[buf.len] as u16));
+                        uart.dr
+                            .write(|w| w.dr().bits(buf.bytes[buf.len] as u16));
                     }
                 }
 
