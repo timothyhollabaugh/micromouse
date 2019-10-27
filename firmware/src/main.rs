@@ -255,7 +255,7 @@ fn main() -> ! {
                 right_motor.change_power((right_power * 10000.0 / 8.0) as i32);
                 left_motor.change_power((left_power * 10000.0 / 8.0) as i32);
 
-                if uart.is_tx_empty() {
+                if let Ok(0) = uart.tx_len() {
                     writeln!(
                         uart,
                         "{:04.4}, {:04.4}, {:01.4}",

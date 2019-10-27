@@ -66,7 +66,7 @@ pub fn run(config: GuiConfig) {
     //let mut simulation = Simulation::new(&config.simulation, 0);
 
     let serial = serialport::open("/dev/ttyUSB0").unwrap();
-    let mut simulation = RemoteMouse::new(&config.simulation, BufReader::new(serial));
+    let mut simulation = RemoteMouse::new(&config.simulation, serial);
 
     let mut debug = simulation.update(&config.simulation);
 

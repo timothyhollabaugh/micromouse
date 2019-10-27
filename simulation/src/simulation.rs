@@ -1,6 +1,6 @@
 use std::f32;
 
-use std::io::BufRead;
+use std::io::Read;
 
 use libm::F32Ext;
 
@@ -31,40 +31,55 @@ pub struct SimulationConfig {
     pub millis_per_step: u32,
 }
 
-pub struct RemoteMouse<R: BufRead> {
+pub struct RemoteMouse<R: Read> {
     reader: R,
+    buf: String,
     orientation: Orientation,
 }
 
-impl<R: BufRead> RemoteMouse<R> {
+impl<R: Read> RemoteMouse<R> {
     pub fn new(config: &SimulationConfig, reader: R) -> RemoteMouse<R> {
         RemoteMouse {
             reader,
+            buf: String::new(),
             orientation: config.initial_orientation,
         }
     }
 
     pub fn update(&mut self, config: &SimulationConfig) -> SimulationDebug {
-        let mut line = String::new();
+        self.reader.read_to_string(&mut self.buf);
 
-        self.reader.read_line(&mut line);
+        if let Some(index) = self.buf.find('\n') {
+            let line: String = self.buf.drain(0..(index + 1)).collect();
 
-        let parts = line
-            .split(',')
-            .map(|s| s.trim())
-            .map(|s| s.parse::<f32>())
-            .collect::<Vec<_>>();
+            eprintln!("line: {}", line);
 
-        if let Some(&x) = parts.get(0).and_then(|r| r.as_ref().ok()) {
-            self.orientation.position.x = x;
-        }
+            let parts = line
+                .split(',')
+                .map(|s| s.trim())
+                .map(|s| s.parse::<f32>())
+                .collect::<Vec<_>>();
 
-        if let Some(&y) = parts.get(1).and_then(|r| r.as_ref().ok()) {
-            self.orientation.position.y = y;
-        }
+            if parts.len() == 3 {
+                match &parts[0] {
+                    Ok(x) => self.orientation.position.x = *x,
+                    Err(e) => eprintln!("x err: {:?}", e),
+                }
 
-        if let Some(&d) = parts.get(2).and_then(|r| r.as_ref().ok()) {
-            self.orientation.direction = Direction::from(d);
+                match &parts[1] {
+                    Ok(y) => self.orientation.position.y = *y,
+                    Err(e) => eprintln!("y err: {:?}", e),
+                }
+
+                match &parts[2] {
+                    Ok(d) => self.orientation.direction = Direction::from(*d),
+                    Err(e) => eprintln!("d err: {:?}", e),
+                }
+            } else {
+                eprintln!("Not the right number of things: {}", parts.len());
+            }
+        } else {
+            eprintln!("No line!");
         }
 
         SimulationDebug {
