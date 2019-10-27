@@ -3,6 +3,43 @@ use core::f32;
 use crate::map::MapConfig;
 use crate::path::PathConfig;
 
+pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
+    cell_width: 180.0,
+    wall_width: 20.0,
+};
+
+pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
+    p: 5.0,
+    i: 0.0,
+    d: 0.0,
+};
+
+pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
+    wheel_diameter: 32.0,
+    gearbox_ratio: 30.0,
+    ticks_per_rev: 12.0,
+    wheelbase: 77.0,
+    width: 64.0,
+    length: 57.5,
+    front_offset: 40.0,
+};
+
+pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
+    wheel_diameter: 32.0,
+    gearbox_ratio: 75.0,
+    ticks_per_rev: 12.0,
+    wheelbase: 77.0,
+    width: 64.0,
+    length: 90.0,
+    front_offset: 48.0,
+};
+
+pub const MOUSE_2019_PATH: PathConfig = PathConfig {
+    p: 100.0,
+    i: 0.0,
+    d: 0.0,
+};
+
 pub struct MouseConfig {
     pub mechanical: MechanicalConfig,
     pub path: PathConfig,

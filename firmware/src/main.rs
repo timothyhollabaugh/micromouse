@@ -33,8 +33,9 @@ use libm::F32Ext;
 
 use mouse::config::MechanicalConfig;
 use mouse::config::MouseConfig;
-use mouse::config::MOUSE_2019;
-use mouse::config::MOUSE_2020;
+use mouse::config::MOUSE_2019_MECH;
+use mouse::config::MOUSE_2019_PATH;
+use mouse::config::MOUSE_MAZE_MAP;
 use mouse::map::Direction;
 use mouse::map::MapConfig;
 use mouse::map::Orientation;
@@ -210,7 +211,11 @@ fn main() -> ! {
         orange_led.toggle();
     }
 
-    let config = MOUSE_2019;
+    let config = MouseConfig {
+        mechanical: MOUSE_2019_MECH,
+        path: MOUSE_2019_PATH,
+        map: MOUSE_MAZE_MAP,
+    };
 
     let initial_orientation = Orientation {
         position: Vector {
