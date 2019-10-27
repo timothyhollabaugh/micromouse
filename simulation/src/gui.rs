@@ -69,11 +69,11 @@ pub fn run(config: GuiConfig) {
             debug = simulation.update(&config.simulation);
             //println!("{:#?}", debug);
             println!(
-                "{}, {}, {}, {}, {}, {}, {}, {}, {}",
+                "{:05}, {:08.4}, {:08.4}, {:01.4}, {:08.4}, {:08.4}, {:01.4}, {:01.4}, {:01.4}",
                 debug.time,
                 debug.mouse_debug.orientation.position.x,
                 debug.mouse_debug.orientation.position.y,
-                debug.mouse_debug.orientation.direction,
+                f32::from(debug.mouse_debug.orientation.direction),
                 debug.mouse_debug.path_debug.distance_along.unwrap_or(999.0),
                 debug.mouse_debug.path_debug.distance_from.unwrap_or(999.0),
                 debug
