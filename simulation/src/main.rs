@@ -3,13 +3,11 @@ extern crate piston_window;
 mod gui;
 mod simulation;
 
-use mouse::config::MechanicalConfig;
 use mouse::config::MouseConfig;
 use mouse::config::MOUSE_2019_MECH;
 use mouse::config::MOUSE_MAZE_MAP;
 use mouse::config::MOUSE_SIM_PATH;
-use mouse::map::{Direction, MapConfig, Orientation, Vector};
-use mouse::path::PathConfig;
+use mouse::map::{Direction, Orientation, Vector};
 
 use simulation::SimulationConfig;
 

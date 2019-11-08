@@ -10,10 +10,10 @@ use crate::path::Path;
 use crate::path::PathDebug;
 use crate::path::Segment;
 
-#[derive(Debug)]
-pub struct MouseDebug<'a> {
+#[derive(Debug, Clone)]
+pub struct MouseDebug {
     pub orientation: Orientation,
-    pub path_debug: PathDebug<'a>,
+    pub path_debug: PathDebug,
 }
 
 pub struct Mouse {

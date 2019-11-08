@@ -126,14 +126,13 @@ impl Orientation {
         delta_right: i32,
     ) {
         let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
-        let delta_angular =
-            Direction::from(config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0));
+        let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
 
-        let mid_dir = self.direction + delta_angular / 2.0;
+        let mid_dir = f32::from(self.direction) + delta_angular / 2.0;
 
-        self.position.x += delta_linear * F32Ext::cos(f32::from(mid_dir));
-        self.position.y += delta_linear * F32Ext::sin(f32::from(mid_dir));
-        self.direction += delta_angular;
+        self.position.x += delta_linear * F32Ext::cos(mid_dir);
+        self.position.y += delta_linear * F32Ext::sin(mid_dir);
+        self.direction = self.direction + Direction::from(delta_angular);
     }
 }
 

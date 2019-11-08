@@ -252,17 +252,28 @@ fn main() -> ! {
                 let (left_power, right_power, debug) =
                     mouse.update(&config, now, left, right);
 
-                right_motor.change_power((right_power * 10000.0 / 8.0) as i32);
-                left_motor.change_power((left_power * 10000.0 / 8.0) as i32);
+                right_motor.change_power((right_power * 10000.0 / 1.0) as i32);
+                left_motor.change_power((left_power * 10000.0 / 1.0) as i32);
 
                 if let Ok(0) = uart.tx_len() {
                     writeln!(
                         uart,
-                        "{:04.4}, {:04.4}, {:01.4}",
-                        debug.orientation.position.x,
-                        debug.orientation.position.y,
-                        debug.orientation.direction,
-                    );
+                        "{:05}\t{:01.03}\t{:01.03}\t{:02.00}",
+                        now,
+                        debug.path_debug.centered_direction.unwrap_or(0.0),
+                        debug
+                            .path_debug
+                            .target_direction
+                            .map(f32::from)
+                            .unwrap_or(0.0),
+                        debug.path_debug.distance_from.unwrap_or(0.0),
+                        //left,
+                        //right,
+                        //debug.orientation.position.x,
+                        //debug.orientation.position.y,
+                        //debug.orientation.direction,
+                    )
+                    .ignore();
                     orange_led.toggle();
                 }
             } else {

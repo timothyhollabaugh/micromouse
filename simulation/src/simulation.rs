@@ -2,22 +2,16 @@ use std::f32;
 
 use std::io::Read;
 
-use libm::F32Ext;
-
-use serialport;
-use serialport::SerialPort;
-
 use mouse::config::MouseConfig;
 use mouse::map::Direction;
 use mouse::map::Orientation;
-use mouse::map::Vector;
 use mouse::mouse::Mouse;
 use mouse::mouse::MouseDebug;
 use mouse::path::PathDebug;
 
-#[derive(Debug)]
-pub struct SimulationDebug<'a> {
-    pub mouse_debug: MouseDebug<'a>,
+#[derive(Debug, Clone)]
+pub struct SimulationDebug {
+    pub mouse_debug: MouseDebug,
     pub left_encoder: i32,
     pub right_encoder: i32,
     pub orientation: Orientation,
@@ -34,7 +28,7 @@ pub struct SimulationConfig {
 pub struct RemoteMouse<R: Read> {
     reader: R,
     buf: String,
-    orientation: Orientation,
+    debug: SimulationDebug,
 }
 
 impl<R: Read> RemoteMouse<R> {
@@ -42,11 +36,27 @@ impl<R: Read> RemoteMouse<R> {
         RemoteMouse {
             reader,
             buf: String::new(),
-            orientation: config.initial_orientation,
+            debug: SimulationDebug {
+                mouse_debug: MouseDebug {
+                    orientation: config.initial_orientation,
+                    path_debug: PathDebug {
+                        path: None,
+                        distance_from: None,
+                        distance_along: None,
+                        centered_direction: None,
+                        tangent_direction: None,
+                        target_direction: None,
+                    },
+                },
+                orientation: config.initial_orientation,
+                left_encoder: 0,
+                right_encoder: 0,
+                time: 0,
+            },
         }
     }
 
-    pub fn update(&mut self, config: &SimulationConfig) -> SimulationDebug {
+    pub fn update(&mut self, _config: &SimulationConfig) -> SimulationDebug {
         self.reader.read_to_string(&mut self.buf);
 
         if let Some(index) = self.buf.find('\n') {
@@ -54,51 +64,40 @@ impl<R: Read> RemoteMouse<R> {
 
             eprintln!("line: {}", line);
 
-            let parts = line
-                .split(',')
-                .map(|s| s.trim())
-                .map(|s| s.parse::<f32>())
-                .collect::<Vec<_>>();
+            let mut parts = line.split(',').map(|s| s.trim());
 
-            if parts.len() == 3 {
-                match &parts[0] {
-                    Ok(x) => self.orientation.position.x = *x,
-                    Err(e) => eprintln!("x err: {:?}", e),
-                }
-
-                match &parts[1] {
-                    Ok(y) => self.orientation.position.y = *y,
-                    Err(e) => eprintln!("y err: {:?}", e),
-                }
-
-                match &parts[2] {
-                    Ok(d) => self.orientation.direction = Direction::from(*d),
-                    Err(e) => eprintln!("d err: {:?}", e),
-                }
-            } else {
-                eprintln!("Not the right number of things: {}", parts.len());
+            if let Some(Ok(centered_direction)) = parts.next().map(|p| p.parse()) {
+                self.debug.mouse_debug.path_debug.centered_direction = Some(centered_direction);
             }
-        } else {
-            eprintln!("No line!");
-        }
 
-        SimulationDebug {
-            mouse_debug: MouseDebug {
-                orientation: self.orientation,
-                path_debug: PathDebug {
-                    path: None,
-                    distance_from: None,
-                    distance_along: None,
-                    centered_direction: None,
-                    tangent_direction: None,
-                    target_direction: None,
-                },
-            },
-            orientation: self.orientation,
-            left_encoder: 0,
-            right_encoder: 0,
-            time: 0,
+            if let Some(Ok(target_direction)) = parts.next().map(|p| p.parse::<f32>()) {
+                self.debug.mouse_debug.path_debug.target_direction =
+                    Some(Direction::from(target_direction));
+            }
+
+            /*
+            if let Some(Ok(left_encoder)) = parts.next().map(|p| p.parse()) {
+                self.left_encoder = left_encoder;
+            }
+
+            if let Some(Ok(right_encoder)) = parts.next().map(|p| p.parse()) {
+                self.right_encoder = right_encoder;
+            }
+
+            if let Some(Ok(x)) = parts.next().map(|p| p.parse()) {
+                self.orientation.position.x = x;
+            }
+
+            if let Some(Ok(y)) = parts.next().map(|p| p.parse()) {
+                self.orientation.position.y = y;
+            }
+
+            if let Some(Ok(d)) = parts.next().map(|p| p.parse::<f32>()) {
+                self.orientation.direction = Direction::from(d)
+            }
+            */
         }
+        self.debug.clone()
     }
 }
 

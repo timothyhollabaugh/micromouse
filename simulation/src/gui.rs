@@ -1,15 +1,24 @@
 use std::time::Instant;
 
+use std::f32::consts::PI;
+
 use std::io::BufReader;
+
+use plotters::prelude::*;
+
+use image::ImageBuffer;
 
 use piston_window::circle_arc;
 use piston_window::clear;
+use piston_window::image as draw_image;
 use piston_window::line;
 use piston_window::rectangle;
 use piston_window::AdvancedWindow;
 use piston_window::EventLoop;
 use piston_window::PistonWindow;
 use piston_window::RenderEvent;
+use piston_window::Texture;
+use piston_window::TextureSettings;
 use piston_window::Transformed;
 use piston_window::UpdateEvent;
 use piston_window::WindowSettings;
@@ -57,15 +66,17 @@ pub fn run(config: GuiConfig) {
         .build()
         .unwrap();
 
+    let mut texture_context = window.create_texture_context();
+
     window.set_ups(
         (1000.0 / (config.simulation.millis_per_step as f64) * config.time_scale as f64) as u64,
     );
 
-    window.set_max_fps(50);
+    window.set_max_fps(60);
 
     //let mut simulation = Simulation::new(&config.simulation, 0);
 
-    let serial = serialport::open("/dev/ttyUSB0").unwrap();
+    let serial = serialport::open("/dev/rfcomm0").unwrap();
     let mut simulation = RemoteMouse::new(&config.simulation, serial);
 
     let mut debug = simulation.update(&config.simulation);
@@ -74,6 +85,7 @@ pub fn run(config: GuiConfig) {
         if let Some(u) = event.update_args() {
             debug = simulation.update(&config.simulation);
             //println!("{:#?}", debug);
+            /*
             println!(
                 "{:05}, {:08.4}, {:08.4}, {:01.4}, {:08.4}, {:08.4}, {:01.4}, {:01.4}, {:01.4}",
                 debug.time,
@@ -100,10 +112,11 @@ pub fn run(config: GuiConfig) {
                     .map(|d| f32::from(d))
                     .unwrap_or(0.0)
             );
+            */
         }
 
         if let Some(r) = event.render_args() {
-            window.draw_2d(&event, |context, graphics| {
+            window.draw_2d(&event, |context, graphics, _device| {
                 clear([1.0; 4], graphics);
 
                 let transform = context
@@ -111,7 +124,7 @@ pub fn run(config: GuiConfig) {
                     .trans(0.0, (maze_size.1 as f64))
                     .scale(config.pixels_per_mm as f64, -config.pixels_per_mm as f64);
 
-                if let Some(path) = debug.mouse_debug.path_debug.path {
+                if let Some(path) = &debug.mouse_debug.path_debug.path {
                     for segment in path {
                         match segment {
                             &Segment::Line(l1, l2) => line(

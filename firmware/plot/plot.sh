@@ -3,7 +3,7 @@
 rm $2.dat
 
 tail -f $1 | awk -v datafile=$2.dat '
-$1 ~ "start" { print > datafile; close(datafile) }
+$1 ~ "start" { print "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" > datafile; close(datafile) }
 $1 !~ "start" { print >> datafile; close(datafile) }' &
 
 gnuplot $2.gnuplot

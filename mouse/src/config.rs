@@ -12,6 +12,7 @@ pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
     p: 5.0,
     i: 0.0,
     d: 0.0,
+    offset_p: 0.1,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
@@ -28,16 +29,24 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     wheel_diameter: 32.0,
     gearbox_ratio: 75.0,
     ticks_per_rev: 12.0,
-    wheelbase: 77.0,
+    wheelbase: 74.0,
     width: 64.0,
     length: 90.0,
     front_offset: 48.0,
 };
 
-pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 10.0,
+pub const MOUSE_2019_PATH_SLOW: PathConfig = PathConfig {
+    p: 1000.0,
     i: 0.0,
-    d: 0.0,
+    d: 200000.0,
+    offset_p: 0.002,
+};
+
+pub const MOUSE_2019_PATH: PathConfig = PathConfig {
+    p: 100.0,
+    i: 0.0,
+    d: 20000.0,
+    offset_p: 0.002,
 };
 
 pub struct MouseConfig {

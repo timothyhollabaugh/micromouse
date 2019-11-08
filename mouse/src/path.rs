@@ -286,9 +286,9 @@ mod tests {
 
 pub const PATH_BUF_LEN: usize = 64;
 
-#[derive(Debug)]
-pub struct PathDebug<'a> {
-    pub path: Option<&'a ArrayVec<[Segment; PATH_BUF_LEN]>>,
+#[derive(Debug, Clone)]
+pub struct PathDebug {
+    pub path: Option<ArrayVec<[Segment; PATH_BUF_LEN]>>,
     pub distance_from: Option<f32>,
     pub distance_along: Option<f32>,
     pub centered_direction: Option<f32>,
@@ -301,6 +301,7 @@ pub struct PathConfig {
     pub p: f32,
     pub i: f32,
     pub d: f32,
+    pub offset_p: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -364,7 +365,7 @@ impl Path {
         let (target_direction, done) = if let Some(segment) = self.segment_buffer.last() {
             let offset = segment.distance_from(orientation.position);
             let tangent_direction = segment.tangent_direction(orientation.position);
-            let target_direction = tangent_direction;
+            let target_direction = tangent_direction - Direction::from(config.offset_p * offset);
 
             debug.distance_from = Some(offset);
             debug.distance_along = Some(segment.distance_along(orientation.position));
@@ -385,7 +386,9 @@ impl Path {
             self.pid
                 .update(centered_direction as f64, delta_time as f64) as f32;
 
-        debug.path = Some(&self.segment_buffer);
+        debug.path = Some(self.segment_buffer.clone());
+
+        self.time = time;
 
         (angular_power, done, debug)
     }
