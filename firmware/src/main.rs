@@ -35,6 +35,8 @@ use mouse::config::MechanicalConfig;
 use mouse::config::MouseConfig;
 use mouse::config::MOUSE_2019_MECH;
 use mouse::config::MOUSE_2019_PATH;
+use mouse::config::MOUSE_2020_MECH;
+use mouse::config::MOUSE_2020_PATH;
 use mouse::config::MOUSE_MAZE_MAP;
 use mouse::map::Direction;
 use mouse::map::MapConfig;
@@ -212,8 +214,8 @@ fn main() -> ! {
     }
 
     let config = MouseConfig {
-        mechanical: MOUSE_2019_MECH,
-        path: MOUSE_2019_PATH,
+        mechanical: MOUSE_2020_MECH,
+        path: MOUSE_2020_PATH,
         map: MOUSE_MAZE_MAP,
     };
 
@@ -252,8 +254,8 @@ fn main() -> ! {
                 let (left_power, right_power, debug) =
                     mouse.update(&config, now, left, right);
 
-                right_motor.change_power((right_power * 10000.0 / 1.0) as i32);
-                left_motor.change_power((left_power * 10000.0 / 1.0) as i32);
+                right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
+                left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
 
                 if let Ok(0) = uart.tx_len() {
                     writeln!(
