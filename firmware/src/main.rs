@@ -260,8 +260,9 @@ fn main() -> ! {
                 if let Ok(0) = uart.tx_len() {
                     writeln!(
                         uart,
-                        "{:05}\t{:01.03}\t{:01.03}\t{:02.00}",
+                        "{:05}\t{:01.03}\t{:01.03}\t{:01.03}\t{:02.00}",
                         now,
+                        debug.orientation.direction,
                         debug.path_debug.centered_direction.unwrap_or(0.0),
                         debug
                             .path_debug
