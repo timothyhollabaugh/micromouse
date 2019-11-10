@@ -30,7 +30,7 @@ impl Mouse {
         left_encoder: i32,
         right_encoder: i32,
     ) -> Mouse {
-        let mut path = Path::new(&config.path, time);
+        let path = Path::new(&config.path, time);
 
         Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
@@ -55,7 +55,7 @@ impl Mouse {
                 700.0,
                 400.0,
                 100.0,
-            ));
+            )).ok();
         }
         let orientation = self
             .map
@@ -88,10 +88,10 @@ impl TestMouse {
 
     pub fn update(
         &mut self,
-        config: &MouseConfig,
+        _config: &MouseConfig,
         time: u32,
-        left_encoder: i32,
-        right_encoder: i32,
+        _left_encoder: i32,
+        _right_encoder: i32,
     ) -> (f32, f32) {
         if time % 10000 <= 5000 {
             (0.0, 0.0)
