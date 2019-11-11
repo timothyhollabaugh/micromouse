@@ -1,5 +1,3 @@
-use ignore_result::Ignore;
-
 use embedded_hal::blocking::i2c;
 
 pub const DEFAULT_ADDRESS: u8 = 0x29;
@@ -103,7 +101,7 @@ where
 
     fn write_u8(&mut self, reg: u16, data: u8) {
         let buf = [((reg >> 8) & 0xff) as u8, (reg & 0xff) as u8, data];
-        self.i2c.write(self.address, &buf).ignore();
+        self.i2c.write(self.address, &buf);
     }
 
     fn write_u16(&mut self, reg: u16, data: u16) {
@@ -113,20 +111,20 @@ where
             ((data >> 8) & 0xff) as u8,
             (data & 0xff) as u8,
         ];
-        self.i2c.write(self.address, &buf).ignore();
+        self.i2c.write(self.address, &buf);
     }
 
     fn read_u8(&mut self, reg: u16) -> u8 {
         let mut buf = [0; 1];
-        self.i2c.write(self.address, &reg.to_be_bytes()).ignore();
-        self.i2c.read(self.address, &mut buf).ignore();
+        self.i2c.write(self.address, &reg.to_be_bytes());
+        self.i2c.read(self.address, &mut buf);
         u8::from_be_bytes(buf)
     }
 
     fn read_u16(&mut self, reg: u16) -> u16 {
         let mut buf = [0; 2];
-        self.i2c.write(self.address, &reg.to_be_bytes()).ignore();
-        self.i2c.read(self.address, &mut buf).ignore();
+        self.i2c.write(self.address, &reg.to_be_bytes());
+        self.i2c.read(self.address, &mut buf);
         u16::from_be_bytes(buf)
     }
 

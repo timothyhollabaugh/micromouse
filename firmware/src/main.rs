@@ -31,7 +31,6 @@ pub mod vl6180x;
 
 use libm::F32Ext;
 
-use mouse::config::MechanicalConfig;
 use mouse::config::MouseConfig;
 use mouse::config::MOUSE_2019_MECH;
 use mouse::config::MOUSE_2019_PATH;
@@ -48,11 +47,12 @@ use mouse::path::PathConfig;
 use core::fmt::Write;
 use core::str;
 use cortex_m_rt::entry;
+use embedded_hal::digital::v2::InputPin;
+use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::digital::v2::StatefulOutputPin;
 use stm32f4xx_hal as stm32f4;
 use stm32f4xx_hal::prelude::*;
 use stm32f4xx_hal::stm32 as stm32f405;
-
-use ignore_result::Ignore;
 
 use crate::battery::Battery;
 use crate::time::Time;
@@ -113,7 +113,7 @@ fn main() -> ! {
     orange_led.set_high();
     blue_led.set_low();
 
-    writeln!(uart, "Initializing").ignore();
+    writeln!(uart, "Initializing");
 
     let mut front_distance = {
         let scl = gpiob.pb8.into_open_drain_output().into_alternate_af4();
@@ -187,12 +187,12 @@ fn main() -> ! {
     blue_led.set_low();
     orange_led.set_low();
 
-    writeln!(uart, "Reading id registers").ignore();
+    writeln!(uart, "Reading id registers");
 
     for _ in 0..2 {
         let buf = front_distance.get_id_bytes();
 
-        writeln!(uart, "{:x?}", buf).ignore();
+        writeln!(uart, "{:x?}", buf);
 
         orange_led.toggle();
     }
@@ -200,7 +200,7 @@ fn main() -> ! {
     for _ in 0..2 {
         let buf = left_distance.get_id_bytes();
 
-        writeln!(uart, "{:x?}", buf).ignore();
+        writeln!(uart, "{:x?}", buf);
 
         orange_led.toggle();
     }
@@ -208,7 +208,7 @@ fn main() -> ! {
     for _ in 0..2 {
         let buf = right_distance.get_id_bytes();
 
-        writeln!(uart, "{:x?}", buf).ignore();
+        writeln!(uart, "{:x?}", buf);
 
         orange_led.toggle();
     }
@@ -227,7 +227,7 @@ fn main() -> ! {
         direction: Direction::from(0.0),
     };
 
-    writeln!(uart, "\n\nstart").ignore();
+    writeln!(uart, "\n\nstart");
 
     let mut last_time: u32 = time.now();
 
@@ -239,10 +239,18 @@ fn main() -> ! {
         right_encoder.count(),
     );
 
+    front_distance.start_ranging();
+    left_distance.start_ranging();
+    right_distance.start_ranging();
+
     let mut running = false;
 
     loop {
         let now: u32 = time.now();
+
+        front_distance.update();
+        right_distance.update();
+        left_distance.update();
 
         if now - last_time >= 10 {
             green_led.toggle();
@@ -258,6 +266,7 @@ fn main() -> ! {
                 left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
 
                 if let Ok(0) = uart.tx_len() {
+                    /*
                     writeln!(
                         uart,
                         "{:05}\t{:01.03}\t{:01.03}\t{:01.03}\t{:02.00}",
@@ -275,8 +284,18 @@ fn main() -> ! {
                         //debug.orientation.position.x,
                         //debug.orientation.position.y,
                         //debug.orientation.direction,
-                    )
-                    .ignore();
+                    );
+                    */
+
+                    writeln!(
+                        uart,
+                        "{}, {}, {}, {}, {}",
+                        left,
+                        right,
+                        left_distance.range(),
+                        front_distance.range(),
+                        right_distance.range()
+                    );
                     orange_led.toggle();
                 }
             } else {
@@ -284,11 +303,11 @@ fn main() -> ! {
                 left_motor.change_power(0);
             }
 
-            if left_button.is_low() {
+            if left_button.is_low().unwrap() {
                 running = true;
             }
 
-            if right_button.is_low() {
+            if right_button.is_low().unwrap() {
                 running = false;
             }
 
