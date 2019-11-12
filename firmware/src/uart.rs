@@ -8,15 +8,7 @@ use cortex_m_rt_macros::interrupt as isr;
 
 use stm32f4xx_hal::stm32 as stm32f405;
 use stm32f4xx_hal::stm32::Interrupt as interrupt;
-
-pub trait Command {
-    fn keyword_command(&self) -> &str;
-    fn handle_command<'a, I: Iterator<Item = &'a str>>(
-        &mut self,
-        uart: &mut Uart,
-        args: I,
-    );
-}
+use stm32f4xx_hal::stm32::NVIC;
 
 const RX_BUFFER_LEN: usize = 1024;
 const TX_BUFFER_LEN: usize = 1024;
@@ -66,7 +58,6 @@ pub struct Uart {}
 impl Uart {
     pub fn setup(
         rcc: &stm32f405::RCC,
-        nvic: &mut stm32f405::NVIC,
         uart: stm32f405::USART1,
         gpioa: &stm32f405::GPIOA,
     ) -> Uart {
@@ -103,7 +94,9 @@ impl Uart {
 
         cortex_m::interrupt::free(|cs| UART.borrow(cs).replace(Some(uart)));
 
-        nvic.enable(interrupt::USART1);
+        unsafe {
+            NVIC::unmask(interrupt::USART1);
+        }
 
         Uart {}
     }

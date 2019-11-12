@@ -29,12 +29,12 @@ impl RightMotor {
         gpio.afrl.modify(|_, w| w.afrl6().af2().afrl7().af2());
 
         // setup the timer
-        timer.psc.write(|w| unsafe { w.psc().bits(10u16) });
+        timer.psc.write(|w| w.psc().bits(10u16));
         timer.cr1.write(|w| w.arpe().set_bit());
         timer.arr.write(|w| w.arr().bits(10000u16));
         timer.ccr1.write(|w| w.ccr().bits(0u16));
         timer.ccr2.write(|w| w.ccr().bits(0u16));
-        timer.ccmr1_output().write(|w| unsafe {
+        timer.ccmr1_output().write(|w| {
             w.oc1m()
                 .bits(0b110)
                 .oc1pe()
@@ -97,7 +97,7 @@ impl RightEncoder {
         timer
             .ccmr1_output()
             .write(|w| unsafe { w.cc1s().bits(0b01).cc2s().bits(0b01) });
-        timer.smcr.write(|w| unsafe { w.sms().bits(0b011) });
+        timer.smcr.write(|w| w.sms().bits(0b011));
         timer.ccer.write(|w| {
             w.cc1e()
                 .set_bit()
@@ -120,8 +120,6 @@ impl Encoder for RightEncoder {
     }
 
     fn reset(&mut self) {
-        self.timer
-            .cnt
-            .write(|w| unsafe { w.cnt().bits(0) });
+        self.timer.cnt.write(|w| w.cnt().bits(0));
     }
 }

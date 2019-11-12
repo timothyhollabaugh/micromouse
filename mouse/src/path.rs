@@ -1,5 +1,4 @@
 use core::f32::consts::FRAC_PI_2;
-use core::f32::consts::PI;
 
 use libm::F32Ext;
 
@@ -12,7 +11,6 @@ use pid_control::PIDController;
 use crate::map::Direction;
 use crate::map::Orientation;
 use crate::map::Vector;
-use crate::map::DIRECTION_PI;
 use crate::map::DIRECTION_PI_2;
 
 pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) -> [Segment; 8] {
@@ -156,7 +154,7 @@ impl Segment {
                 (i - l1).magnitude()
             }
 
-            &Segment::Arc(s, c, t) => {
+            &Segment::Arc(s, c, _t) => {
                 let v_mouse = m - c;
                 let v_start = s - c;
 
@@ -215,7 +213,7 @@ impl Segment {
                 Direction::from(F32Ext::atan2(v_line.y, v_line.x))
             }
 
-            &Segment::Arc(s, c, t) => {
+            &Segment::Arc(_s, c, t) => {
                 let v_mouse = m - c;
 
                 let perpendicular_direction = v_mouse.direction();

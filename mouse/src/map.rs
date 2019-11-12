@@ -4,7 +4,6 @@ use libm::F32Ext;
 
 use crate::config::MechanicalConfig;
 use core::fmt::{Error, Formatter};
-use core::ops::{Add, Div};
 
 pub struct MapConfig {
     pub cell_width: f32,

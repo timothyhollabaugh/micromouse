@@ -1,5 +1,4 @@
 use core::f32;
-use core::f32::consts::FRAC_PI_2;
 
 use crate::config::MouseConfig;
 use crate::map::Map;
@@ -8,7 +7,6 @@ use crate::map::Vector;
 use crate::path;
 use crate::path::Path;
 use crate::path::PathDebug;
-use crate::path::Segment;
 
 #[derive(Debug, Clone)]
 pub struct MouseDebug {
@@ -47,15 +45,17 @@ impl Mouse {
         right_encoder: i32,
     ) -> (f32, f32, MouseDebug) {
         if self.done {
-            self.path.add_segments(&path::rounded_rectangle(
-                Vector {
-                    x: 1000.0,
-                    y: 1000.0,
-                },
-                700.0,
-                400.0,
-                100.0,
-            )).ok();
+            self.path
+                .add_segments(&path::rounded_rectangle(
+                    Vector {
+                        x: 1000.0,
+                        y: 1000.0,
+                    },
+                    700.0,
+                    400.0,
+                    100.0,
+                ))
+                .ok();
         }
         let orientation = self
             .map

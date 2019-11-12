@@ -14,9 +14,9 @@ impl Time {
         rcc.apb2enr.modify(|_, w| w.tim1en().set_bit());
 
         // setup the timer
-        timer.psc.write(|w| unsafe { w.psc().bits(16000) });
+        timer.psc.write(|w| w.psc().bits(16000));
         timer.cr1.modify(|_, w| w.cen().set_bit());
-        timer.cnt.write(|w| unsafe { w.cnt().bits(0) });
+        timer.cnt.write(|w| w.cnt().bits(0));
 
         Time {
             timer,

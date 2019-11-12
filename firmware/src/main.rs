@@ -29,27 +29,22 @@ pub mod time;
 pub mod uart;
 pub mod vl6180x;
 
-use libm::F32Ext;
-
 use mouse::config::MouseConfig;
+#[allow(unused_imports)]
 use mouse::config::MOUSE_2019_MECH;
+#[allow(unused_imports)]
 use mouse::config::MOUSE_2019_PATH;
+#[allow(unused_imports)]
 use mouse::config::MOUSE_2020_MECH;
 use mouse::config::MOUSE_2020_PATH;
 use mouse::config::MOUSE_MAZE_MAP;
 use mouse::map::Direction;
-use mouse::map::MapConfig;
 use mouse::map::Orientation;
 use mouse::map::Vector;
 use mouse::mouse::Mouse;
-use mouse::path::PathConfig;
 
 use core::fmt::Write;
-use core::str;
 use cortex_m_rt::entry;
-use embedded_hal::digital::v2::InputPin;
-use embedded_hal::digital::v2::OutputPin;
-use embedded_hal::digital::v2::StatefulOutputPin;
 use stm32f4xx_hal as stm32f4;
 use stm32f4xx_hal::prelude::*;
 use stm32f4xx_hal::stm32 as stm32f405;
@@ -57,7 +52,6 @@ use stm32f4xx_hal::stm32 as stm32f405;
 use crate::battery::Battery;
 use crate::time::Time;
 
-use crate::uart::Command;
 use crate::uart::Uart;
 
 use crate::motors::{Encoder, Motor};
@@ -76,7 +70,7 @@ pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
 #[entry]
 fn main() -> ! {
     let p = stm32f4::stm32::Peripherals::take().unwrap();
-    let mut cp = stm32f405::CorePeripherals::take().unwrap();
+    let _cp = stm32f405::CorePeripherals::take().unwrap();
 
     // Init non-hal things
     let mut time = Time::setup(&p.RCC, p.TIM1);
@@ -85,7 +79,7 @@ fn main() -> ! {
 
     let mut battery = Battery::setup(&p.RCC, &p.GPIOB, p.ADC1);
 
-    let mut uart = Uart::setup(&p.RCC, &mut cp.NVIC, p.USART1, &p.GPIOA);
+    let mut uart = Uart::setup(&p.RCC, p.USART1, &p.GPIOA);
 
     let mut left_motor = LeftMotor::setup(&p.RCC, p.TIM3, &p.GPIOA);
     let left_encoder = LeftEncoder::setup(&p.RCC, &p.GPIOA, &p.GPIOB, p.TIM2);
@@ -107,23 +101,23 @@ fn main() -> ! {
     let mut orange_led = gpiob.pb15.into_push_pull_output();
 
     let left_button = gpioc.pc10.into_pull_up_input();
-    let middle_button = gpioc.pc11.into_pull_up_input();
+    let _middle_button = gpioc.pc11.into_pull_up_input();
     let right_button = gpioc.pc12.into_pull_up_input();
 
-    orange_led.set_high();
-    blue_led.set_low();
+    orange_led.set_high().ok();
+    blue_led.set_low().ok();
 
-    writeln!(uart, "Initializing");
+    writeln!(uart, "Initializing").ok();
 
     let mut front_distance = {
         let scl = gpiob.pb8.into_open_drain_output().into_alternate_af4();
         let sda = gpiob.pb9.into_open_drain_output().into_alternate_af4();
 
         let mut gpio0 = gpioc.pc0.into_open_drain_output();
-        gpio0.set_high();
+        gpio0.set_high().ok();
 
         let mut gpio1 = gpioc.pc1.into_open_drain_output();
-        gpio1.set_high();
+        gpio1.set_high().ok();
 
         let i2c =
             stm32f4::i2c::I2c::i2c1(p.I2C1, (scl, sda), 100.khz(), clocks);
@@ -136,18 +130,18 @@ fn main() -> ! {
         distance
     };
 
-    orange_led.set_low();
-    blue_led.set_high();
+    orange_led.set_low().ok();
+    blue_led.set_high().ok();
 
     let mut left_distance = {
         let scl = gpiob.pb10.into_open_drain_output().into_alternate_af4();
         let sda = gpiob.pb11.into_open_drain_output().into_alternate_af4();
 
         let mut gpio0 = gpioc.pc2.into_open_drain_output();
-        gpio0.set_high();
+        gpio0.set_high().ok();
 
         let mut gpio1 = gpioc.pc3.into_open_drain_output();
-        gpio1.set_high();
+        gpio1.set_high().ok();
 
         let i2c =
             stm32f4::i2c::I2c::i2c2(p.I2C2, (scl, sda), 100.khz(), clocks);
@@ -160,18 +154,18 @@ fn main() -> ! {
         distance
     };
 
-    orange_led.set_high();
-    blue_led.set_high();
+    orange_led.set_high().ok();
+    blue_led.set_high().ok();
 
     let mut right_distance = {
         let scl = gpioa.pa8.into_open_drain_output().into_alternate_af4();
         let sda = gpioc.pc9.into_open_drain_output().into_alternate_af4();
 
         let mut gpio0 = gpioc.pc4.into_open_drain_output();
-        gpio0.set_high();
+        gpio0.set_high().ok();
 
         let mut gpio1 = gpioc.pc5.into_open_drain_output();
-        gpio1.set_high();
+        gpio1.set_high().ok();
 
         let i2c =
             stm32f4::i2c::I2c::i2c3(p.I2C3, (scl, sda), 100.khz(), clocks);
@@ -184,33 +178,33 @@ fn main() -> ! {
         distance
     };
 
-    blue_led.set_low();
-    orange_led.set_low();
+    blue_led.set_low().ok();
+    orange_led.set_low().ok();
 
-    writeln!(uart, "Reading id registers");
+    writeln!(uart, "Reading id registers").ok();
 
     for _ in 0..2 {
         let buf = front_distance.get_id_bytes();
 
-        writeln!(uart, "{:x?}", buf);
+        writeln!(uart, "{:x?}", buf).ok();
 
-        orange_led.toggle();
+        orange_led.toggle().ok();
     }
 
     for _ in 0..2 {
         let buf = left_distance.get_id_bytes();
 
-        writeln!(uart, "{:x?}", buf);
+        writeln!(uart, "{:x?}", buf).ok();
 
-        orange_led.toggle();
+        orange_led.toggle().ok();
     }
 
     for _ in 0..2 {
         let buf = right_distance.get_id_bytes();
 
-        writeln!(uart, "{:x?}", buf);
+        writeln!(uart, "{:x?}", buf).ok();
 
-        orange_led.toggle();
+        orange_led.toggle().ok();
     }
 
     let config = MouseConfig {
@@ -227,7 +221,7 @@ fn main() -> ! {
         direction: Direction::from(0.0),
     };
 
-    writeln!(uart, "\n\nstart");
+    writeln!(uart, "\n\nstart").ok();
 
     let mut last_time: u32 = time.now();
 
@@ -253,13 +247,13 @@ fn main() -> ! {
         left_distance.update();
 
         if now - last_time >= 10 {
-            green_led.toggle();
+            green_led.toggle().ok();
 
             if running {
                 let left = left_encoder.count();
                 let right = right_encoder.count();
 
-                let (left_power, right_power, debug) =
+                let (left_power, right_power, _debug) =
                     mouse.update(&config, now, left, right);
 
                 right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
@@ -295,8 +289,9 @@ fn main() -> ! {
                         left_distance.range(),
                         front_distance.range(),
                         right_distance.range()
-                    );
-                    orange_led.toggle();
+                    )
+                    .ok();
+                    orange_led.toggle().ok();
                 }
             } else {
                 right_motor.change_power(0);
@@ -312,9 +307,9 @@ fn main() -> ! {
             }
 
             if battery.is_dead() {
-                red_led.set_high();
+                red_led.set_high().ok();
             } else {
-                red_led.set_low();
+                red_led.set_low().ok();
             }
 
             last_time = now;
