@@ -25,6 +25,16 @@ pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
     front_offset: 40.0,
 };
 
+pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
+    wheel_diameter: 32.0,
+    gearbox_ratio: 30.0,
+    ticks_per_rev: 12.0,
+    wheelbase: 77.0,
+    width: 64.0,
+    length: 57.5,
+    front_offset: 40.0,
+};
+
 pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     wheel_diameter: 32.0,
     gearbox_ratio: 75.0,

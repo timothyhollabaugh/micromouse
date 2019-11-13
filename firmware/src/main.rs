@@ -36,6 +36,9 @@ use mouse::config::MOUSE_2019_MECH;
 use mouse::config::MOUSE_2019_PATH;
 #[allow(unused_imports)]
 use mouse::config::MOUSE_2020_MECH;
+#[allow(unused_imports)]
+use mouse::config::MOUSE_2020_MECH2;
+#[allow(unused_imports)]
 use mouse::config::MOUSE_2020_PATH;
 use mouse::config::MOUSE_MAZE_MAP;
 use mouse::map::Direction;
@@ -208,7 +211,7 @@ fn main() -> ! {
     }
 
     let config = MouseConfig {
-        mechanical: MOUSE_2020_MECH,
+        mechanical: MOUSE_2020_MECH2,
         path: MOUSE_2020_PATH,
         map: MOUSE_MAZE_MAP,
     };
@@ -253,19 +256,18 @@ fn main() -> ! {
                 let left = left_encoder.count();
                 let right = right_encoder.count();
 
-                let (left_power, right_power, _debug) =
+                let (left_power, right_power, debug) =
                     mouse.update(&config, now, left, right);
 
                 right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
                 left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
 
                 if let Ok(0) = uart.tx_len() {
-                    /*
                     writeln!(
                         uart,
                         "{:05}\t{:01.03}\t{:01.03}\t{:01.03}\t{:02.00}",
                         now,
-                        debug.orientation.direction,
+                        f32::from(debug.orientation.direction),
                         debug.path_debug.centered_direction.unwrap_or(0.0),
                         debug
                             .path_debug
@@ -273,14 +275,9 @@ fn main() -> ! {
                             .map(f32::from)
                             .unwrap_or(0.0),
                         debug.path_debug.distance_from.unwrap_or(0.0),
-                        //left,
-                        //right,
-                        //debug.orientation.position.x,
-                        //debug.orientation.position.y,
-                        //debug.orientation.direction,
                     );
-                    */
 
+                    /*
                     writeln!(
                         uart,
                         "{}, {}, {}, {}, {}",
@@ -291,6 +288,8 @@ fn main() -> ! {
                         right_distance.range()
                     )
                     .ok();
+                    */
+
                     orange_led.toggle().ok();
                 }
             } else {
