@@ -46,8 +46,12 @@ impl Direction {
         let raw_self = f32::from(self);
         let raw_center = f32::from(center);
 
-        if raw_self - raw_center > PI {
+        let diff = raw_self - raw_center;
+
+        if diff > PI {
             raw_self - 2.0 * PI
+        } else if diff < -PI {
+            raw_self + 2.0 * PI
         } else {
             raw_self
         }
