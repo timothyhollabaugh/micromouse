@@ -43,6 +43,9 @@ impl Mouse {
         time: u32,
         left_encoder: i32,
         right_encoder: i32,
+        left_distance: u8,
+        front_distance: u8,
+        right_distance: u8,
     ) -> (f32, f32, MouseDebug) {
         if self.done {
             self.path
@@ -57,9 +60,14 @@ impl Mouse {
                 ))
                 .ok();
         }
-        let orientation = self
-            .map
-            .update(&config.mechanical, left_encoder, right_encoder);
+        let orientation = self.map.update(
+            &config.mechanical,
+            left_encoder,
+            right_encoder,
+            left_distance,
+            front_distance,
+            right_distance,
+        );
 
         let (angular_power, done, path_debug) = self.path.update(&config.path, time, orientation);
 

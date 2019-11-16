@@ -42,7 +42,7 @@ impl core::ops::Sub for Vector {
 pub struct Direction(f32);
 
 impl Direction {
-    pub(crate) fn centered_at(self, center: Direction) -> f32 {
+    pub fn centered_at(self, center: Direction) -> f32 {
         let raw_self = f32::from(self);
         let raw_center = f32::from(center);
 
@@ -54,6 +54,13 @@ impl Direction {
             raw_self + 2.0 * PI
         } else {
             raw_self
+        }
+    }
+
+    pub fn into_unit_vector(self) -> Vector {
+        Vector {
+            x: F32Ext::cos(self.0),
+            y: F32Ext::sin(self.0),
         }
     }
 }
@@ -159,6 +166,9 @@ impl Map {
         config: &MechanicalConfig,
         left_encoder: i32,
         right_encoder: i32,
+        left_distance: u8,
+        front_distance: u8,
+        right_distance: u8,
     ) -> Orientation {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
