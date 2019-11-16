@@ -1,13 +1,71 @@
 use core::f32::consts::PI;
+use core::fmt::{Error, Formatter};
 
 use libm::F32Ext;
 
 use crate::config::MechanicalConfig;
-use core::fmt::{Error, Formatter};
+use crate::maze::EdgeIndex;
 
 pub struct MapConfig {
     pub cell_width: f32,
     pub wall_width: f32,
+}
+
+impl MapConfig {
+    /**
+     *  Projects the `from` orientation onto the nearest wall, and gives the index of it
+     *
+     *  Loops starting at `from`, incrementing by a distance of `config.wall_width / 2.0` in the direction
+     *  of `from` until a closed wall is found, then returns the index to that wall.
+     *
+     *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
+     */
+    pub fn project_wall(&self, config: MapConfig, from: Orientation) -> EdgeIndex {
+        let direction_vector = (config.wall_width / 2.0) * from.into_unit_vector();
+
+        let mut current_position = from.position;
+
+        loop {
+            let local_x = direction_vector.x % config.cell_width;
+            let local_y = direction_vector.y % config.cell_width;
+            let maze_x = (direction_vector.x / config.cell_width) as usize;
+            let maze_y = (direction_vector.y / config.cell_width) as usize;
+
+            if local_y <= config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x,
+                    y: maze_y,
+                    horizontal: false,
+                };
+            }
+
+            if local_y >= config.cell_width - config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x,
+                    y: maze_y + 1,
+                    horizontal: false,
+                };
+            }
+
+            if local_x <= config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x,
+                    y: maze_y,
+                    horizontal: false,
+                };
+            }
+
+            if local_x >= config.cell_width - config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x + 1,
+                    y: maze_y,
+                    horizontal: false,
+                };
+            }
+
+            current_position += direction_vector;
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
