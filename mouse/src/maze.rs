@@ -1,3 +1,6 @@
+use crate::map::MapConfig;
+use crate::map::Orientation;
+
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
 
@@ -59,7 +62,7 @@ impl Maze {
         }
     }
 
-    pub fn get(&self, x: usize, y: usize) -> (Edge, Edge, Edge, Edge) {
+    pub fn get_cell(&self, x: usize, y: usize) -> (Edge, Edge, Edge, Edge) {
         let north_edge = if y >= HEIGHT - 1 {
             Edge::Closed
         } else {
@@ -85,5 +88,35 @@ impl Maze {
         };
 
         (north_edge, south_edge, east_edge, west_edge)
+    }
+
+    pub fn get_edge(&self, x: usize, y: usize, horizontal: bool) -> Edge {
+        if horizontal {
+            *self
+                .horizontal_edges
+                .get(x)
+                .and_then(|walls| walls.get(y))
+                .unwrap_or(&Edge::Closed)
+        } else {
+            *self
+                .vertical_edges
+                .get(y)
+                .and_then(|walls| walls.get(x))
+                .unwrap_or(&Edge::Closed)
+        }
+    }
+
+    /**
+     *  Projects the `from` orientation onto the nearest wall, and gives the index of it
+     */
+    pub fn project_wall(&self, config: MapConfig, from: Orientation) -> (usize, usize, bool) {
+        let direction_vector = from.clone().into_unit_vector();
+        let mut current_position = from.position;
+        loop {
+            let local_x = direction_vector.x % config.cell_width;
+            if local_x <= config.wall_width / 2
+                || local_x >= config.cell_width - config.wall_width / 2
+            {}
+        }
     }
 }
