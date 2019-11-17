@@ -2,6 +2,7 @@ use core::f32;
 
 use crate::config::MouseConfig;
 use crate::map::Map;
+use crate::map::MapDebug;
 use crate::map::Orientation;
 use crate::map::Vector;
 use crate::path;
@@ -11,7 +12,8 @@ use crate::path::PathDebug;
 #[derive(Debug, Clone)]
 pub struct MouseDebug {
     pub orientation: Orientation,
-    pub path_debug: PathDebug,
+    pub path: PathDebug,
+    pub map: MapDebug,
 }
 
 pub struct Mouse {
@@ -51,16 +53,16 @@ impl Mouse {
             self.path
                 .add_segments(&path::rounded_rectangle(
                     Vector {
-                        x: 1000.0,
-                        y: 1000.0,
+                        x: 1170.0,
+                        y: 1350.0,
                     },
-                    700.0,
-                    400.0,
-                    190.0,
+                    540.0,
+                    180.0,
+                    80.0,
                 ))
                 .ok();
         }
-        let orientation = self.map.update(
+        let (orientation, map_debug) = self.map.update(
             &config.mechanical,
             left_encoder,
             right_encoder,
@@ -80,7 +82,8 @@ impl Mouse {
 
         let debug = MouseDebug {
             orientation,
-            path_debug,
+            path: path_debug,
+            map: map_debug,
         };
 
         (left_power, right_power, debug)

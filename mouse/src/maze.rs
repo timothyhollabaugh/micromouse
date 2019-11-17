@@ -6,6 +6,68 @@ use core::ops::IndexMut;
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
 
+pub struct MazeConfig {
+    pub cell_width: f32,
+    pub wall_width: f32,
+}
+
+impl MazeConfig {
+    /**
+     *  Projects the `from` orientation onto the nearest wall, and gives the index of it
+     *
+     *  Loops starting at `from`, incrementing by a distance of `config.wall_width / 2.0` in the direction
+     *  of `from` until a closed wall is found, then returns the index to that wall.
+     *
+     *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
+     */
+    pub fn project_wall(&self, config: MazeConfig, from: Orientation) -> EdgeIndex {
+        let direction_vector = (config.wall_width / 2.0) * from.direction.into_unit_vector();
+
+        let mut current_position = from.position;
+
+        loop {
+            let local_x = direction_vector.x % config.cell_width;
+            let local_y = direction_vector.y % config.cell_width;
+            let maze_x = (direction_vector.x / config.cell_width) as usize;
+            let maze_y = (direction_vector.y / config.cell_width) as usize;
+
+            if local_y <= config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x,
+                    y: maze_y,
+                    horizontal: false,
+                };
+            }
+
+            if local_y >= config.cell_width - config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x,
+                    y: maze_y + 1,
+                    horizontal: false,
+                };
+            }
+
+            if local_x <= config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x,
+                    y: maze_y,
+                    horizontal: false,
+                };
+            }
+
+            if local_x >= config.cell_width - config.wall_width / 2.0 {
+                break EdgeIndex {
+                    x: maze_x + 1,
+                    y: maze_y,
+                    horizontal: false,
+                };
+            }
+
+            current_position += direction_vector;
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Edge {
     Open,
@@ -17,14 +79,18 @@ pub enum Edge {
 /// The indexes are 0-based, but do not include any of the perimiter edges.
 pub struct EdgeIndex {
     /// The x index of the edge
-    x: usize,
+    pub x: usize,
 
     /// The y index of the edge
-    y: usize,
+    pub y: usize,
 
     /// Whether the edge is horizontal (true), or vertical (false)
-    horizontal: bool,
-} /// Keeps track of all the walls in a maze pub struct Maze {
+    pub horizontal: bool,
+}
+
+/// Keeps track of all the walls in a maze
+#[derive(Clone, Debug)]
+pub struct Maze {
     horizontal_edges: [[Edge; HEIGHT - 1]; WIDTH],
     vertical_edges: [[Edge; HEIGHT]; WIDTH - 1],
 }
@@ -34,6 +100,16 @@ impl Maze {
         Maze {
             horizontal_edges: [[edge; HEIGHT - 1]; WIDTH],
             vertical_edges: [[edge; HEIGHT]; WIDTH - 1],
+        }
+    }
+
+    pub fn from_edges(
+        horizontal_edges: [[Edge; HEIGHT - 1]; WIDTH],
+        vertical_edges: [[Edge; HEIGHT]; WIDTH - 1],
+    ) -> Maze {
+        Maze {
+            horizontal_edges,
+            vertical_edges,
         }
     }
 
@@ -103,38 +179,27 @@ impl Maze {
         (north_edge, south_edge, east_edge, west_edge)
     }
 
-}
-
-impl Index<EdgeIndex> for Maze {
-    type Output = Edge;
-
-    fn index(&self, index: EdgeIndex) -> &Self::Output {
-        if horizontal {
+    pub fn get_edge(&self, index: EdgeIndex) -> Option<&Edge> {
+        if index.horizontal {
             self.horizontal_edges
-                .get(x)
-                .and_then(|walls| walls.get(y))
-                .unwrap_or(&Edge::Closed)
+                .get(index.x)
+                .and_then(|walls| walls.get(index.y))
         } else {
             self.vertical_edges
-                .get(y)
-                .and_then(|walls| walls.get(x))
-                .unwrap_or(&Edge::Closed)
+                .get(index.x)
+                .and_then(|walls| walls.get(index.y))
         }
     }
-}
 
-impl IndexMut<EdgeIndex> for Maze {
-    fn index_mut(&mut self, index: EdgeIndex) -> &mut Self::Output {
-        if horizontal {
+    pub fn get_edge_mut(&mut self, index: EdgeIndex) -> Option<&mut Edge> {
+        if index.horizontal {
             self.horizontal_edges
-                .get_mut(x)
-                .and_then(|walls| walls.get_mut(y))
-                .unwrap_or(&mut Edge::Closed)
+                .get_mut(index.x)
+                .and_then(|walls| walls.get_mut(index.y))
         } else {
             self.vertical_edges
-                .get_mut(y)
-                .and_then(|walls| walls.get_mut(x))
-                .unwrap_or(&mut Edge::Closed)
+                .get_mut(index.x)
+                .and_then(|walls| walls.get_mut(index.y))
         }
     }
 }

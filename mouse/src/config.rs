@@ -1,11 +1,14 @@
 use core::f32;
 
 use crate::map::MapConfig;
+use crate::maze::MazeConfig;
 use crate::path::PathConfig;
 
 pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
-    cell_width: 180.0,
-    wall_width: 20.0,
+    maze: MazeConfig {
+        cell_width: 180.0,
+        wall_width: 20.0,
+    },
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {

@@ -1,71 +1,17 @@
 use core::f32::consts::PI;
 use core::fmt::{Error, Formatter};
+use core::ops::Mul;
 
 use libm::F32Ext;
 
 use crate::config::MechanicalConfig;
+use crate::maze::Edge;
 use crate::maze::EdgeIndex;
+use crate::maze::Maze;
+use crate::maze::MazeConfig;
 
 pub struct MapConfig {
-    pub cell_width: f32,
-    pub wall_width: f32,
-}
-
-impl MapConfig {
-    /**
-     *  Projects the `from` orientation onto the nearest wall, and gives the index of it
-     *
-     *  Loops starting at `from`, incrementing by a distance of `config.wall_width / 2.0` in the direction
-     *  of `from` until a closed wall is found, then returns the index to that wall.
-     *
-     *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
-     */
-    pub fn project_wall(&self, config: MapConfig, from: Orientation) -> EdgeIndex {
-        let direction_vector = (config.wall_width / 2.0) * from.into_unit_vector();
-
-        let mut current_position = from.position;
-
-        loop {
-            let local_x = direction_vector.x % config.cell_width;
-            let local_y = direction_vector.y % config.cell_width;
-            let maze_x = (direction_vector.x / config.cell_width) as usize;
-            let maze_y = (direction_vector.y / config.cell_width) as usize;
-
-            if local_y <= config.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x,
-                    y: maze_y,
-                    horizontal: false,
-                };
-            }
-
-            if local_y >= config.cell_width - config.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x,
-                    y: maze_y + 1,
-                    horizontal: false,
-                };
-            }
-
-            if local_x <= config.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x,
-                    y: maze_y,
-                    horizontal: false,
-                };
-            }
-
-            if local_x >= config.cell_width - config.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x + 1,
-                    y: maze_y,
-                    horizontal: false,
-                };
-            }
-
-            current_position += direction_vector;
-        }
-    }
+    pub maze: MazeConfig,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -92,6 +38,46 @@ impl core::ops::Sub for Vector {
             x: self.x - other.x,
             y: self.y - other.y,
         }
+    }
+}
+
+impl core::ops::Mul<f32> for Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Vector {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+
+impl core::ops::Mul<Vector> for f32 {
+    type Output = Vector;
+
+    fn mul(self, rhs: Vector) -> Self::Output {
+        Vector {
+            x: rhs.x * self,
+            y: rhs.y * self,
+        }
+    }
+}
+
+impl core::ops::Add for Vector {
+    type Output = Vector;
+
+    fn add(self, rhs: Vector) -> Self::Output {
+        Vector {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl core::ops::AddAssign for Vector {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
     }
 }
 
@@ -204,18 +190,60 @@ impl Orientation {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct MapDebug {
+    pub maze: Maze,
+}
+
 pub struct Map {
     orientation: Orientation,
+    maze: Maze,
     left_encoder: i32,
     right_encoder: i32,
 }
 
 impl Map {
     pub fn new(orientation: Orientation, left_encoder: i32, right_encoder: i32) -> Map {
+        let mut horizontal_edges = [[Edge::Unknown; crate::maze::HEIGHT - 1]; crate::maze::WIDTH];
+        let mut vertical_edges = [[Edge::Unknown; crate::maze::HEIGHT]; crate::maze::WIDTH - 1];
+
+        horizontal_edges[6][6] = Edge::Closed;
+        horizontal_edges[7][6] = Edge::Closed;
+        horizontal_edges[8][6] = Edge::Closed;
+        horizontal_edges[9][6] = Edge::Closed;
+
+        horizontal_edges[6][7] = Edge::Open;
+        horizontal_edges[7][7] = Edge::Closed;
+        horizontal_edges[8][7] = Edge::Closed;
+        horizontal_edges[9][7] = Edge::Open;
+
+        horizontal_edges[6][8] = Edge::Closed;
+        horizontal_edges[7][8] = Edge::Closed;
+        horizontal_edges[8][8] = Edge::Closed;
+        horizontal_edges[9][8] = Edge::Closed;
+
+        vertical_edges[5][7] = Edge::Closed;
+        vertical_edges[5][8] = Edge::Closed;
+
+        vertical_edges[6][7] = Edge::Open;
+        vertical_edges[6][8] = Edge::Open;
+
+        vertical_edges[7][7] = Edge::Open;
+        vertical_edges[7][8] = Edge::Open;
+
+        vertical_edges[8][7] = Edge::Open;
+        vertical_edges[8][8] = Edge::Open;
+
+        vertical_edges[9][7] = Edge::Closed;
+        vertical_edges[9][8] = Edge::Closed;
+
+        let maze = Maze::from_edges(horizontal_edges, vertical_edges);
+
         Map {
             orientation,
             left_encoder,
             right_encoder,
+            maze,
         }
     }
 
@@ -227,7 +255,7 @@ impl Map {
         left_distance: u8,
         front_distance: u8,
         right_distance: u8,
-    ) -> Orientation {
+    ) -> (Orientation, MapDebug) {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
@@ -237,6 +265,10 @@ impl Map {
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
-        self.orientation
+        let debug = MapDebug {
+            maze: self.maze.clone(),
+        };
+
+        (self.orientation, debug)
     }
 }

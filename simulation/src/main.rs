@@ -37,6 +37,13 @@ fn main() {
 
         pixels_per_mm: 0.25,
         time_scale: 1.0,
+        mouse_color: [0.0, 1.0, 0.0, 1.0],
+        path_color: [0.0, 0.0, 1.0, 1.0],
+        wall_open_color: [1.0, 1.0, 1.0, 1.0],
+        wall_closed_color: [0.2, 0.2, 0.2, 1.0],
+        wall_unknown_color: [0.9, 0.9, 0.9, 1.0],
+        wall_err_color: [1.0, 0.0, 0.0, 1.0],
+        post_color: [0.0, 0.0, 0.0, 1.0],
     };
 
     gui::run(config);

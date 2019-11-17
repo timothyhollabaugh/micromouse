@@ -4,7 +4,10 @@ use std::io::Read;
 
 use mouse::config::MouseConfig;
 use mouse::map::Direction;
+use mouse::map::MapDebug;
 use mouse::map::Orientation;
+use mouse::maze::Edge;
+use mouse::maze::Maze;
 use mouse::mouse::Mouse;
 use mouse::mouse::MouseDebug;
 use mouse::path::PathDebug;
@@ -39,13 +42,16 @@ impl<R: Read> RemoteMouse<R> {
             debug: SimulationDebug {
                 mouse_debug: MouseDebug {
                     orientation: config.initial_orientation,
-                    path_debug: PathDebug {
+                    path: PathDebug {
                         path: None,
                         distance_from: None,
                         distance_along: None,
                         centered_direction: None,
                         tangent_direction: None,
                         target_direction: None,
+                    },
+                    map: MapDebug {
+                        maze: Maze::new(Edge::Unknown),
                     },
                 },
                 orientation: config.initial_orientation,
@@ -67,11 +73,11 @@ impl<R: Read> RemoteMouse<R> {
             let mut parts = line.split(',').map(|s| s.trim());
 
             if let Some(Ok(centered_direction)) = parts.next().map(|p| p.parse()) {
-                self.debug.mouse_debug.path_debug.centered_direction = Some(centered_direction);
+                self.debug.mouse_debug.path.centered_direction = Some(centered_direction);
             }
 
             if let Some(Ok(target_direction)) = parts.next().map(|p| p.parse::<f32>()) {
-                self.debug.mouse_debug.path_debug.target_direction =
+                self.debug.mouse_debug.path.target_direction =
                     Some(Direction::from(target_direction));
             }
 
@@ -129,6 +135,9 @@ impl Simulation {
             self.time,
             self.left_encoder,
             self.right_encoder,
+            255,
+            255,
+            255,
         );
 
         // Collect debug info from this run

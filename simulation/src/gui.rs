@@ -23,29 +23,38 @@ use piston_window::Transformed;
 use piston_window::UpdateEvent;
 use piston_window::WindowSettings;
 
+use mouse::maze::Edge;
+use mouse::maze::EdgeIndex;
 use mouse::maze::HEIGHT;
 use mouse::maze::WIDTH;
 
+use mouse::map::Orientation;
 use mouse::path::Segment;
 
 use crate::simulation::RemoteMouse;
 use crate::simulation::Simulation;
 use crate::simulation::SimulationConfig;
-use mouse::map::Orientation;
 
 pub struct GuiConfig {
     pub simulation: SimulationConfig,
     pub pixels_per_mm: f32,
     pub time_scale: f32,
+    pub mouse_color: [f32; 4],
+    pub path_color: [f32; 4],
+    pub wall_open_color: [f32; 4],
+    pub wall_closed_color: [f32; 4],
+    pub wall_unknown_color: [f32; 4],
+    pub wall_err_color: [f32; 4],
+    pub post_color: [f32; 4],
 }
 
 impl GuiConfig {
     pub fn pixels_per_cell(&self) -> f32 {
-        self.simulation.mouse.map.cell_width * self.pixels_per_mm
+        self.simulation.mouse.map.maze.cell_width * self.pixels_per_mm
     }
 
     pub fn pixels_per_wall(&self) -> f32 {
-        self.simulation.mouse.map.wall_width * self.pixels_per_mm
+        self.simulation.mouse.map.maze.wall_width * self.pixels_per_mm
     }
 }
 
@@ -72,12 +81,12 @@ pub fn run(config: GuiConfig) {
         (1000.0 / (config.simulation.millis_per_step as f64) * config.time_scale as f64) as u64,
     );
 
-    window.set_max_fps(60);
+    window.set_max_fps(30);
 
-    //let mut simulation = Simulation::new(&config.simulation, 0);
+    let mut simulation = Simulation::new(&config.simulation, 0);
 
-    let serial = serialport::open("/dev/rfcomm0").unwrap();
-    let mut simulation = RemoteMouse::new(&config.simulation, serial);
+    //let serial = serialport::open("/dev/rfcomm0").unwrap();
+    //let mut simulation = RemoteMouse::new(&config.simulation, serial);
 
     let mut debug = simulation.update(&config.simulation);
 
@@ -124,11 +133,95 @@ pub fn run(config: GuiConfig) {
                     .trans(0.0, (maze_size.1 as f64))
                     .scale(config.pixels_per_mm as f64, -config.pixels_per_mm as f64);
 
-                if let Some(path) = &debug.mouse_debug.path_debug.path {
+                // Draw the posts
+                for x in 0..WIDTH + 1 {
+                    for y in 0..HEIGHT + 1 {
+                        let cell_width = config.simulation.mouse.map.maze.cell_width;
+                        let wall_width = config.simulation.mouse.map.maze.wall_width;
+                        rectangle(
+                            config.post_color,
+                            [
+                                (x as f32 * cell_width - wall_width / 2.0) as f64,
+                                (y as f32 * cell_width - wall_width / 2.0) as f64,
+                                wall_width as f64,
+                                wall_width as f64,
+                            ],
+                            transform,
+                            graphics,
+                        )
+                    }
+                }
+
+                // Draw the horizontal walls
+                for x in 0..WIDTH {
+                    for y in 0..HEIGHT - 1 {
+                        let cell_width = config.simulation.mouse.map.maze.cell_width;
+                        let wall_width = config.simulation.mouse.map.maze.wall_width;
+                        let edge_index = EdgeIndex {
+                            x,
+                            y,
+                            horizontal: true,
+                        };
+                        let edge = debug.mouse_debug.map.maze.get_edge(edge_index);
+                        let color = match edge {
+                            Some(Edge::Open) => config.wall_open_color,
+                            Some(Edge::Closed) => config.wall_closed_color,
+                            Some(Edge::Unknown) => config.wall_unknown_color,
+                            None => config.wall_err_color,
+                        };
+
+                        rectangle(
+                            color,
+                            [
+                                (x as f32 * cell_width + wall_width / 2.0) as f64,
+                                ((y + 1) as f32 * cell_width - wall_width / 2.0) as f64,
+                                (cell_width - wall_width) as f64,
+                                wall_width as f64,
+                            ],
+                            transform,
+                            graphics,
+                        );
+                    }
+                }
+
+                // Draw the vertical walls
+                for x in 0..WIDTH - 1 {
+                    for y in 0..HEIGHT {
+                        let cell_width = config.simulation.mouse.map.maze.cell_width;
+                        let wall_width = config.simulation.mouse.map.maze.wall_width;
+                        let edge_index = EdgeIndex {
+                            x,
+                            y,
+                            horizontal: false,
+                        };
+                        let edge = debug.mouse_debug.map.maze.get_edge(edge_index);
+                        let color = match edge {
+                            Some(Edge::Open) => config.wall_open_color,
+                            Some(Edge::Closed) => config.wall_closed_color,
+                            Some(Edge::Unknown) => config.wall_unknown_color,
+                            None => config.wall_err_color,
+                        };
+
+                        rectangle(
+                            color,
+                            [
+                                ((x + 1) as f32 * cell_width - wall_width / 2.0) as f64,
+                                (y as f32 * cell_width + wall_width / 2.0) as f64,
+                                wall_width as f64,
+                                (cell_width - wall_width) as f64,
+                            ],
+                            transform,
+                            graphics,
+                        );
+                    }
+                }
+
+                // Draw the path
+                if let Some(path) = &debug.mouse_debug.path.path {
                     for segment in path {
                         match segment {
                             &Segment::Line(l1, l2) => line(
-                                [0.0, 0.0, 1.0, 1.0],
+                                config.path_color,
                                 2.0,
                                 [l1.x as f64, l1.y as f64, l2.x as f64, l2.y as f64],
                                 transform,
@@ -149,7 +242,7 @@ pub fn run(config: GuiConfig) {
                                 };
 
                                 circle_arc(
-                                    [0.0, 0.0, 1.0, 1.0],
+                                    config.path_color,
                                     2.0,
                                     t_start as f64,
                                     t_end as f64,
@@ -166,8 +259,10 @@ pub fn run(config: GuiConfig) {
                         }
                     }
                 }
+
+                // Draw the mouse
                 rectangle(
-                    [0.0, 1.0, 0.0, 1.0],
+                    config.mouse_color,
                     [
                         (-config.simulation.mouse.mechanical.length / 2.0) as f64,
                         (-config.simulation.mouse.mechanical.width / 2.0) as f64,
