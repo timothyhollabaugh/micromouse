@@ -12,10 +12,10 @@ pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
-    p: 5.0,
+    p: 10.0,
     i: 0.0,
     d: 0.0,
-    offset_p: 0.1,
+    offset_p: 0.002,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
