@@ -65,6 +65,7 @@ impl Mouse {
 
         let (orientation, map_debug) = self.map.update(
             &config.mechanical,
+            &config.map.maze,
             left_encoder,
             right_encoder,
             left_distance,

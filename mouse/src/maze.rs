@@ -15,39 +15,39 @@ impl MazeConfig {
     /**
      *  Projects the `from` orientation onto the nearest wall, and gives the index of it
      *
-     *  Loops starting at `from`, incrementing by a distance of `config.wall_width / 2.0` in the direction
+     *  Loops starting at `from`, incrementing by a distance of `self.wall_width / 2.0` in the direction
      *  of `from` until a closed wall is found, then returns the index to that wall.
      *
      *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
      */
-    pub fn project_wall(&self, config: MazeConfig, from: Orientation) -> EdgeIndex {
-        let direction_vector = (config.wall_width / 2.0) * from.direction.into_unit_vector();
+    pub fn project_wall(&self, from: Orientation) -> EdgeIndex {
+        let direction_vector = (self.wall_width / 2.0) * from.direction.into_unit_vector();
 
         let mut current_position = from.position;
 
         loop {
-            let local_x = direction_vector.x % config.cell_width;
-            let local_y = direction_vector.y % config.cell_width;
-            let maze_x = (direction_vector.x / config.cell_width) as usize;
-            let maze_y = (direction_vector.y / config.cell_width) as usize;
+            let local_x = current_position.x % self.cell_width;
+            let local_y = current_position.y % self.cell_width;
+            let maze_x = (current_position.x / self.cell_width) as usize;
+            let maze_y = (current_position.y / self.cell_width) as usize;
 
-            if local_y <= config.wall_width / 2.0 {
+            if local_y <= self.wall_width / 2.0 {
                 break EdgeIndex {
                     x: maze_x,
                     y: maze_y,
-                    horizontal: false,
+                    horizontal: true,
                 };
             }
 
-            if local_y >= config.cell_width - config.wall_width / 2.0 {
+            if local_y >= self.cell_width - self.wall_width / 2.0 {
                 break EdgeIndex {
                     x: maze_x,
                     y: maze_y + 1,
-                    horizontal: false,
+                    horizontal: true,
                 };
             }
 
-            if local_x <= config.wall_width / 2.0 {
+            if local_x <= self.wall_width / 2.0 {
                 break EdgeIndex {
                     x: maze_x,
                     y: maze_y,
@@ -55,7 +55,7 @@ impl MazeConfig {
                 };
             }
 
-            if local_x >= config.cell_width - config.wall_width / 2.0 {
+            if local_x >= self.cell_width - self.wall_width / 2.0 {
                 break EdgeIndex {
                     x: maze_x + 1,
                     y: maze_y,
@@ -77,6 +77,7 @@ pub enum Edge {
 
 /// An index into a maze. This will uniquely identify any edge.
 /// The indexes are 0-based, but do include the perimeter edges.
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EdgeIndex {
     /// The x index of the edge
     pub x: usize,

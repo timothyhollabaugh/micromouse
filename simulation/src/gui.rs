@@ -13,6 +13,8 @@ use piston_window::clear;
 use piston_window::image as draw_image;
 use piston_window::line;
 use piston_window::rectangle;
+use piston_window::rectangle::Border;
+use piston_window::rectangle::Rectangle;
 use piston_window::AdvancedWindow;
 use piston_window::EventLoop;
 use piston_window::PistonWindow;
@@ -45,6 +47,7 @@ pub struct GuiConfig {
     pub wall_closed_color: [f32; 4],
     pub wall_unknown_color: [f32; 4],
     pub wall_err_color: [f32; 4],
+    pub wall_front_border_color: [f32; 4],
     pub post_color: [f32; 4],
 }
 
@@ -157,6 +160,7 @@ pub fn run(config: GuiConfig) {
                     for y in 0..HEIGHT + 1 {
                         let cell_width = config.simulation.mouse.map.maze.cell_width;
                         let wall_width = config.simulation.mouse.map.maze.wall_width;
+
                         let edge_index = EdgeIndex {
                             x,
                             y,
@@ -174,14 +178,25 @@ pub fn run(config: GuiConfig) {
                             Edge::Unknown => config.wall_unknown_color,
                         };
 
-                        rectangle(
-                            color,
+                        let border = debug.mouse_debug.map.front_edge.and_then(|e_i| {
+                            if edge_index == e_i {
+                                Some(Border {
+                                    color: config.wall_front_border_color,
+                                    radius: 2.0,
+                                })
+                            } else {
+                                None
+                            }
+                        });
+
+                        Rectangle::new(color).maybe_border(border).draw(
                             [
                                 (x as f32 * cell_width + wall_width / 2.0) as f64,
                                 (y as f32 * cell_width - wall_width / 2.0) as f64,
                                 (cell_width - wall_width) as f64,
                                 wall_width as f64,
                             ],
+                            &Default::default(),
                             transform,
                             graphics,
                         );
@@ -210,14 +225,25 @@ pub fn run(config: GuiConfig) {
                             Edge::Unknown => config.wall_unknown_color,
                         };
 
-                        rectangle(
-                            color,
+                        let border = debug.mouse_debug.map.front_edge.and_then(|e_i| {
+                            if edge_index == e_i {
+                                Some(Border {
+                                    color: config.wall_front_border_color,
+                                    radius: 2.0,
+                                })
+                            } else {
+                                None
+                            }
+                        });
+
+                        Rectangle::new(color).maybe_border(border).draw(
                             [
                                 (x as f32 * cell_width - wall_width / 2.0) as f64,
                                 (y as f32 * cell_width + wall_width / 2.0) as f64,
                                 wall_width as f64,
                                 (cell_width - wall_width) as f64,
                             ],
+                            &Default::default(),
                             transform,
                             graphics,
                         );

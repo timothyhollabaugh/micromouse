@@ -193,6 +193,7 @@ impl Orientation {
 #[derive(Clone, Debug)]
 pub struct MapDebug {
     pub maze: Maze,
+    pub front_edge: Option<EdgeIndex>,
 }
 
 pub struct Map {
@@ -249,7 +250,8 @@ impl Map {
 
     pub fn update(
         &mut self,
-        config: &MechanicalConfig,
+        mech_config: &MechanicalConfig,
+        maze_config: &MazeConfig,
         left_encoder: i32,
         right_encoder: i32,
         left_distance: u8,
@@ -260,13 +262,16 @@ impl Map {
         let delta_right = right_encoder - self.right_encoder;
 
         self.orientation
-            .update_from_encoders(&config, delta_left, delta_right);
+            .update_from_encoders(&mech_config, delta_left, delta_right);
 
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
+        let front_edge = maze_config.project_wall(self.orientation);
+
         let debug = MapDebug {
             maze: self.maze.clone(),
+            front_edge: Some(front_edge),
         };
 
         (self.orientation, debug)
