@@ -62,6 +62,7 @@ impl Mouse {
                 ))
                 .ok();
         }
+
         let (orientation, map_debug) = self.map.update(
             &config.mechanical,
             left_encoder,

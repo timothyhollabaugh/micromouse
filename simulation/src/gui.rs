@@ -154,7 +154,7 @@ pub fn run(config: GuiConfig) {
 
                 // Draw the horizontal walls
                 for x in 0..WIDTH {
-                    for y in 0..HEIGHT - 1 {
+                    for y in 0..HEIGHT + 1 {
                         let cell_width = config.simulation.mouse.map.maze.cell_width;
                         let wall_width = config.simulation.mouse.map.maze.wall_width;
                         let edge_index = EdgeIndex {
@@ -162,19 +162,23 @@ pub fn run(config: GuiConfig) {
                             y,
                             horizontal: true,
                         };
-                        let edge = debug.mouse_debug.map.maze.get_edge(edge_index);
+                        let edge = debug
+                            .mouse_debug
+                            .map
+                            .maze
+                            .get_edge(edge_index)
+                            .unwrap_or(&Edge::Closed);
                         let color = match edge {
-                            Some(Edge::Open) => config.wall_open_color,
-                            Some(Edge::Closed) => config.wall_closed_color,
-                            Some(Edge::Unknown) => config.wall_unknown_color,
-                            None => config.wall_err_color,
+                            Edge::Open => config.wall_open_color,
+                            Edge::Closed => config.wall_closed_color,
+                            Edge::Unknown => config.wall_unknown_color,
                         };
 
                         rectangle(
                             color,
                             [
                                 (x as f32 * cell_width + wall_width / 2.0) as f64,
-                                ((y + 1) as f32 * cell_width - wall_width / 2.0) as f64,
+                                (y as f32 * cell_width - wall_width / 2.0) as f64,
                                 (cell_width - wall_width) as f64,
                                 wall_width as f64,
                             ],
@@ -185,7 +189,7 @@ pub fn run(config: GuiConfig) {
                 }
 
                 // Draw the vertical walls
-                for x in 0..WIDTH - 1 {
+                for x in 0..WIDTH + 1 {
                     for y in 0..HEIGHT {
                         let cell_width = config.simulation.mouse.map.maze.cell_width;
                         let wall_width = config.simulation.mouse.map.maze.wall_width;
@@ -194,18 +198,22 @@ pub fn run(config: GuiConfig) {
                             y,
                             horizontal: false,
                         };
-                        let edge = debug.mouse_debug.map.maze.get_edge(edge_index);
+                        let edge = debug
+                            .mouse_debug
+                            .map
+                            .maze
+                            .get_edge(edge_index)
+                            .unwrap_or(&Edge::Closed);
                         let color = match edge {
-                            Some(Edge::Open) => config.wall_open_color,
-                            Some(Edge::Closed) => config.wall_closed_color,
-                            Some(Edge::Unknown) => config.wall_unknown_color,
-                            None => config.wall_err_color,
+                            Edge::Open => config.wall_open_color,
+                            Edge::Closed => config.wall_closed_color,
+                            Edge::Unknown => config.wall_unknown_color,
                         };
 
                         rectangle(
                             color,
                             [
-                                ((x + 1) as f32 * cell_width - wall_width / 2.0) as f64,
+                                (x as f32 * cell_width - wall_width / 2.0) as f64,
                                 (y as f32 * cell_width + wall_width / 2.0) as f64,
                                 wall_width as f64,
                                 (cell_width - wall_width) as f64,

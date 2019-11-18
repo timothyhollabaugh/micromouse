@@ -76,7 +76,7 @@ pub enum Edge {
 }
 
 /// An index into a maze. This will uniquely identify any edge.
-/// The indexes are 0-based, but do not include any of the perimiter edges.
+/// The indexes are 0-based, but do include the perimeter edges.
 pub struct EdgeIndex {
     /// The x index of the edge
     pub x: usize,
@@ -183,10 +183,10 @@ impl Maze {
         if index.horizontal {
             self.horizontal_edges
                 .get(index.x)
-                .and_then(|walls| walls.get(index.y))
+                .and_then(|walls| walls.get(index.y - 1))
         } else {
             self.vertical_edges
-                .get(index.x)
+                .get(index.x - 1)
                 .and_then(|walls| walls.get(index.y))
         }
     }
