@@ -1,5 +1,6 @@
 use crate::map::MapConfig;
 use crate::map::Orientation;
+use crate::map::Vector;
 use core::ops::Index;
 use core::ops::IndexMut;
 
@@ -12,58 +13,87 @@ pub struct MazeConfig {
 }
 
 impl MazeConfig {
-    /**
-     *  Projects the `from` orientation onto the nearest wall, and gives the index of it
-     *
-     *  Loops starting at `from`, incrementing by a distance of `self.wall_width / 2.0` in the direction
-     *  of `from` until a closed wall is found, then returns the index to that wall.
-     *
-     *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
-     */
-    pub fn project_wall(&self, from: Orientation) -> EdgeIndex {
-        let direction_vector = (self.wall_width / 2.0) * from.direction.into_unit_vector();
+    pub fn edge_on_point(&self, point: Vector) -> Option<EdgeIndex> {
+        let local_x = point.x % self.cell_width;
+        let local_y = point.y % self.cell_width;
+        let maze_x = (point.x / self.cell_width) as usize;
+        let maze_y = (point.y / self.cell_width) as usize;
 
-        let mut current_position = from.position;
+        if local_y <= self.wall_width / 2.0 {
+            return Some(EdgeIndex {
+                x: maze_x,
+                y: maze_y,
+                horizontal: true,
+            });
+        }
 
+        if local_y >= self.cell_width - self.wall_width / 2.0 {
+            return Some(EdgeIndex {
+                x: maze_x,
+                y: maze_y + 1,
+                horizontal: true,
+            });
+        }
+
+        if local_x <= self.wall_width / 2.0 {
+            return Some(EdgeIndex {
+                x: maze_x,
+                y: maze_y,
+                horizontal: false,
+            });
+        }
+
+        if local_x >= self.cell_width - self.wall_width / 2.0 {
+            return Some(EdgeIndex {
+                x: maze_x + 1,
+                y: maze_y,
+                horizontal: false,
+            });
+        }
+
+        None
+    }
+
+    pub fn edge_projection_iter(&self, from: Orientation) -> EdgeProjectionIterator {
+        EdgeProjectionIterator {
+            config: self,
+            direction_vector: (self.wall_width / 3.0) * from.direction.into_unit_vector(),
+            current_position: from.position,
+        }
+    }
+}
+
+/**
+ *  Projects the `from` orientation onto the nearest wall, and gives the index of it
+ *
+ *  Loops starting at `from`, incrementing by a distance of `self.wall_width / 2.0` in the direction
+ *  of `from` until a closed wall is found, then returns the index to that wall.
+ *
+ *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
+ */
+pub struct EdgeProjectionIterator<'a> {
+    config: &'a MazeConfig,
+    direction_vector: Vector,
+    current_position: Vector,
+}
+
+impl<'a> Iterator for EdgeProjectionIterator<'a> {
+    type Item = EdgeIndex;
+
+    fn next(&mut self) -> Option<EdgeIndex> {
+        // Get out of any edges we are currently in
+        // Avoids returning the same edge for subsequent calls to `next`
+        //while self.config.edge_on_point(self.current_position).is_some() {
+        //self.current_position += self.direction_vector;
+        //}
+
+        // Keep going in the direction of `direction_vector` until an edge is found.
         loop {
-            let local_x = current_position.x % self.cell_width;
-            let local_y = current_position.y % self.cell_width;
-            let maze_x = (current_position.x / self.cell_width) as usize;
-            let maze_y = (current_position.y / self.cell_width) as usize;
+            self.current_position += self.direction_vector;
 
-            if local_y <= self.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x,
-                    y: maze_y,
-                    horizontal: true,
-                };
+            if let Some(edge_index) = self.config.edge_on_point(self.current_position) {
+                break Some(edge_index);
             }
-
-            if local_y >= self.cell_width - self.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x,
-                    y: maze_y + 1,
-                    horizontal: true,
-                };
-            }
-
-            if local_x <= self.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x,
-                    y: maze_y,
-                    horizontal: false,
-                };
-            }
-
-            if local_x >= self.cell_width - self.wall_width / 2.0 {
-                break EdgeIndex {
-                    x: maze_x + 1,
-                    y: maze_y,
-                    horizontal: false,
-                };
-            }
-
-            current_position += direction_vector;
         }
     }
 }
@@ -182,25 +212,21 @@ impl Maze {
 
     pub fn get_edge(&self, index: EdgeIndex) -> Option<&Edge> {
         if index.horizontal {
-            self.horizontal_edges
-                .get(index.x)
-                .and_then(|walls| walls.get(index.y - 1))
+            if index.y == 0 {
+                None
+            } else {
+                self.horizontal_edges
+                    .get(index.x)
+                    .and_then(|walls| walls.get(index.y - 1))
+            }
         } else {
-            self.vertical_edges
-                .get(index.x - 1)
-                .and_then(|walls| walls.get(index.y))
-        }
-    }
-
-    pub fn get_edge_mut(&mut self, index: EdgeIndex) -> Option<&mut Edge> {
-        if index.horizontal {
-            self.horizontal_edges
-                .get_mut(index.x)
-                .and_then(|walls| walls.get_mut(index.y))
-        } else {
-            self.vertical_edges
-                .get_mut(index.x)
-                .and_then(|walls| walls.get_mut(index.y))
+            if index.x == 0 {
+                None
+            } else {
+                self.vertical_edges
+                    .get(index.x - 1)
+                    .and_then(|walls| walls.get(index.y))
+            }
         }
     }
 }

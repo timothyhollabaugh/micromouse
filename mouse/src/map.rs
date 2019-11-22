@@ -267,11 +267,15 @@ impl Map {
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
-        let front_edge = maze_config.project_wall(self.orientation);
+        let front_edge = maze_config
+            .edge_projection_iter(self.orientation)
+            .find(|edge_index| {
+                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
+            });
 
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_edge: Some(front_edge),
+            front_edge: front_edge,
         };
 
         (self.orientation, debug)
