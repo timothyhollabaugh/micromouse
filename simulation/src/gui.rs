@@ -93,8 +93,14 @@ pub fn run(config: GuiConfig) {
 
     let mut debug = simulation.update(&config.simulation);
 
+    let mut last_update_time = Instant::now();
+    let mut last_render_time = Instant::now();
+
     while let Some(event) = window.next() {
         if let Some(u) = event.update_args() {
+            let now = Instant::now();
+            println!("Updating: {}", now.duration_since(last_update_time).as_secs_f32());
+            last_update_time = now;
             debug = simulation.update(&config.simulation);
             //println!("{:#?}", debug);
             /*
@@ -128,6 +134,9 @@ pub fn run(config: GuiConfig) {
         }
 
         if let Some(r) = event.render_args() {
+            let now = Instant::now();
+            println!("Rendering: {}", now.duration_since(last_render_time).as_secs_f32());
+            last_render_time = now;
             window.draw_2d(&event, |context, graphics, _device| {
                 clear([1.0; 4], graphics);
 
