@@ -44,6 +44,8 @@ fn main() {
         wall_unknown_color: [0.9, 0.9, 0.9, 1.0],
         wall_err_color: [1.0, 0.0, 0.0, 1.0],
         wall_front_border_color: [1.0, 0.0, 1.0, 1.0],
+        wall_left_border_color: [1.0, 1.0, 0.0, 1.0],
+        wall_right_border_color: [0.0, 1.0, 1.0, 1.0],
         post_color: [0.0, 0.0, 0.0, 1.0],
     };
 

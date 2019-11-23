@@ -1,5 +1,5 @@
-use std::time::Instant;
 use std::time::Duration;
+use std::time::Instant;
 
 use std::thread;
 
@@ -55,6 +55,8 @@ pub struct GuiConfig {
     pub wall_unknown_color: [f32; 4],
     pub wall_err_color: [f32; 4],
     pub wall_front_border_color: [f32; 4],
+    pub wall_left_border_color: [f32; 4],
+    pub wall_right_border_color: [f32; 4],
     pub post_color: [f32; 4],
 }
 
@@ -75,11 +77,10 @@ fn orientation_transform<T: Transformed + Sized>(orientation: &Orientation, tran
 }
 
 enum GuiCmd {
-    Exit
+    Exit,
 }
 
 pub fn run(config: GuiConfig) {
-
     let (debug_tx, debug_rx) = mpsc::channel();
     let (cmd_tx, cmd_rx) = mpsc::channel();
 
@@ -90,7 +91,11 @@ pub fn run(config: GuiConfig) {
     gui_thread.join();
 }
 
-fn run_simulation(debug_tx: mpsc::Sender<SimulationDebug>, cmd_rx: mpsc::Receiver<GuiCmd>, config: &GuiConfig) {
+fn run_simulation(
+    debug_tx: mpsc::Sender<SimulationDebug>,
+    cmd_rx: mpsc::Receiver<GuiCmd>,
+    config: &GuiConfig,
+) {
     let mut simulation = Simulation::new(&config.simulation, 0);
 
     //let serial = serialport::open("/dev/rfcomm0").unwrap();
@@ -107,11 +112,31 @@ fn run_simulation(debug_tx: mpsc::Sender<SimulationDebug>, cmd_rx: mpsc::Receive
 
         debug_tx.send(debug);
 
-        thread::sleep(Duration::from_millis((config.simulation.millis_per_step as f32 * config.time_scale) as u64));
+        thread::sleep(Duration::from_millis(
+            (config.simulation.millis_per_step as f32 * config.time_scale) as u64,
+        ));
     }
 }
 
-fn run_gui(debug_rx: mpsc::Receiver<SimulationDebug>, cmd_tx: mpsc::Sender<GuiCmd>, config: &GuiConfig) {
+fn edge_border(
+    current_edge: EdgeIndex,
+    other_edge: Option<EdgeIndex>,
+    color: [f32; 4],
+) -> Option<Border> {
+    other_edge.and_then(|other_edge| {
+        if current_edge == other_edge {
+            Some(Border { color, radius: 4.0 })
+        } else {
+            None
+        }
+    })
+}
+
+fn run_gui(
+    debug_rx: mpsc::Receiver<SimulationDebug>,
+    cmd_tx: mpsc::Sender<GuiCmd>,
+    config: &GuiConfig,
+) {
     let maze_size = (
         (WIDTH as f32 * config.pixels_per_cell()) as u32,
         (HEIGHT as f32 * config.pixels_per_cell()) as u32,
@@ -130,7 +155,6 @@ fn run_gui(debug_rx: mpsc::Receiver<SimulationDebug>, cmd_tx: mpsc::Sender<GuiCm
 
     while let Some(event) = window.next() {
         if let Some(r) = event.render_args() {
-
             let mut new_debugs = debug_rx.try_iter().collect();
             debugs.append(&mut new_debugs);
 
@@ -143,7 +167,6 @@ fn run_gui(debug_rx: mpsc::Receiver<SimulationDebug>, cmd_tx: mpsc::Sender<GuiCm
                     .scale(config.pixels_per_mm as f64, -config.pixels_per_mm as f64);
 
                 if let Some(debug) = debugs.last() {
-
                     let cell_width = config.simulation.mouse.map.maze.cell_width;
                     let wall_width = config.simulation.mouse.map.maze.wall_width;
 
@@ -186,18 +209,26 @@ fn run_gui(debug_rx: mpsc::Receiver<SimulationDebug>, cmd_tx: mpsc::Sender<GuiCm
                                 Edge::Unknown => config.wall_unknown_color,
                             };
 
-                            let border = debug.mouse_debug.map.front_edge.and_then(|e_i| {
-                                if edge_index == e_i {
-                                    Some(Border {
-                                        color: config.wall_front_border_color,
-                                        radius: 2.0,
-                                    })
-                                } else {
-                                    None
-                                }
-                            });
+                            let front_edge_border = edge_border(
+                                edge_index,
+                                debug.mouse_debug.map.front_edge,
+                                config.wall_front_border_color,
+                            );
+                            let left_edge_border = edge_border(
+                                edge_index,
+                                debug.mouse_debug.map.left_edge,
+                                config.wall_left_border_color,
+                            );
+                            let right_edge_border = edge_border(
+                                edge_index,
+                                debug.mouse_debug.map.right_edge,
+                                config.wall_right_border_color,
+                            );
 
-                            Rectangle::new(color).maybe_border(border).draw(
+                            let edge_border =
+                                front_edge_border.or(left_edge_border).or(right_edge_border);
+
+                            Rectangle::new(color).maybe_border(edge_border).draw(
                                 [
                                     (x as f32 * cell_width + wall_width / 2.0) as f64,
                                     (y as f32 * cell_width - wall_width / 2.0) as f64,
@@ -232,18 +263,26 @@ fn run_gui(debug_rx: mpsc::Receiver<SimulationDebug>, cmd_tx: mpsc::Sender<GuiCm
                                 Edge::Unknown => config.wall_unknown_color,
                             };
 
-                            let border = debug.mouse_debug.map.front_edge.and_then(|e_i| {
-                                if edge_index == e_i {
-                                    Some(Border {
-                                        color: config.wall_front_border_color,
-                                        radius: 2.0,
-                                    })
-                                } else {
-                                    None
-                                }
-                            });
+                            let front_edge_border = edge_border(
+                                edge_index,
+                                debug.mouse_debug.map.front_edge,
+                                config.wall_front_border_color,
+                            );
+                            let left_edge_border = edge_border(
+                                edge_index,
+                                debug.mouse_debug.map.left_edge,
+                                config.wall_left_border_color,
+                            );
+                            let right_edge_border = edge_border(
+                                edge_index,
+                                debug.mouse_debug.map.right_edge,
+                                config.wall_right_border_color,
+                            );
 
-                            Rectangle::new(color).maybe_border(border).draw(
+                            let edge_border =
+                                front_edge_border.or(left_edge_border).or(right_edge_border);
+
+                            Rectangle::new(color).maybe_border(edge_border).draw(
                                 [
                                     (x as f32 * cell_width - wall_width / 2.0) as f64,
                                     (y as f32 * cell_width + wall_width / 2.0) as f64,

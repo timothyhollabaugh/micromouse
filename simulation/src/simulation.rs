@@ -54,6 +54,8 @@ impl<R: Read> RemoteMouse<R> {
                     map: MapDebug {
                         maze: Maze::new(Edge::Unknown),
                         front_edge: None,
+                        left_edge: None,
+                        right_edge: None,
                     },
                 },
                 orientation: config.initial_orientation,

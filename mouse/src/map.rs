@@ -1,4 +1,5 @@
 use core::f32::consts::PI;
+use core::f32::consts::FRAC_PI_2;
 use core::fmt::{Error, Formatter};
 use core::ops::Mul;
 
@@ -148,6 +149,16 @@ impl core::ops::Add for Direction {
     }
 }
 
+impl core::ops::Add<f32> for Direction {
+    type Output = Direction;
+    fn add(self, rhs: f32) -> Self::Output { Direction::from(self.0 + rhs)}
+}
+
+impl core::ops::Add<Direction> for f32 {
+    type Output = Direction;
+    fn add(self, rhs: Direction) -> Self::Output { Direction::from(self + rhs.0)}
+}
+
 impl core::ops::Sub for Direction {
     type Output = Direction;
 
@@ -195,6 +206,8 @@ impl Orientation {
 pub struct MapDebug {
     pub maze: Maze,
     pub front_edge: Option<EdgeIndex>,
+    pub left_edge: Option<EdgeIndex>,
+    pub right_edge: Option<EdgeIndex>,
 }
 
 pub struct Map {
@@ -274,9 +287,34 @@ impl Map {
                 *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
             });
 
+        let left_distance_orientation = Orientation {
+            position: self.orientation.position,
+            direction: self.orientation.direction + DIRECTION_PI_2,
+        };
+
+        let left_edge = maze_config
+            .edge_projection_iter(left_distance_orientation)
+            .find(|edge_index| {
+                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
+            });
+
+
+        let right_distance_orientation = Orientation {
+            position: self.orientation.position,
+            direction: self.orientation.direction - DIRECTION_PI_2,
+        };
+
+        let right_edge = maze_config
+            .edge_projection_iter(right_distance_orientation)
+            .find(|edge_index| {
+                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
+            });
+
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_edge: front_edge,
+            front_edge,
+            left_edge,
+            right_edge,
         };
 
         (self.orientation, debug)
