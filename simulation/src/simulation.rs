@@ -21,6 +21,7 @@ pub struct SimulationDebug {
     pub time: u32,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct SimulationConfig {
     pub mouse: MouseConfig,
     pub max_speed: f32,

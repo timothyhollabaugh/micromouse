@@ -10,6 +10,7 @@ use crate::maze::EdgeIndex;
 use crate::maze::Maze;
 use crate::maze::MazeConfig;
 
+#[derive(Debug, Copy, Clone)]
 pub struct MapConfig {
     pub maze: MazeConfig,
 }

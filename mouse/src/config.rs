@@ -69,6 +69,7 @@ pub const MOUSE_2020_PATH: PathConfig = PathConfig {
     offset_p: 0.002,
 };
 
+#[derive(Debug, Copy, Clone)]
 pub struct MouseConfig {
     pub mechanical: MechanicalConfig,
     pub path: PathConfig,

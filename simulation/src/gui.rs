@@ -1,4 +1,9 @@
 use std::time::Instant;
+use std::time::Duration;
+
+use std::thread;
+
+use std::sync::mpsc;
 
 use std::f32::consts::PI;
 
@@ -36,7 +41,9 @@ use mouse::path::Segment;
 use crate::simulation::RemoteMouse;
 use crate::simulation::Simulation;
 use crate::simulation::SimulationConfig;
+use crate::simulation::SimulationDebug;
 
+#[derive(Debug, Copy, Clone)]
 pub struct GuiConfig {
     pub simulation: SimulationConfig,
     pub pixels_per_mm: f32,
@@ -67,7 +74,44 @@ fn orientation_transform<T: Transformed + Sized>(orientation: &Orientation, tran
         .rot_rad(orientation.direction.into())
 }
 
+enum GuiCmd {
+    Exit
+}
+
 pub fn run(config: GuiConfig) {
+
+    let (debug_tx, debug_rx) = mpsc::channel();
+    let (cmd_tx, cmd_rx) = mpsc::channel();
+
+    let simulation_thread = thread::spawn(move || run_simulation(debug_tx, cmd_rx, &config));
+    let gui_thread = thread::spawn(move || run_gui(debug_rx, cmd_tx, &config.clone()));
+
+    simulation_thread.join();
+    gui_thread.join();
+}
+
+fn run_simulation(debug_tx: mpsc::Sender<SimulationDebug>, cmd_rx: mpsc::Receiver<GuiCmd>, config: &GuiConfig) {
+    let mut simulation = Simulation::new(&config.simulation, 0);
+
+    //let serial = serialport::open("/dev/rfcomm0").unwrap();
+    //let mut simulation = RemoteMouse::new(&config.simulation, serial);
+
+    'main: loop {
+        for cmd in cmd_rx.try_iter() {
+            match cmd {
+                Exit => break 'main,
+            }
+        }
+
+        let debug = simulation.update(&config.simulation);
+
+        debug_tx.send(debug);
+
+        thread::sleep(Duration::from_millis((config.simulation.millis_per_step as f32 * config.time_scale) as u64));
+    }
+}
+
+fn run_gui(debug_rx: mpsc::Receiver<SimulationDebug>, cmd_tx: mpsc::Sender<GuiCmd>, config: &GuiConfig) {
     let maze_size = (
         (WIDTH as f32 * config.pixels_per_cell()) as u32,
         (HEIGHT as f32 * config.pixels_per_cell()) as u32,
@@ -80,66 +124,16 @@ pub fn run(config: GuiConfig) {
 
     let mut texture_context = window.create_texture_context();
 
-    window.set_ups(
-        (1000.0 / (config.simulation.millis_per_step as f64) * config.time_scale as f64) as u64,
-    );
-
     window.set_max_fps(30);
 
-    let mut simulation = Simulation::new(&config.simulation, 0);
-
-    //let serial = serialport::open("/dev/rfcomm0").unwrap();
-    //let mut simulation = RemoteMouse::new(&config.simulation, serial);
-
     let mut debugs = Vec::new();
-    debugs.push(simulation.update(&config.simulation));
-
-    let mut last_update_time = Instant::now();
-    let mut last_render_time = Instant::now();
-
-    let mut draw_posts = true;
 
     while let Some(event) = window.next() {
-        if let Some(u) = event.update_args() {
-            let now = Instant::now();
-            println!("Updating: {}", now.duration_since(last_update_time).as_secs_f32());
-            last_update_time = now;
-            debugs.push(simulation.update(&config.simulation));
-            //println!("{:#?}", debug);
-            /*
-            println!(
-                "{:05}, {:08.4}, {:08.4}, {:01.4}, {:08.4}, {:08.4}, {:01.4}, {:01.4}, {:01.4}",
-                debug.time,
-                debug.mouse_debug.orientation.position.x,
-                debug.mouse_debug.orientation.position.y,
-                f32::from(debug.mouse_debug.orientation.direction),
-                debug.mouse_debug.path_debug.distance_along.unwrap_or(999.0),
-                debug.mouse_debug.path_debug.distance_from.unwrap_or(999.0),
-                debug
-                    .mouse_debug
-                    .path_debug
-                    .centered_direction
-                    .unwrap_or(999.0),
-                debug
-                    .mouse_debug
-                    .path_debug
-                    .tangent_direction
-                    .map(|d| f32::from(d))
-                    .unwrap_or(0.0),
-                debug
-                    .mouse_debug
-                    .path_debug
-                    .target_direction
-                    .map(|d| f32::from(d))
-                    .unwrap_or(0.0)
-            );
-            */
-        }
-
         if let Some(r) = event.render_args() {
-            let now = Instant::now();
-            println!("Rendering: {}", now.duration_since(last_render_time).as_secs_f32());
-            last_render_time = now;
+
+            let mut new_debugs = debug_rx.try_iter().collect();
+            debugs.append(&mut new_debugs);
+
             window.draw_2d(&event, |context, graphics, _device| {
                 clear([1.0; 4], graphics);
 
@@ -323,4 +317,6 @@ pub fn run(config: GuiConfig) {
             });
         }
     }
+
+    cmd_tx.send(GuiCmd::Exit);
 }

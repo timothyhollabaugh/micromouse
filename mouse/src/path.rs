@@ -294,7 +294,7 @@ pub struct PathDebug {
     pub target_direction: Option<Direction>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct PathConfig {
     pub p: f32,
     pub i: f32,

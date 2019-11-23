@@ -7,6 +7,7 @@ use core::ops::IndexMut;
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
 
+#[derive(Debug, Copy, Clone)]
 pub struct MazeConfig {
     pub cell_width: f32,
     pub wall_width: f32,
