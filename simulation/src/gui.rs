@@ -48,7 +48,8 @@ pub struct GuiConfig {
     pub simulation: SimulationConfig,
     pub pixels_per_mm: f32,
     pub time_scale: f32,
-    pub mouse_color: [f32; 4],
+    pub simulated_mouse_color: [f32; 4],
+    pub real_mouse_color: [f32; 4],
     pub path_color: [f32; 4],
     pub wall_open_color: [f32; 4],
     pub wall_closed_color: [f32; 4],
@@ -342,7 +343,7 @@ fn run_gui(
 
                     // Draw the mouse
                     rectangle(
-                        config.mouse_color,
+                        config.simulated_mouse_color,
                         [
                             (-config.simulation.mouse.mechanical.length / 2.0) as f64,
                             (-config.simulation.mouse.mechanical.width / 2.0) as f64,
@@ -352,6 +353,24 @@ fn run_gui(
                         orientation_transform(&debug.orientation, transform),
                         graphics,
                     );
+
+                    // Draw the mouse
+                    Rectangle::new([0.0, 0.0, 0.0, 0.0])
+                        .border(Border {
+                            color: config.real_mouse_color,
+                            radius: 4.0,
+                        })
+                        .draw(
+                            [
+                                (-config.simulation.mouse.mechanical.length / 2.0) as f64,
+                                (-config.simulation.mouse.mechanical.width / 2.0) as f64,
+                                config.simulation.mouse.mechanical.length as f64,
+                                config.simulation.mouse.mechanical.width as f64,
+                            ],
+                            &Default::default(),
+                            orientation_transform(&debug.mouse_debug.orientation, transform),
+                            graphics,
+                        );
                 }
             });
         }

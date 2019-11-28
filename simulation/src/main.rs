@@ -33,11 +33,13 @@ fn main() {
             },
 
             millis_per_step: 10,
+            max_wheel_accel: 60000.0,
         },
 
         pixels_per_mm: 0.25,
         time_scale: 1.0,
-        mouse_color: [0.0, 1.0, 0.0, 1.0],
+        simulated_mouse_color: [0.0, 1.0, 0.0, 1.0],
+        real_mouse_color: [1.0, 0.0, 0.0, 1.0],
         path_color: [0.0, 0.0, 1.0, 1.0],
         wall_open_color: [1.0, 1.0, 1.0, 1.0],
         wall_closed_color: [0.5, 0.5, 0.5, 1.0],

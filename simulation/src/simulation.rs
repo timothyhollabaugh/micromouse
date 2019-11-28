@@ -2,6 +2,8 @@ use std::f32;
 
 use std::io::Read;
 
+use std::cmp::min;
+
 use mouse::config::MouseConfig;
 use mouse::map::Direction;
 use mouse::map::MapDebug;
@@ -27,6 +29,15 @@ pub struct SimulationConfig {
     pub max_speed: f32,
     pub initial_orientation: Orientation,
     pub millis_per_step: u32,
+
+    /// The max speed a wheel can accelerate by before slipping
+    pub max_wheel_accel: f32,
+}
+
+impl SimulationConfig {
+    pub fn sec_per_step(&self) -> f32 {
+        self.millis_per_step as f32 / 1000.0
+    }
 }
 
 pub struct RemoteMouse<R: Read> {
@@ -115,6 +126,8 @@ pub struct Simulation {
     mouse: Mouse,
     orientation: Orientation,
     past_orientations: Vec<Orientation>,
+    last_left_wheel_speed: f32,
+    last_right_wheel_speed: f32,
     left_encoder: i32,
     right_encoder: i32,
     time: u32,
@@ -128,6 +141,8 @@ impl Simulation {
             past_orientations: Vec::new(),
             left_encoder: 0,
             right_encoder: 0,
+            last_left_wheel_speed: 0.0,
+            last_right_wheel_speed: 0.0,
             time,
         }
     }
@@ -154,27 +169,57 @@ impl Simulation {
         };
 
         // Update the state for the next run
-        let left_speed = left_power * config.max_speed;
-        let right_speed = right_power * config.max_speed;
+        let left_wheel_speed = left_power * config.max_speed;
+        let right_wheel_speed = right_power * config.max_speed;
 
-        let delta_left = config
+        let delta_left_wheel = config
             .mouse
             .mechanical
-            .mm_to_ticks(left_speed * (config.millis_per_step as f32 / 1000.0))
+            .mm_to_ticks(left_wheel_speed * (config.millis_per_step as f32 / 1000.0))
             as i32;
 
-        let delta_right = config
+        let delta_right_wheel = config
             .mouse
             .mechanical
-            .mm_to_ticks(right_speed * (config.millis_per_step as f32 / 1000.0))
+            .mm_to_ticks(right_wheel_speed * (config.millis_per_step as f32 / 1000.0))
             as i32;
 
-        self.left_encoder += delta_left;
-        self.right_encoder += delta_right;
+        self.left_encoder += delta_left_wheel;
+        self.right_encoder += delta_right_wheel;
         self.time += config.millis_per_step;
 
-        self.orientation
-            .update_from_encoders(&config.mouse.mechanical, delta_left, delta_right);
+        let left_accel = (left_wheel_speed - self.last_left_wheel_speed) / config.sec_per_step();
+        let right_accel = (right_wheel_speed - self.last_right_wheel_speed) / config.sec_per_step();
+
+        let left_ground_speed = if left_accel > config.max_wheel_accel {
+            self.last_left_wheel_speed + config.max_wheel_accel * config.sec_per_step()
+        } else {
+            left_wheel_speed
+        };
+
+        let right_ground_speed = if right_accel > config.max_wheel_accel {
+            self.last_right_wheel_speed + config.max_wheel_accel * config.sec_per_step()
+        } else {
+            right_wheel_speed
+        };
+
+        let delta_left_ground = config
+            .mouse
+            .mechanical
+            .mm_to_ticks(left_ground_speed * config.sec_per_step())
+            as i32;
+
+        let delta_right_ground = config
+            .mouse
+            .mechanical
+            .mm_to_ticks(right_ground_speed * config.sec_per_step())
+            as i32;
+
+        self.orientation.update_from_encoders(
+            &config.mouse.mechanical,
+            delta_left_ground,
+            delta_right_ground,
+        );
 
         debug
     }
