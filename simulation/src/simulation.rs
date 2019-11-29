@@ -10,6 +10,7 @@ use mouse::map::MapDebug;
 use mouse::map::Orientation;
 use mouse::maze::Edge;
 use mouse::maze::Maze;
+use mouse::motion::MotionDebug;
 use mouse::mouse::Mouse;
 use mouse::mouse::MouseDebug;
 use mouse::path::PathDebug;
@@ -67,6 +68,16 @@ impl<R: Read> RemoteMouse<R> {
                         front_edge: None,
                         left_edge: None,
                         right_edge: None,
+                    },
+                    motion: MotionDebug {
+                        target_left_power: 0.0,
+                        target_right_power: 0.0,
+                        normalized_left_power: 0.0,
+                        normalized_right_power: 0.0,
+                        limited_left_power: 0.0,
+                        limited_right_power: 0.0,
+                        left_delta_power: 0.0,
+                        right_delta_power: 0.0,
                     },
                 },
                 orientation: config.initial_orientation,

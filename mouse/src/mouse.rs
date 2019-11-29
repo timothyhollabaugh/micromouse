@@ -5,6 +5,8 @@ use crate::map::Map;
 use crate::map::MapDebug;
 use crate::map::Orientation;
 use crate::map::Vector;
+use crate::motion::Motion;
+use crate::motion::MotionDebug;
 use crate::path;
 use crate::path::Path;
 use crate::path::PathDebug;
@@ -14,11 +16,13 @@ pub struct MouseDebug {
     pub orientation: Orientation,
     pub path: PathDebug,
     pub map: MapDebug,
+    pub motion: MotionDebug,
 }
 
 pub struct Mouse {
     map: Map,
     path: Path,
+    motion: Motion,
     done: bool,
 }
 
@@ -35,6 +39,7 @@ impl Mouse {
         Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
+            motion: Motion::new(&config.motion, time),
             done: true,
         }
     }
@@ -79,13 +84,15 @@ impl Mouse {
 
         let linear_power = if done { 0.0 } else { 1.0 };
 
-        let left_power = linear_power - angular_power;
-        let right_power = linear_power + angular_power;
+        let (left_power, right_power, motion_debug) =
+            self.motion
+                .update(&config.motion, time, linear_power, angular_power);
 
         let debug = MouseDebug {
             orientation,
             path: path_debug,
             map: map_debug,
+            motion: motion_debug,
         };
 
         (left_power, right_power, debug)

@@ -5,6 +5,7 @@ mod simulation;
 
 use mouse::config::MouseConfig;
 use mouse::config::MOUSE_2019_MECH;
+use mouse::config::MOUSE_2020_MOTION;
 use mouse::config::MOUSE_MAZE_MAP;
 use mouse::config::MOUSE_SIM_PATH;
 use mouse::map::{Direction, Orientation, Vector};
@@ -20,6 +21,7 @@ fn main() {
                 mechanical: MOUSE_2019_MECH,
                 path: MOUSE_SIM_PATH,
                 map: MOUSE_MAZE_MAP,
+                motion: MOUSE_2020_MOTION,
             },
 
             max_speed: 500.0,
