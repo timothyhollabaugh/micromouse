@@ -12,3 +12,4 @@ libm = "0.1"
 serialport = "3.3"
 plotters = "0.2"
 image = "0.22"
+conrod = { version = "0.61"}

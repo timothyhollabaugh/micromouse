@@ -13,7 +13,6 @@ use plotters::prelude::*;
 
 use image::ImageBuffer;
 
-use piston_window::circle_arc;
 use piston_window::clear;
 use piston_window::image as draw_image;
 use piston_window::line;
@@ -29,6 +28,10 @@ use piston_window::TextureSettings;
 use piston_window::Transformed;
 use piston_window::UpdateEvent;
 use piston_window::WindowSettings;
+use piston_window::{circle_arc, G2dTexture};
+
+use conrod::text::GlyphCache;
+use conrod::UiBuilder;
 
 use mouse::maze::Edge;
 use mouse::maze::EdgeIndex;
@@ -133,6 +136,28 @@ fn edge_border(
     })
 }
 
+//pub struct Ids {
+//status_text,
+//status_button,
+//}
+
+enum GuiState {
+    Running,
+    Stopped,
+}
+
+struct MouseGui {
+    state: GuiState,
+}
+
+impl MouseGui {
+    pub fn new() -> MouseGui {
+        MouseGui {
+            state: GuiState::Stopped,
+        }
+    }
+}
+
 fn run_gui(
     debug_rx: mpsc::Receiver<SimulationDebug>,
     cmd_tx: mpsc::Sender<GuiCmd>,
@@ -143,10 +168,41 @@ fn run_gui(
         (HEIGHT as f32 * config.pixels_per_cell()) as u32,
     );
 
-    let mut window: PistonWindow = WindowSettings::new("Micromouse Simulation", maze_size)
+    let ui_width = 600;
+    let ui_height = maze_size.1;
+
+    let window_size = (maze_size.0, maze_size.1 + ui_width);
+
+    let mut window: PistonWindow = WindowSettings::new("Micromouse Simulation", window_size)
         .exit_on_esc(true)
         .build()
         .unwrap();
+
+    let mut ui = UiBuilder::new([ui_width as f64, ui_height as f64]).build();
+
+    ui.fonts.insert_from_file("FiraSans-Regular.ttf");
+
+    let mut text_vertex_data = Vec::new();
+    let (mut glyph_cache, mut text_texture_cache) = {
+        const SCALE_TOLERANCE: f32 = 0.1;
+        const POSITION_TOLERANCE: f32 = 0.1;
+        let cache = GlyphCache::builder()
+            .dimensions(ui_width, ui_height)
+            .scale_tolerance(SCALE_TOLERANCE)
+            .position_tolerance(POSITION_TOLERANCE)
+            .build();
+        let buffer_len = ui_width as usize * ui_height as usize;
+        let init = vec![128; buffer_len];
+        let settings = TextureSettings::new();
+        let factory = &mut window.factory;
+        let texture =
+            G2dTexture::from_memory_alpha(factor, &init, ui_width, ui_height, &settings).unwrap();
+        (cache, texture)
+    };
+
+    //let ids = Ids::new(ui.widget_id_generator());
+
+    let mut app = MouseGui::new();
 
     let mut texture_context = window.create_texture_context();
 
