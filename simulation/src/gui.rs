@@ -12,6 +12,7 @@ use crossbeam::channel;
 use druid::kurbo::Affine;
 use druid::kurbo::Rect;
 use druid::kurbo::Size;
+use druid::kurbo::Vec2;
 use druid::piet::Color;
 use druid::piet::RenderContext;
 use druid::widget::Align;
@@ -29,6 +30,7 @@ use druid::{
     AppLauncher, BaseState, BoxConstraints, Env, Event, EventCtx, LayoutCtx, PaintCtx, UpdateCtx,
 };
 
+use mouse::config::MechanicalConfig;
 use mouse::maze::Edge;
 use mouse::maze::EdgeIndex;
 use mouse::maze::Maze;
@@ -36,6 +38,7 @@ use mouse::maze::HEIGHT as MAZE_HEIGHT;
 use mouse::maze::WIDTH as MAZE_WIDTH;
 
 use mouse::map::Orientation;
+use mouse::map::Vector;
 use mouse::path::Segment;
 
 use crate::simulation::RemoteMouse;
@@ -265,6 +268,7 @@ impl<T: Data> Widget<T> for MazeWidget<T> {
             &into_color(config.maze_color),
         );
 
+        // Draw the maze
         for i in 0..MAZE_WIDTH + 1 {
             for j in 0..MAZE_HEIGHT + 1 {
                 let x = i as f64 * maze_config.cell_width as f64;
@@ -286,12 +290,57 @@ impl<T: Data> Widget<T> for MazeWidget<T> {
                     draw_wall(config, &debug.mouse_debug.map.maze, i, j, true, paint_ctx);
                 }
 
+                // Draw the vertical walls
                 if j <= MAZE_HEIGHT {
                     draw_wall(config, &debug.mouse_debug.map.maze, i, j, false, paint_ctx);
                 }
             }
         }
+
+        // Draw the mouse
+        draw_mouse(
+            paint_ctx,
+            &config.simulation.mouse.mechanical,
+            debug.mouse_debug.orientation,
+            into_color(config.simulated_mouse_color),
+        );
+
+        draw_mouse(
+            paint_ctx,
+            &config.simulation.mouse.mechanical,
+            debug.orientation,
+            into_color(config.real_mouse_color),
+        );
     }
+}
+
+fn draw_mouse(
+    paint_ctx: &mut PaintCtx,
+    mech: &MechanicalConfig,
+    orientation: Orientation,
+    color: Color,
+) {
+    paint_ctx
+        .with_save(|paint_ctx| {
+            paint_ctx.transform(Affine::translate((
+                orientation.position.x as f64,
+                orientation.position.y as f64,
+            )));
+
+            paint_ctx.transform(Affine::rotate(f32::from(orientation.direction) as f64));
+
+            paint_ctx.fill(
+                Rect::new(
+                    mech.front_offset as f64 - mech.length as f64,
+                    -mech.width as f64 / 2.0,
+                    mech.front_offset as f64,
+                    mech.width as f64 / 2.0,
+                ),
+                &color,
+            );
+            Ok(())
+        })
+        .ok();
 }
 
 fn draw_wall(
@@ -378,8 +427,7 @@ impl<T: Data, Rx> Widget<T> for ChannelWidget<T, Rx> {
                 println!("Window Connected!");
                 ctx.request_anim_frame()
             }
-            Event::AnimFrame(delta_nanos) => {
-                println!("{}", delta_nanos);
+            Event::AnimFrame(_delta_nanos) => {
                 let rx = (self.channel)(data, env);
 
                 for d in rx.try_iter() {
