@@ -74,7 +74,7 @@ pub const MOUSE_2020_PATH: PathConfig = PathConfig {
     offset_p: 0.002,
 };
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MouseConfig {
     pub mechanical: MechanicalConfig,
     pub path: PathConfig,
@@ -85,7 +85,7 @@ pub struct MouseConfig {
 /**
  *  Various physical parameters about the mouse
  */
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct MechanicalConfig {
     pub wheel_diameter: f32,
     pub gearbox_ratio: f32,

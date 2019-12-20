@@ -113,7 +113,7 @@ pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) ->
  * are tangent. This makes the movement nice and smooth. However, it does not have to be for eg.
  * turning around in place.
  */
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Segment {
     /**
      * A line segment is defined by start and end points.
@@ -284,7 +284,7 @@ mod tests {
 
 pub const PATH_BUF_LEN: usize = 64;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct PathDebug {
     pub path: Option<ArrayVec<[Segment; PATH_BUF_LEN]>>,
     pub distance_from: Option<f32>,
@@ -294,7 +294,7 @@ pub struct PathDebug {
     pub target_direction: Option<Direction>,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PathConfig {
     pub p: f32,
     pub i: f32,

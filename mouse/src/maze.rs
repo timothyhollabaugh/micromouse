@@ -7,7 +7,7 @@ use core::ops::IndexMut;
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MazeConfig {
     pub cell_width: f32,
     pub wall_width: f32,
@@ -106,6 +106,12 @@ pub enum Edge {
     Unknown,
 }
 
+impl Default for Edge {
+    fn default() -> Edge {
+        Edge::Unknown
+    }
+}
+
 /// An index into a maze. This will uniquely identify any edge.
 /// The indexes are 0-based, but do include the perimeter edges.
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -121,7 +127,7 @@ pub struct EdgeIndex {
 }
 
 /// Keeps track of all the walls in a maze
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Maze {
     horizontal_edges: [[Edge; HEIGHT - 1]; WIDTH],
     vertical_edges: [[Edge; HEIGHT]; WIDTH - 1],

@@ -8,13 +8,13 @@ fn max(f1: f32, f2: f32) -> f32 {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MotionConfig {
     /// The max power change for each wheel before the linear speed is reduced.
     pub max_wheel_delta_power: f32,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct MotionDebug {
     pub target_left_power: f32,
     pub target_right_power: f32,

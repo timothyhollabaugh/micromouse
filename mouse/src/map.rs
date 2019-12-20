@@ -1,5 +1,5 @@
-use core::f32::consts::PI;
 use core::f32::consts::FRAC_PI_2;
+use core::f32::consts::PI;
 use core::fmt::{Error, Formatter};
 use core::ops::Mul;
 
@@ -11,12 +11,12 @@ use crate::maze::EdgeIndex;
 use crate::maze::Maze;
 use crate::maze::MazeConfig;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct MapConfig {
     pub maze: MazeConfig,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct Vector {
     pub x: f32,
     pub y: f32,
@@ -84,7 +84,7 @@ impl core::ops::AddAssign for Vector {
 }
 
 /// A direction wrapped to 0 - 2pi
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 pub struct Direction(f32);
 
 impl Direction {
@@ -151,12 +151,16 @@ impl core::ops::Add for Direction {
 
 impl core::ops::Add<f32> for Direction {
     type Output = Direction;
-    fn add(self, rhs: f32) -> Self::Output { Direction::from(self.0 + rhs)}
+    fn add(self, rhs: f32) -> Self::Output {
+        Direction::from(self.0 + rhs)
+    }
 }
 
 impl core::ops::Add<Direction> for f32 {
     type Output = Direction;
-    fn add(self, rhs: Direction) -> Self::Output { Direction::from(self + rhs.0)}
+    fn add(self, rhs: Direction) -> Self::Output {
+        Direction::from(self + rhs.0)
+    }
 }
 
 impl core::ops::Sub for Direction {
@@ -178,7 +182,7 @@ impl core::ops::Div<f32> for Direction {
 pub const DIRECTION_PI_2: Direction = Direction(core::f32::consts::FRAC_PI_2);
 pub const DIRECTION_PI: Direction = Direction(core::f32::consts::PI);
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Orientation {
     pub position: Vector,
     pub direction: Direction,
@@ -202,7 +206,7 @@ impl Orientation {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct MapDebug {
     pub maze: Maze,
     pub front_edge: Option<EdgeIndex>,
@@ -297,7 +301,6 @@ impl Map {
             .find(|edge_index| {
                 *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
             });
-
 
         let right_distance_orientation = Orientation {
             position: self.orientation.position,

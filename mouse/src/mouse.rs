@@ -11,7 +11,7 @@ use crate::path;
 use crate::path::Path;
 use crate::path::PathDebug;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct MouseDebug {
     pub orientation: Orientation,
     pub path: PathDebug,

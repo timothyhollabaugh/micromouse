@@ -15,7 +15,7 @@ use mouse::mouse::Mouse;
 use mouse::mouse::MouseDebug;
 use mouse::path::PathDebug;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct SimulationDebug {
     pub mouse_debug: MouseDebug,
     pub left_encoder: i32,
@@ -24,7 +24,7 @@ pub struct SimulationDebug {
     pub time: u32,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct SimulationConfig {
     pub mouse: MouseConfig,
     pub max_speed: f32,
@@ -89,7 +89,7 @@ impl<R: Read> RemoteMouse<R> {
     }
 
     pub fn update(&mut self, _config: &SimulationConfig) -> SimulationDebug {
-        self.reader.read_to_string(&mut self.buf);
+        self.reader.read_to_string(&mut self.buf).ok();
 
         if let Some(index) = self.buf.find('\n') {
             let line: String = self.buf.drain(0..(index + 1)).collect();
