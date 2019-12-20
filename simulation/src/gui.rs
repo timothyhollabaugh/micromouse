@@ -31,14 +31,17 @@ use druid::{
 };
 
 use mouse::config::MechanicalConfig;
+
 use mouse::maze::Edge;
 use mouse::maze::EdgeIndex;
 use mouse::maze::Maze;
 use mouse::maze::HEIGHT as MAZE_HEIGHT;
 use mouse::maze::WIDTH as MAZE_WIDTH;
 
+use mouse::map::MapDebug;
 use mouse::map::Orientation;
 use mouse::map::Vector;
+
 use mouse::path::Segment;
 
 use crate::simulation::RemoteMouse;
@@ -287,12 +290,12 @@ impl<T: Data> Widget<T> for MazeWidget<T> {
 
                 // Draw the horizontal walls
                 if i <= MAZE_WIDTH {
-                    draw_wall(config, &debug.mouse_debug.map.maze, i, j, true, paint_ctx);
+                    draw_wall(config, &debug.mouse_debug.map, i, j, true, paint_ctx);
                 }
 
                 // Draw the vertical walls
                 if j <= MAZE_HEIGHT {
-                    draw_wall(config, &debug.mouse_debug.map.maze, i, j, false, paint_ctx);
+                    draw_wall(config, &debug.mouse_debug.map, i, j, false, paint_ctx);
                 }
             }
         }
@@ -345,7 +348,7 @@ fn draw_mouse(
 
 fn draw_wall(
     config: GuiConfig,
-    maze: &Maze,
+    map: &MapDebug,
     i: usize,
     j: usize,
     horizontal: bool,
@@ -358,7 +361,7 @@ fn draw_wall(
         horizontal,
     };
 
-    let wall = maze.get_edge(index);
+    let wall = map.maze.get_edge(index);
 
     let color = match wall {
         // The top/bottom border for horizontal walls
@@ -400,6 +403,16 @@ fn draw_wall(
     };
 
     paint_ctx.fill(rect, &into_color(color));
+
+    if map.front_edge == Some(index) {
+        paint_ctx.stroke(rect, &into_color(config.wall_front_border_color), 8.0);
+    }
+    if map.left_edge == Some(index) {
+        paint_ctx.stroke(rect, &into_color(config.wall_left_border_color), 8.0);
+    }
+    if map.right_edge == Some(index) {
+        paint_ctx.stroke(rect, &into_color(config.wall_right_border_color), 8.0);
+    }
 }
 
 /// A widget that controls the simulation. It handles talking to the simulation through a channel
