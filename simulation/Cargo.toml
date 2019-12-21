@@ -5,13 +5,6 @@ authors = ["Tim <timothyhollabaugh@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rand = "0.6.5"
 mouse = { path = "../mouse" }
 libm = "0.1"
-serialport = "3.3"
-druid = { git = "https://github.com/xi-editor/druid.git", version = "0.4" }
-crossbeam = "0.7"
 serde = "1.0"
-
-[profile.release]
-debug = true
