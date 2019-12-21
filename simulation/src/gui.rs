@@ -1,11 +1,14 @@
+use std::f32::consts::PI;
+use std::fmt::Display;
+use std::io::BufReader;
+use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
-use std::thread;
-
-use std::f32::consts::PI;
-
-use std::io::BufReader;
+use serde::ser;
+use serde::Serialize;
+use serde::Serializer;
 
 use crossbeam::channel;
 
@@ -19,7 +22,9 @@ use druid::widget::Align;
 use druid::widget::Button;
 use druid::widget::Flex;
 use druid::widget::Label;
+use druid::widget::List;
 use druid::widget::Padding;
+use druid::widget::Scroll;
 use druid::widget::WidgetExt;
 use druid::Data;
 use druid::LifeCycle;
@@ -97,14 +102,6 @@ impl GuiConfig {
     }
 }
 
-/*
-fn orientation_transform<T: Transformed + Sized>(orientation: &Orientation, transform: T) -> T {
-    transform
-        .trans(orientation.position.x as f64, orientation.position.y as f64)
-        .rot_rad(orientation.direction.into())
-}
-*/
-
 enum GuiCmd {
     Exit,
 }
@@ -146,22 +143,6 @@ fn run_simulation(
         ));
     }
 }
-
-/*
-fn edge_border(
-    current_edge: EdgeIndex,
-    other_edge: Option<EdgeIndex>,
-    color: [f32; 4],
-) -> Option<Border> {
-    other_edge.and_then(|other_edge| {
-        if current_edge == other_edge {
-            Some(Border { color, radius: 4.0 })
-        } else {
-            None
-        }
-    })
-}
-*/
 
 #[derive(Data, Clone)]
 struct GuiData {
@@ -464,282 +445,3 @@ impl<T: Data, Rx> Widget<T> for ChannelWidget<T, Rx> {
         println!("Painting");
     }
 }
-
-/*
-fn run_gui(
-    debug_rx: mpsc::Receiver<SimulationDebug>,
-    cmd_tx: mpsc::Sender<GuiCmd>,
-    config: &GuiConfig,
-) {
-    let maze_size = (
-        (WIDTH as f32 * config.pixels_per_cell()) as u32,
-        (HEIGHT as f32 * config.pixels_per_cell()) as u32,
-    );
-
-    let ui_width = 600;
-    let ui_height = maze_size.1;
-
-    let window_size = (maze_size.0, maze_size.1 + ui_width);
-
-    let mut window: PistonWindow = WindowSettings::new("Micromouse Simulation", window_size)
-        .exit_on_esc(true)
-        .build()
-        .unwrap();
-
-    let mut ui = UiBuilder::new([ui_width as f64, ui_height as f64]).build();
-
-    ui.fonts.insert_from_file("FiraSans-Regular.ttf");
-
-    let mut text_vertex_data = Vec::new();
-    let (mut glyph_cache, mut text_texture_cache) = {
-        const SCALE_TOLERANCE: f32 = 0.1;
-        const POSITION_TOLERANCE: f32 = 0.1;
-        let cache = GlyphCache::builder()
-            .dimensions(ui_width, ui_height)
-            .scale_tolerance(SCALE_TOLERANCE)
-            .position_tolerance(POSITION_TOLERANCE)
-            .build();
-        let buffer_len = ui_width as usize * ui_height as usize;
-        let init = vec![128; buffer_len];
-        let settings = TextureSettings::new();
-        let factory = &mut window.factory;
-        let texture =
-            G2dTexture::from_memory_alpha(factor, &init, ui_width, ui_height, &settings).unwrap();
-        (cache, texture)
-    };
-
-    //let ids = Ids::new(ui.widget_id_generator());
-
-    let mut app = MouseGui::new();
-
-    let mut texture_context = window.create_texture_context();
-
-    window.set_max_fps(30);
-
-    let mut debugs = Vec::new();
-
-    while let Some(event) = window.next() {
-        if let Some(r) = event.render_args() {
-            let mut new_debugs = debug_rx.try_iter().collect();
-            debugs.append(&mut new_debugs);
-
-            window.draw_2d(&event, |context, graphics, _device| {
-                clear([1.0; 4], graphics);
-
-                let transform = context
-                    .transform
-                    .trans(0.0, (maze_size.1 as f64))
-                    .scale(config.pixels_per_mm as f64, -config.pixels_per_mm as f64);
-
-                if let Some(debug) = debugs.last() {
-                    let cell_width = config.simulation.mouse.map.maze.cell_width;
-                    let wall_width = config.simulation.mouse.map.maze.wall_width;
-
-                    // Draw the posts
-                    for x in 0..WIDTH + 1 {
-                        for y in 0..HEIGHT + 1 {
-                            rectangle(
-                                config.post_color,
-                                [
-                                    (x as f32 * cell_width - wall_width / 2.0) as f64,
-                                    (y as f32 * cell_width - wall_width / 2.0) as f64,
-                                    wall_width as f64,
-                                    wall_width as f64,
-                                ],
-                                transform,
-                                graphics,
-                            )
-                        }
-                    }
-
-                    // Draw the horizontal walls
-                    for x in 0..WIDTH {
-                        for y in 0..HEIGHT + 1 {
-                            let edge_index = EdgeIndex {
-                                x,
-                                y,
-                                horizontal: true,
-                            };
-
-                            let edge = debug
-                                .mouse_debug
-                                .map
-                                .maze
-                                .get_edge(edge_index)
-                                .unwrap_or(&Edge::Closed);
-
-                            let color = match edge {
-                                Edge::Open => config.wall_open_color,
-                                Edge::Closed => config.wall_closed_color,
-                                Edge::Unknown => config.wall_unknown_color,
-                            };
-
-                            let front_edge_border = edge_border(
-                                edge_index,
-                                debug.mouse_debug.map.front_edge,
-                                config.wall_front_border_color,
-                            );
-                            let left_edge_border = edge_border(
-                                edge_index,
-                                debug.mouse_debug.map.left_edge,
-                                config.wall_left_border_color,
-                            );
-                            let right_edge_border = edge_border(
-                                edge_index,
-                                debug.mouse_debug.map.right_edge,
-                                config.wall_right_border_color,
-                            );
-
-                            let edge_border =
-                                front_edge_border.or(left_edge_border).or(right_edge_border);
-
-                            Rectangle::new(color).maybe_border(edge_border).draw(
-                                [
-                                    (x as f32 * cell_width + wall_width / 2.0) as f64,
-                                    (y as f32 * cell_width - wall_width / 2.0) as f64,
-                                    (cell_width - wall_width) as f64,
-                                    wall_width as f64,
-                                ],
-                                &Default::default(),
-                                transform,
-                                graphics,
-                            );
-                        }
-                    }
-
-                    // Draw the vertical walls
-                    for x in 0..WIDTH + 1 {
-                        for y in 0..HEIGHT {
-                            let edge_index = EdgeIndex {
-                                x,
-                                y,
-                                horizontal: false,
-                            };
-                            let edge = debug
-                                .mouse_debug
-                                .map
-                                .maze
-                                .get_edge(edge_index)
-                                .unwrap_or(&Edge::Closed);
-
-                            let color = match edge {
-                                Edge::Open => config.wall_open_color,
-                                Edge::Closed => config.wall_closed_color,
-                                Edge::Unknown => config.wall_unknown_color,
-                            };
-
-                            let front_edge_border = edge_border(
-                                edge_index,
-                                debug.mouse_debug.map.front_edge,
-                                config.wall_front_border_color,
-                            );
-                            let left_edge_border = edge_border(
-                                edge_index,
-                                debug.mouse_debug.map.left_edge,
-                                config.wall_left_border_color,
-                            );
-                            let right_edge_border = edge_border(
-                                edge_index,
-                                debug.mouse_debug.map.right_edge,
-                                config.wall_right_border_color,
-                            );
-
-                            let edge_border =
-                                front_edge_border.or(left_edge_border).or(right_edge_border);
-
-                            Rectangle::new(color).maybe_border(edge_border).draw(
-                                [
-                                    (x as f32 * cell_width - wall_width / 2.0) as f64,
-                                    (y as f32 * cell_width + wall_width / 2.0) as f64,
-                                    wall_width as f64,
-                                    (cell_width - wall_width) as f64,
-                                ],
-                                &Default::default(),
-                                transform,
-                                graphics,
-                            );
-                        }
-                    }
-
-                    // Draw the path
-                    if let Some(path) = &debug.mouse_debug.path.path {
-                        for segment in path {
-                            match segment {
-                                &Segment::Line(l1, l2) => line(
-                                    config.path_color,
-                                    2.0,
-                                    [l1.x as f64, l1.y as f64, l2.x as f64, l2.y as f64],
-                                    transform,
-                                    graphics,
-                                ),
-                                &Segment::Arc(s, c, t) => {
-                                    let v = s - c;
-                                    let r = v.magnitude();
-
-                                    let (t_start, t_end) = if t < 0.0 {
-                                        let t_start = f32::atan2(v.y, v.x);
-                                        let t_end = t_start + t;
-                                        (t_end, t_start)
-                                    } else {
-                                        let t_start = f32::atan2(v.y, v.x);
-                                        let t_end = t_start + t;
-                                        (t_start, t_end)
-                                    };
-
-                                    circle_arc(
-                                        config.path_color,
-                                        2.0,
-                                        t_start as f64,
-                                        t_end as f64,
-                                        [
-                                            (c.x - r) as f64,
-                                            (c.y - r) as f64,
-                                            (r * 2.0) as f64,
-                                            (r * 2.0) as f64,
-                                        ],
-                                        transform,
-                                        graphics,
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Draw the mouse
-                    rectangle(
-                        config.simulated_mouse_color,
-                        [
-                            (-config.simulation.mouse.mechanical.length / 2.0) as f64,
-                            (-config.simulation.mouse.mechanical.width / 2.0) as f64,
-                            config.simulation.mouse.mechanical.length as f64,
-                            config.simulation.mouse.mechanical.width as f64,
-                        ],
-                        orientation_transform(&debug.orientation, transform),
-                        graphics,
-                    );
-
-                    // Draw the mouse
-                    Rectangle::new([0.0, 0.0, 0.0, 0.0])
-                        .border(Border {
-                            color: config.real_mouse_color,
-                            radius: 4.0,
-                        })
-                        .draw(
-                            [
-                                (-config.simulation.mouse.mechanical.length / 2.0) as f64,
-                                (-config.simulation.mouse.mechanical.width / 2.0) as f64,
-                                config.simulation.mouse.mechanical.length as f64,
-                                config.simulation.mouse.mechanical.width as f64,
-                            ],
-                            &Default::default(),
-                            orientation_transform(&debug.mouse_debug.orientation, transform),
-                            graphics,
-                        );
-                }
-            });
-        }
-    }
-
-    cmd_tx.send(GuiCmd::Exit);
-}
-*/

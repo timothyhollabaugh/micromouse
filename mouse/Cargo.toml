@@ -10,6 +10,12 @@ edition = "2018"
 libm = "0.1"
 pid_control = { git = "https://github.com/mbr/pid_control-rs" }
 
+[dependencies.serde]
+version = "1.0"
+default-features = false
+features = ["derive"]
+
 [dependencies.arrayvec]
 version = "0.4"
 default-features = false
+features = ["serde-1"]

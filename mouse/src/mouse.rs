@@ -1,5 +1,7 @@
 use core::f32;
 
+use serde::Serialize;
+
 use crate::config::MouseConfig;
 use crate::map::Map;
 use crate::map::MapDebug;
@@ -11,7 +13,7 @@ use crate::path;
 use crate::path::Path;
 use crate::path::PathDebug;
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct MouseDebug {
     pub orientation: Orientation,
     pub path: PathDebug,

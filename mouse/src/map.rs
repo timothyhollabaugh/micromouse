@@ -3,6 +3,8 @@ use core::f32::consts::PI;
 use core::fmt::{Error, Formatter};
 use core::ops::Mul;
 
+use serde::Serialize;
+
 use libm::F32Ext;
 
 use crate::config::MechanicalConfig;
@@ -16,7 +18,7 @@ pub struct MapConfig {
     pub maze: MazeConfig,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize)]
 pub struct Vector {
     pub x: f32,
     pub y: f32,
@@ -84,7 +86,7 @@ impl core::ops::AddAssign for Vector {
 }
 
 /// A direction wrapped to 0 - 2pi
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Default, Serialize)]
 pub struct Direction(f32);
 
 impl Direction {
@@ -182,7 +184,7 @@ impl core::ops::Div<f32> for Direction {
 pub const DIRECTION_PI_2: Direction = Direction(core::f32::consts::FRAC_PI_2);
 pub const DIRECTION_PI: Direction = Direction(core::f32::consts::PI);
 
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize)]
 pub struct Orientation {
     pub position: Vector,
     pub direction: Direction,
@@ -206,7 +208,7 @@ impl Orientation {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct MapDebug {
     pub maze: Maze,
     pub front_edge: Option<EdgeIndex>,

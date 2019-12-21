@@ -1,8 +1,8 @@
+use std::cmp::min;
 use std::f32;
-
 use std::io::Read;
 
-use std::cmp::min;
+use serde::Serialize;
 
 use mouse::config::MouseConfig;
 use mouse::map::Direction;
@@ -15,7 +15,7 @@ use mouse::mouse::Mouse;
 use mouse::mouse::MouseDebug;
 use mouse::path::PathDebug;
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct SimulationDebug {
     pub mouse_debug: MouseDebug,
     pub left_encoder: i32,
