@@ -173,7 +173,7 @@ impl Simulation {
             255,
         );
 
-        let (left_power, right_power, mouse_debug): (f32, f32, MouseDebug) = Default::default();
+        //let (left_power, right_power, mouse_debug): (f32, f32, MouseDebug) = Default::default();
 
         // Update the state for the next run
         let left_wheel_speed = left_power * config.max_speed;

@@ -67,6 +67,9 @@ const config = {
     wall_closed_color: '#444444',
     wall_unknown_color: '#999999',
     wall_err_color: '#ff0000',
+
+    mouse_int_color: '#00ff00',
+    mouse_ext_color: '#ff0000',
 };
 
 async function run_simulation(config) {
@@ -96,7 +99,13 @@ function Ui(parent, config) {
 
     self.maze_ui = new MazeUi(self.root, config);
 
-    self.update = function(config, debug) { }
+    self.update = function(config, debug) {
+        self.maze_ui.update(config, debug)
+
+        if (debug.time % 5000 === 0) {
+            console.log(debug);
+        }
+    }
 }
 
 function MazeUi(parent, config) {
@@ -112,6 +121,8 @@ function MazeUi(parent, config) {
 
     world.scale(config.px_per_mm);
 
+    let maze = world.group();
+
     self.posts = [];
     self.horizontal_walls = [];
     self.vertical_walls = [];
@@ -121,7 +132,7 @@ function MazeUi(parent, config) {
         self.vertical_walls[i] = [];
         for (let j = 0; j < MAZE_HEIGHT + 1; j++) {
 
-            let post = world.rect(maze_config.wall_width, maze_config.wall_width);
+            let post = maze.rect(maze_config.wall_width, maze_config.wall_width);
             post.move(i * maze_config.cell_width, j * maze_config.cell_width);
             self.posts[i][j] = post;
 
@@ -134,7 +145,7 @@ function MazeUi(parent, config) {
                     wall_color = config.wall_unknown_color;
                 }
 
-                self.horizontal_walls[i][j] = world
+                self.horizontal_walls[i][j] = maze
                     .rect(maze_config.cell_width - maze_config.wall_width, maze_config.wall_width)
                     .move(i * maze_config.cell_width + maze_config.wall_width, j * maze_config.cell_width)
                     .fill(wall_color);
@@ -149,12 +160,58 @@ function MazeUi(parent, config) {
                     wall_color = config.wall_unknown_color;
                 }
 
-                self.vertical_walls[i][j] = world
+                self.vertical_walls[i][j] = maze
                     .rect(maze_config.wall_width, maze_config.cell_width - maze_config.wall_width)
                     .move(i * maze_config.cell_width, j * maze_config.cell_width + maze_config.wall_width)
                     .fill(wall_color);
             }
         }
+    }
+
+    let mech = config.simulation.mouse.mechanical;
+
+    self.mouse_int = world.group()
+    self.mouse_int.rect(mech.length, mech.width).fill(config.mouse_int_color).translate(mech.front_offset - mech.length, -mech.width/2);
+
+    self.mouse_ext = world.group()
+    self.mouse_ext.rect(mech.length, mech.width).fill(config.mouse_ext_color).translate(mech.front_offset - mech.length, -mech.width/2);
+
+    self.update = function (config, debug) {
+        for (let i = 1; i < MAZE_WIDTH; i++) {
+            for (let j = 1; j < MAZE_HEIGHT; j++) {
+                if (i < MAZE_WIDTH) {
+                    let wall = debug.mouse_debug.map.maze.horizontal_edges[i][j - 1];
+                    if (wall === "Closed") {
+                        self.horizontal_walls[i][j].fill(config.wall_closed_color)
+                    } else if (wall === "Open") {
+                        self.horizontal_walls[i][j].fill(config.wall_open_color)
+                    } else if (wall === "Unknown") {
+                        self.horizontal_walls[i][j].fill(config.wall_unknown_color)
+                    } else {
+                        self.horizontal_walls[i][j].fill(config.wall_err_color)
+                    }
+                }
+
+                if (j < MAZE_HEIGHT) {
+                    let wall = debug.mouse_debug.map.maze.vertical_edges[i - 1][j];
+                    if (wall === "Closed") {
+                        self.vertical_walls[i][j].fill(config.wall_closed_color)
+                    } else if (wall === "Open") {
+                        self.vertical_walls[i][j].fill(config.wall_open_color)
+                    } else if (wall === "Unknown") {
+                        self.vertical_walls[i][j].fill(config.wall_unknown_color)
+                    } else {
+                        self.vertical_walls[i][j].fill(config.wall_err_color)
+                    }
+                }
+            }
+        }
+
+        let orientation_int = debug.mouse_debug.orientation;
+        self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
+
+        let orientation_ext = debug.orientation;
+        self.mouse_ext.rotate(orientation_ext.direction * 180 / Math.PI).translate(orientation_ext.position.x, orientation_ext.position.y);
     }
 }
 
