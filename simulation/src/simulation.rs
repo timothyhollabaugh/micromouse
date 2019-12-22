@@ -2,6 +2,7 @@ use std::cmp::min;
 use std::f32;
 use std::io::Read;
 
+use serde::Deserialize;
 use serde::Serialize;
 
 use mouse::config::MouseConfig;
@@ -15,7 +16,7 @@ use mouse::mouse::Mouse;
 use mouse::mouse::MouseDebug;
 use mouse::path::PathDebug;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SimulationDebug {
     pub mouse_debug: MouseDebug,
     pub left_encoder: i32,
@@ -24,7 +25,7 @@ pub struct SimulationDebug {
     pub time: u32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SimulationConfig {
     pub mouse: MouseConfig,
     pub max_speed: f32,
@@ -145,7 +146,7 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    pub fn new(config: &SimulationConfig, time: u32) -> Simulation {
+    pub fn new(config: &SimulationConfig) -> Simulation {
         Simulation {
             mouse: Mouse::new(&config.mouse, config.initial_orientation, 0, 0, 0),
             orientation: config.initial_orientation,
@@ -154,7 +155,7 @@ impl Simulation {
             right_encoder: 0,
             last_left_wheel_speed: 0.0,
             last_right_wheel_speed: 0.0,
-            time,
+            time: 0,
         }
     }
 
@@ -169,6 +170,8 @@ impl Simulation {
             255,
             255,
         );
+
+        let (left_power, right_power, mouse_debug): (f32, f32, MouseDebug) = Default::default();
 
         // Collect debug info from this run
         let debug = SimulationDebug {

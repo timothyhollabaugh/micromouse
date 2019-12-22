@@ -3,6 +3,7 @@ use core::f32::consts::PI;
 use core::fmt::{Error, Formatter};
 use core::ops::Mul;
 
+use serde::Deserialize;
 use serde::Serialize;
 
 use libm::F32Ext;
@@ -13,12 +14,12 @@ use crate::maze::EdgeIndex;
 use crate::maze::Maze;
 use crate::maze::MazeConfig;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
     pub maze: MazeConfig,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Vector {
     pub x: f32,
     pub y: f32,
@@ -86,7 +87,7 @@ impl core::ops::AddAssign for Vector {
 }
 
 /// A direction wrapped to 0 - 2pi
-#[derive(Copy, Clone, Debug, PartialEq, Default, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct Direction(f32);
 
 impl Direction {
@@ -184,7 +185,7 @@ impl core::ops::Div<f32> for Direction {
 pub const DIRECTION_PI_2: Direction = Direction(core::f32::consts::FRAC_PI_2);
 pub const DIRECTION_PI: Direction = Direction(core::f32::consts::PI);
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Orientation {
     pub position: Vector,
     pub direction: Direction,
@@ -208,7 +209,7 @@ impl Orientation {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     pub maze: Maze,
     pub front_edge: Option<EdgeIndex>,
@@ -287,6 +288,7 @@ impl Map {
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
+        /*
         let front_edge = maze_config
             .edge_projection_iter(self.orientation)
             .find(|edge_index| {
@@ -314,12 +316,13 @@ impl Map {
             .find(|edge_index| {
                 *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
             });
+            */
 
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_edge,
-            left_edge,
-            right_edge,
+            front_edge: None,
+            left_edge: None,
+            right_edge: None,
         };
 
         (self.orientation, debug)

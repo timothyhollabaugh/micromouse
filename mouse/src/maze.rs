@@ -1,6 +1,7 @@
 use core::ops::Index;
 use core::ops::IndexMut;
 
+use serde::Deserialize;
 use serde::Serialize;
 
 use crate::map::MapConfig;
@@ -10,7 +11,7 @@ use crate::map::Vector;
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct MazeConfig {
     pub cell_width: f32,
     pub wall_width: f32,
@@ -102,7 +103,7 @@ impl<'a> Iterator for EdgeProjectionIterator<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Edge {
     Open,
     Closed,
@@ -117,7 +118,7 @@ impl Default for Edge {
 
 /// An index into a maze. This will uniquely identify any edge.
 /// The indexes are 0-based, but do include the perimeter edges.
-#[derive(Debug, Copy, Clone, PartialEq, Serialize)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct EdgeIndex {
     /// The x index of the edge
     pub x: usize,
@@ -130,7 +131,7 @@ pub struct EdgeIndex {
 }
 
 /// Keeps track of all the walls in a maze
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Maze {
     horizontal_edges: [[Edge; HEIGHT - 1]; WIDTH],
     vertical_edges: [[Edge; HEIGHT]; WIDTH - 1],

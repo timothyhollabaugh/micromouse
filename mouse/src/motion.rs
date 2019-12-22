@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use serde::Serialize;
 
 use libm::F32Ext;
@@ -10,13 +11,13 @@ fn max(f1: f32, f2: f32) -> f32 {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionConfig {
     /// The max power change for each wheel before the linear speed is reduced.
     pub max_wheel_delta_power: f32,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionDebug {
     pub target_left_power: f32,
     pub target_right_power: f32,
