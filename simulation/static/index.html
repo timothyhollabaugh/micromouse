@@ -7,94 +7,9 @@
 <body>
 
 <h1>Micromouse simulation</h1>
+<p>Time:</p>
+<p id="time"></p>
 <!-- Note the usage of `type=module` here as this is an ES6 module -->
-<script type="module">
-    // Use ES module import syntax to import functionality from the module
-    // that we have compiled.
-    //
-    // Note that the `default` import is an initialization function which
-    // will "boot" the module and make it ready to use. Currently browsers
-    // don't support natively imported WebAssembly as an ES module, but
-    // eventually the manual initialization won't be required!
-    import init, { JsSimulation } from './pkg/simulation.js';
-
-    async function run() {
-        // First up we need to actually load the wasm file, so we use the
-        // default export to inform it where the wasm file is located on the
-        // server, and then we wait on the returned promise to wait for the
-        // wasm to be loaded.
-        // It may look like this: `await init('./pkg/without_a_bundler_bg.wasm');`,
-        // but there is also a handy default inside `init` function, which uses
-        // `import.meta` to locate the wasm file relatively to js file
-        //
-        // Note that instead of a string here you can also pass in an instance
-        // of `WebAssembly.Module` which allows you to compile your own module.
-        // Also note that the promise, when resolved, yields the wasm module's
-        // exports which is the same as importing the `*_bg` module in other
-        // modes
-        await init();
-
-        const MOUSE_2019_MECH = {
-            wheel_diameter: 32.0,
-                gearbox_ratio: 75.0,
-                ticks_per_rev: 12.0,
-                wheelbase: 74.0,
-                width: 64.0,
-                length: 90.0,
-                front_offset: 48.0,
-        };
-
-        const MOUSE_SIM_PATH = {
-            p: 10.0,
-                i: 0.0,
-                d: 0.0,
-                offset_p: 0.002,
-        };
-
-        const MOUSE_MAZE_MAP = {
-            maze: {
-                cell_width: 180.0,
-                    wall_width: 20.0,
-            },
-        };
-
-        const MOUSE_2020_MOTION = {
-            max_wheel_delta_power: 10000.0,
-        };
-
-        const config ={
-            mouse: {
-                mechanical: MOUSE_2019_MECH,
-                path: MOUSE_SIM_PATH,
-                map: MOUSE_MAZE_MAP,
-                motion: MOUSE_2020_MOTION,
-            },
-
-            max_speed: 500.0,
-
-            initial_orientation: {
-                position: {
-                    x: 1000.0,
-                    y: 1000.0,
-                },
-                direction: 0.0,
-            },
-
-            millis_per_step: 10,
-            max_wheel_accel: 60000.0,
-
-        };
-
-        // And afterwards we can use all the functionality defined in wasm.
-        let simulation = new JsSimulation(config);
-
-        for(let i = 0; i < 50; i++) {
-            let debug = simulation.update(config);
-            console.log(debug);
-        }
-    }
-
-    run();
-</script>
+<script type="module" src="ui.js"></script>
 </body>
 </html>
