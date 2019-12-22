@@ -33,8 +33,7 @@ impl JsSimulation {
     /// The config argument is a SimulationConfig,
     /// and the return is a SimulationDebug.
     pub fn update(&mut self, config: JsValue) -> JsValue {
-        //let config: SimulationConfig = config.into_serde().unwrap();
-        let config = SimulationConfig::default();
+        let config: SimulationConfig = config.into_serde().unwrap();
         let debug = self.simulation.update(&config);
         JsValue::from_serde(&debug).unwrap()
     }

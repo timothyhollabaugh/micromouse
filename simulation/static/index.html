@@ -87,8 +87,11 @@
 
         // And afterwards we can use all the functionality defined in wasm.
         let simulation = new JsSimulation(config);
-        let debug = simulation.update(config);
-        console.log(debug);
+
+        for(let i = 0; i < 50; i++) {
+            let debug = simulation.update(config);
+            console.log(debug);
+        }
     }
 
     run();

@@ -23,6 +23,7 @@ pub struct SimulationDebug {
     pub right_encoder: i32,
     pub orientation: Orientation,
     pub time: u32,
+    pub config: SimulationConfig,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -85,6 +86,7 @@ impl<R: Read> RemoteMouse<R> {
                 left_encoder: 0,
                 right_encoder: 0,
                 time: 0,
+                config: config.clone(),
             },
         }
     }
@@ -173,15 +175,6 @@ impl Simulation {
 
         let (left_power, right_power, mouse_debug): (f32, f32, MouseDebug) = Default::default();
 
-        // Collect debug info from this run
-        let debug = SimulationDebug {
-            mouse_debug,
-            left_encoder: self.left_encoder,
-            right_encoder: self.right_encoder,
-            orientation: self.orientation,
-            time: self.time,
-        };
-
         // Update the state for the next run
         let left_wheel_speed = left_power * config.max_speed;
         let right_wheel_speed = right_power * config.max_speed;
@@ -234,6 +227,16 @@ impl Simulation {
             delta_left_ground,
             delta_right_ground,
         );
+
+        // Collect debug info from this run
+        let debug = SimulationDebug {
+            mouse_debug,
+            left_encoder: self.left_encoder,
+            right_encoder: self.right_encoder,
+            orientation: self.orientation,
+            time: self.time,
+            config: config.clone(),
+        };
 
         debug
     }
