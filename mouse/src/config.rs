@@ -1,18 +1,29 @@
 use core::f32;
 
+use serde::Deserialize;
+use serde::Serialize;
+
 use crate::map::MapConfig;
+use crate::maze::MazeConfig;
+use crate::motion::MotionConfig;
 use crate::path::PathConfig;
 
 pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
-    cell_width: 180.0,
-    wall_width: 20.0,
+    maze: MazeConfig {
+        cell_width: 180.0,
+        wall_width: 20.0,
+    },
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
-    p: 5.0,
+    p: 10.0,
     i: 0.0,
     d: 0.0,
-    offset_p: 0.1,
+    offset_p: 0.002,
+};
+
+pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
+    max_wheel_delta_power: 10000.0,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
@@ -66,16 +77,18 @@ pub const MOUSE_2020_PATH: PathConfig = PathConfig {
     offset_p: 0.002,
 };
 
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MouseConfig {
     pub mechanical: MechanicalConfig,
     pub path: PathConfig,
     pub map: MapConfig,
+    pub motion: MotionConfig,
 }
 
 /**
  *  Various physical parameters about the mouse
  */
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MechanicalConfig {
     pub wheel_diameter: f32,
     pub gearbox_ratio: f32,

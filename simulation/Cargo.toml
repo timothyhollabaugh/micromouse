@@ -4,11 +4,16 @@ version = "0.1.0"
 authors = ["Tim <timothyhollabaugh@gmail.com>"]
 edition = "2018"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
 [dependencies]
-piston_window = "0.105.0"
-rand = "0.6.5"
 mouse = { path = "../mouse" }
 libm = "0.1"
-serialport = "3.3"
-plotters = "0.2"
-image = "0.22"
+serde = "1.0"
+wasm-bindgen = { versione = "0.2", features = ["serde-serialize"] }
+console_error_panic_hook = { version = "0.1", optional = true }
+

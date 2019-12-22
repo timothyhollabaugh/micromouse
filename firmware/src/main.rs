@@ -253,11 +253,21 @@ fn main() -> ! {
             green_led.toggle().ok();
 
             if running {
-                let left = left_encoder.count();
-                let right = right_encoder.count();
+                let left_encoder_count = left_encoder.count();
+                let right_encoder_count = right_encoder.count();
+                let left_distance_range = left_distance.range();
+                let front_distance_range = front_distance.range();
+                let right_distance_range = right_distance.range();
 
-                let (left_power, right_power, debug) =
-                    mouse.update(&config, now, left, right);
+                let (left_power, right_power, debug) = mouse.update(
+                    &config,
+                    now,
+                    left_encoder_count,
+                    right_encoder_count,
+                    left_distance_range,
+                    front_distance_range,
+                    right_distance_range,
+                );
 
                 right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
                 left_motor.change_power((left_power * 10000.0 / 6.0) as i32);

@@ -1,22 +1,31 @@
 use core::f32;
 
+use serde::Deserialize;
+use serde::Serialize;
+
 use crate::config::MouseConfig;
 use crate::map::Map;
+use crate::map::MapDebug;
 use crate::map::Orientation;
 use crate::map::Vector;
+use crate::motion::Motion;
+use crate::motion::MotionDebug;
 use crate::path;
 use crate::path::Path;
 use crate::path::PathDebug;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MouseDebug {
     pub orientation: Orientation,
-    pub path_debug: PathDebug,
+    pub path: PathDebug,
+    pub map: MapDebug,
+    pub motion: MotionDebug,
 }
 
 pub struct Mouse {
     map: Map,
     path: Path,
+    motion: Motion,
     done: bool,
 }
 
@@ -33,6 +42,7 @@ impl Mouse {
         Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
+            motion: Motion::new(&config.motion, time),
             done: true,
         }
     }
@@ -43,23 +53,33 @@ impl Mouse {
         time: u32,
         left_encoder: i32,
         right_encoder: i32,
+        left_distance: u8,
+        front_distance: u8,
+        right_distance: u8,
     ) -> (f32, f32, MouseDebug) {
         if self.done {
             self.path
                 .add_segments(&path::rounded_rectangle(
                     Vector {
-                        x: 1000.0,
-                        y: 1000.0,
+                        x: 1170.0,
+                        y: 1350.0,
                     },
-                    700.0,
-                    400.0,
-                    190.0,
+                    540.0,
+                    180.0,
+                    80.0,
                 ))
                 .ok();
         }
-        let orientation = self
-            .map
-            .update(&config.mechanical, left_encoder, right_encoder);
+
+        let (orientation, map_debug) = self.map.update(
+            &config.mechanical,
+            &config.map.maze,
+            left_encoder,
+            right_encoder,
+            left_distance,
+            front_distance,
+            right_distance,
+        );
 
         let (angular_power, done, path_debug) = self.path.update(&config.path, time, orientation);
 
@@ -67,12 +87,15 @@ impl Mouse {
 
         let linear_power = if done { 0.0 } else { 1.0 };
 
-        let left_power = linear_power - angular_power;
-        let right_power = linear_power + angular_power;
+        let (left_power, right_power, motion_debug) =
+            self.motion
+                .update(&config.motion, time, linear_power, angular_power);
 
         let debug = MouseDebug {
             orientation,
-            path_debug,
+            path: path_debug,
+            map: map_debug,
+            motion: motion_debug,
         };
 
         (left_power, right_power, debug)
