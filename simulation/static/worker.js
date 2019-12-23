@@ -20,19 +20,28 @@ let simulation = null;
 let config = null;
 let interval_id = null;
 
+function reset_simulation() {
+    simulation = new wasm_bindgen.JsSimulation(config);
+}
+
+function run_simulation() {
+    if (simulation && inited) {
+        let debug = simulation.update(config);
+        self.postMessage(debug);
+    }
+}
+
 self.onmessage = function (event) {
+    console.log(event.data);
     if (event.data.name === 'config') {
         config = event.data.data;
     } else if (event.data.name === 'start') {
         if (config && !interval_id) {
             interval_id = setInterval(function() {
                 if (!simulation && inited && config !== null) {
-                    simulation = new wasm_bindgen.JsSimulation(config);
+                    reset_simulation();
                 }
-                if (simulation && inited) {
-                    let debug = simulation.update(config);
-                    self.postMessage(debug);
-                }
+                run_simulation();
             }, config.millis_per_step)
         }
     } else if (event.data.name === 'stop') {
@@ -40,5 +49,9 @@ self.onmessage = function (event) {
             clearInterval(interval_id);
             interval_id = null;
         }
+    } else if (event.data.name === 'reset') {
+        console.log('reset');
+        reset_simulation();
+        run_simulation()
     }
 };

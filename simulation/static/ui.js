@@ -147,21 +147,29 @@ function SimulationUi(parent, send, config) {
     self.time = document.createElement('span');
     self.root.append(self.time);
 
-    self.button = document.createElement('button');
-    self.button.className = 'button is-primary is-pulled-right';
-    self.button.innerText = "Start";
-    self.button.onclick = function() {
+    self.reset = document.createElement('button');
+    self.reset.className ='button is-danger is-pulled-right';
+    self.reset.innerText = "Reset";
+    self.reset.onclick = function() {
+        send({name: 'reset', data: {}})
+    };
+    self.root.append(self.reset);
+
+    self.startstop = document.createElement('button');
+    self.startstop.className = 'button is-primary is-pulled-right';
+    self.startstop.innerText = "Start";
+    self.startstop.onclick = function() {
         if (self.running) {
             self.running = false;
-            self.button.innerText = "Stop";
+            self.startstop.innerText = "Start";
             send({name: 'stop', data: {}});
         } else {
             self.running = true;
-            self.button.innerText = "Start";
+            self.startstop.innerText = "Stop";
             send({name: 'start', data: {}});
         }
     };
-    self.root.append(self.button);
+    self.root.append(self.startstop);
 
     self.update = function(config, debug) {
         self.time.innerText = debug.time;
