@@ -5,7 +5,7 @@
 // will "boot" the module and make it ready to use. Currently browsers
 // don't support natively imported WebAssembly as an ES module, but
 // eventually the manual initialization won't be required!
-import init, { JsSimulation } from './pkg/simulation.js';
+//import init, { JsSimulation } from './pkg/simulation.js';
 
 const MAZE_WIDTH = 16;
 const MAZE_HEIGHT = 16;
@@ -72,26 +72,38 @@ const config = {
     mouse_ext_color: '#ff0000',
 };
 
-async function run_simulation(config) {
-    await init();
+function run_worker(config) {
+    let debug = null;
+    if (window.Worker) {
+        let worker = new Worker('worker.js');
+        worker.postMessage({name: 'config', data: config.simulation});
+        worker.onmessage = function (event) {
+            debug = event.data;
+        };
 
-    // And afterwards we can use all the functionality defined in wasm.
-    let simulation = new JsSimulation(config.simulation);
+        let root = document.getElementById('ui');
 
-    let time_p = document.getElementById("time");
+        let ui = new Ui(root, function(message) {
+            worker.postMessage(message);
+        }, config);
 
-    let root = document.getElementById('ui');
+        let last_time = 0;
 
-    let ui = new Ui(root, config);
+        function simulate(time) {
+            if (time - last_time > 33 ){
+                if (debug) {
+                    ui.update(config, debug);
+                }
+                last_time = time;
+            }
+            requestAnimationFrame(simulate);
+        }
 
-    setInterval(function() {
-        let debug = simulation.update(config.simulation);
-        time_p.innerText = debug.time;
-        ui.update(config, debug);
-    }, config.millis_per_step);
+        requestAnimationFrame(simulate);
+    }
 }
 
-function Ui(parent, config) {
+function Ui(parent, send, config) {
     let self = this;
 
     self.root = document.createElement('div');
@@ -100,23 +112,59 @@ function Ui(parent, config) {
 
     self.maze_div = document.createElement('div');
     self.maze_div.className = 'column is-narrow';
-    self.maze_ui = new MazeUi(self.maze_div, config);
     self.root.append(self.maze_div);
+
+    self.simulation_ui = new SimulationUi(self.maze_div, send, config);
+    self.maze_ui = new MazeUi(self.maze_div, config);
 
     self.debug_div = document.createElement('div');
     self.debug_div.className = 'column is-narrow';
     self.debug_div.style.width = '25em';
-    self.debug_ui = new DebugUi(self.debug_div, config);
     self.root.append(self.debug_div);
 
+    self.debug_ui = new DebugUi(self.debug_div, config);
 
     self.update = function(config, debug) {
+        self.simulation_ui.update(config, debug);
         self.maze_ui.update(config, debug);
         self.debug_ui.update(config, debug);
 
         if (debug.time % 5000 === 0) {
             console.log(debug);
         }
+    }
+}
+
+function SimulationUi(parent, send, config) {
+    let self = this;
+
+    self.root = document.createElement('div');
+    self.root.className += 'box';
+    parent.append(self.root);
+
+    self.running = false;
+
+    self.time = document.createElement('span');
+    self.root.append(self.time);
+
+    self.button = document.createElement('button');
+    self.button.className = 'button is-primary is-pulled-right';
+    self.button.innerText = "Start";
+    self.button.onclick = function() {
+        if (self.running) {
+            self.running = false;
+            self.button.innerText = "Stop";
+            send({name: 'stop', data: {}});
+        } else {
+            self.running = true;
+            self.button.innerText = "Start";
+            send({name: 'start', data: {}});
+        }
+    };
+    self.root.append(self.button);
+
+    self.update = function(config, debug) {
+        self.time.innerText = debug.time;
     }
 }
 
@@ -485,4 +533,5 @@ function run_render3d() {
     animate();
 }
 
-run_simulation(config);
+//run_simulation(config);
+run_worker(config);
