@@ -61,7 +61,7 @@ const config = {
         max_wheel_accel: 60000.0,
     },
 
-    px_per_mm: 0.25,
+    px_per_mm: 0.2,
 
     wall_open_color: '#ffffff',
     wall_closed_color: '#444444',
@@ -95,12 +95,24 @@ function Ui(parent, config) {
     let self = this;
 
     self.root = document.createElement('div');
+    self.root.className = 'columns';
     parent.append(self.root);
 
-    self.maze_ui = new MazeUi(self.root, config);
+    self.maze_div = document.createElement('div');
+    self.maze_div.className = 'column is-narrow';
+    self.maze_ui = new MazeUi(self.maze_div, config);
+    self.root.append(self.maze_div);
+
+    self.debug_div = document.createElement('div');
+    self.debug_div.className = 'column is-narrow';
+    self.debug_div.style.width = '25em';
+    self.debug_ui = new DebugUi(self.debug_div, config);
+    self.root.append(self.debug_div);
+
 
     self.update = function(config, debug) {
-        self.maze_ui.update(config, debug)
+        self.maze_ui.update(config, debug);
+        self.debug_ui.update(config, debug);
 
         if (debug.time % 5000 === 0) {
             console.log(debug);
@@ -108,8 +120,114 @@ function Ui(parent, config) {
     }
 }
 
+function DebugUi(parent, config) {
+    let self = this;
+
+    self.root = document.createElement('div');
+    self.root.className += 'box';
+    parent.append(self.root);
+
+    self.node = new Node('debug');
+    self.root.append(self.node.root);
+
+    self.update = function(config, debug) {
+        self.node.update(debug);
+    }
+}
+
+function Node(key) {
+    let self = this;
+
+    self.root = document.createElement('div');
+
+    self.header = document.createElement('div');
+    self.root.append(self.header);
+
+    self.name = document.createElement('span');
+    self.name.innerText = key;
+    self.header.append(self.name);
+
+    self.value = document.createElement('span');
+    self.value.className += 'is-pulled-right';
+    self.value.style.fontFamily = 'monospace';
+    self.value.style.width = '6em';
+    self.header.append(self.value);
+
+    self.nodes = {};
+    self.data = null;
+    self.open = false;
+
+    self.update = function(data) {
+        if (data !== null && typeof data === 'object') {
+            if (!self.header.onclick) {
+                self.header.onclick = function() {
+                    if (self.open) {
+                        self.open = false;
+                        self.icon.innerHTML = feather.icons['chevron-right'].toSvg({height: '1em'});
+                    } else {
+                        self.open = true;
+                        self.icon.innerHTML = feather.icons['chevron-down'].toSvg({height: '1em'});
+                    }
+                };
+                self.header.style.cursor = 'pointer';
+            }
+            if (!self.icon) {
+                self.icon = document.createElement('span');
+                self.icon.innerHTML = feather.icons['chevron-right'].toSvg({height: '1em'});
+                self.header.prepend(self.icon);
+            }
+            if (self.open) {
+                if (!self.children) {
+                    self.children = document.createElement('div');
+                    self.children.style.paddingLeft = '0.5em';
+                    self.children.style.marginLeft = '0.5em';
+                    self.children.style.borderLeft = 'solid black 1px';
+                    self.root.append(self.children);
+                }
+                for (let key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        if (self.nodes[key]) {
+                            self.nodes[key].update(data[key])
+                        } else {
+                            let node = new Node(key);
+                            node.update(data[key]);
+                            self.nodes[key] = node;
+                            self.children.append(node.root);
+                        }
+                    }
+                }
+            } else {
+                if (self.children) {
+                    self.children.remove();
+                    self.children = undefined;
+                }
+
+                if (self.nodes !== {}) {
+                    self.nodes = {};
+                }
+
+                if (self.data) {
+                    self.data = null;
+                }
+            }
+            self.value.innerText = Object.keys(data).length + " items";
+        } else {
+            if (data !== self.data) {
+                if (typeof data === 'number') {
+                    self.value.innerText = math.format(data, {precision: 4, upperExp: 4});
+                } else if (typeof data === 'string') {
+                    self.value.innerText = data;
+                } else {
+                    self.value.innerText = String(data);
+                }
+                self.data = data;
+            }
+        }
+    };
+}
+
 function MazeUi(parent, config) {
-    self = this;
+    let self = this;
 
     const maze_config = config.simulation.mouse.map.maze;
     const maze_width_mm = MAZE_WIDTH * maze_config.cell_width + maze_config.wall_width;
