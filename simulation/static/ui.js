@@ -139,6 +139,7 @@ function Ui(parent, state) {
 
     self.simulation_ui = new SimulationUi(self.maze_div, state);
     self.maze_ui = new MazeUi(self.maze_div, state);
+    self.graph_ui = new GraphUi(self.maze_div, state);
 
     self.debug_div = document.createElement('div');
     self.debug_div.className = 'column is-narrow';
@@ -150,6 +151,7 @@ function Ui(parent, state) {
     self.update = function(state) {
         self.simulation_ui.update(state);
         self.maze_ui.update(state);
+        self.graph_ui.update(state);
         self.debug_ui.update(state);
     }
 }
@@ -409,6 +411,59 @@ function Node(key) {
             }
         }
     };
+}
+
+function GraphUi(parent, state) {
+    let self = this;
+
+    let root = div();
+    parent.append(root.el);
+
+    let graph = new Graph(root.el);
+
+    self.update = function(state) {
+        graph.update(1000, 1000, 2000, state, function(state, index) {
+            return state.debugs[index].mouse_debug.orientation.position.x;
+        })
+    }
+
+}
+
+function Graph(parent) {
+    let self = this;
+
+    const WIDTH = 1500;
+    const HEIGHT = 500;
+
+    let draw = SVG(parent).size(WIDTH, HEIGHT);
+    let line = draw.polyline([]).fill('none').stroke({width: 2});
+
+    self.update = function(range, min, max, state, f) {
+        let points = [];
+
+        let center = state.index;
+
+        if (center < 0) {
+            center = state.debugs.length - range/2;
+        }
+
+        if (center < range/2) {
+            center = range/2;
+        }
+
+        let start = center - range/2;
+
+        for (let i = 0; i < range; i ++) {
+            let index = i + start;
+            if (index < state.debugs.length) {
+                let value = f(state, index) - min;
+                points[i] = [i * WIDTH / range, value * HEIGHT / (max - min)];
+            }
+        }
+
+        line.clear();
+        line.plot(points);
+    }
 }
 
 function MazeUi(parent, state) {
