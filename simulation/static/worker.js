@@ -32,7 +32,6 @@ function run_simulation() {
 }
 
 self.onmessage = function (event) {
-    console.log(event.data);
     if (event.data.name === 'config') {
         config = event.data.data;
     } else if (event.data.name === 'start') {
@@ -50,7 +49,6 @@ self.onmessage = function (event) {
             interval_id = null;
         }
     } else if (event.data.name === 'reset') {
-        console.log('reset');
         reset_simulation();
         run_simulation()
     }

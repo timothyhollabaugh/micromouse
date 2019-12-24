@@ -1,11 +1,4 @@
-// Use ES module import syntax to import functionality from the module
-// that we have compiled.
-//
-// Note that the `default` import is an initialization function which
-// will "boot" the module and make it ready to use. Currently browsers
-// don't support natively imported WebAssembly as an ES module, but
-// eventually the manual initialization won't be required!
-//import init, { JsSimulation } from './pkg/simulation.js';
+console.log("Starting");
 
 const MAZE_WIDTH = 16;
 const MAZE_HEIGHT = 16;
@@ -72,28 +65,58 @@ const config = {
     mouse_ext_color: '#ff0000',
 };
 
+function UiState(send) {
+    let self = this;
+
+    self.config = config;
+    self.debugs = [];
+    self.index = -1;
+    self.debug = function() {
+        if (self.index < 0) {
+            return self.debugs[self.debugs.length-1]
+        } else {
+            return self.debugs[self.index]
+        }
+    };
+    self.running = false;
+    self.start = function() {
+        if (!self.running) {
+            send({name: 'start', data: {}});
+            self.running = true;
+        }
+    };
+    self.stop = function() {
+        if (self.running) {
+            send({name: 'stop', data: {}});
+            self.running = false;
+        }
+    };
+    self.reset = function() {
+        send({name: 'reset', data: {}});
+        self.debugs = [];
+    };
+}
+
 function run_worker(config) {
-    let debug = null;
     if (window.Worker) {
         let worker = new Worker('worker.js');
         worker.postMessage({name: 'config', data: config.simulation});
+
+        let ui_state = new UiState(function(m) { worker.postMessage(m) } );
+
         worker.onmessage = function (event) {
-            debug = event.data;
+            ui_state.debugs.push(event.data);
         };
 
         let root = document.getElementById('ui');
 
-        let ui = new Ui(root, function(message) {
-            worker.postMessage(message);
-        }, config);
+        let ui = new Ui(root, ui_state);
 
         let last_time = 0;
 
         function simulate(time) {
             if (time - last_time > 33 ){
-                if (debug) {
-                    ui.update(config, debug);
-                }
+                ui.update(ui_state);
                 last_time = time;
             }
             requestAnimationFrame(simulate);
@@ -103,91 +126,195 @@ function run_worker(config) {
     }
 }
 
-function Ui(parent, send, config) {
+function Ui(parent, state) {
     let self = this;
 
     self.root = document.createElement('div');
-    self.root.className = 'columns';
+    self.root.className = 'columns container';
     parent.append(self.root);
 
     self.maze_div = document.createElement('div');
     self.maze_div.className = 'column is-narrow';
     self.root.append(self.maze_div);
 
-    self.simulation_ui = new SimulationUi(self.maze_div, send, config);
-    self.maze_ui = new MazeUi(self.maze_div, config);
+    self.simulation_ui = new SimulationUi(self.maze_div, state);
+    self.maze_ui = new MazeUi(self.maze_div, state);
 
     self.debug_div = document.createElement('div');
     self.debug_div.className = 'column is-narrow';
     self.debug_div.style.width = '25em';
     self.root.append(self.debug_div);
 
-    self.debug_ui = new DebugUi(self.debug_div, config);
+    self.debug_ui = new DebugUi(self.debug_div, state);
 
-    self.update = function(config, debug) {
-        self.simulation_ui.update(config, debug);
-        self.maze_ui.update(config, debug);
-        self.debug_ui.update(config, debug);
-
-        if (debug.time % 5000 === 0) {
-            console.log(debug);
-        }
+    self.update = function(state) {
+        self.simulation_ui.update(state);
+        self.maze_ui.update(state);
+        self.debug_ui.update(state);
     }
 }
 
-function SimulationUi(parent, send, config) {
+function SimulationUi(parent, state) {
     let self = this;
 
-    self.root = document.createElement('div');
-    self.root.className += 'box';
-    parent.append(self.root);
+    let controls = fieldset().classes('control field has-addons').disabled(true).children([
+        p().classes('control').children([
+            input('number')
+                .classes('input')
+                .style('text-align', 'right')
+                .style('fontFamily', 'monospace')
+                .oninput(function(){
+                    if (!state.running && this.el.value > 0 && this.el.value < state.debugs.length) {
+                        state.index = Number(this.el.value);
+                    }
+                })
+                .onupdate(function(state) {
+                    if (state.running) {
+                        this.value(state.debugs.length);
+                    }
+                })
+        ]),
+        p().classes('control').children([
+            button()
+                .classes('button is-static')
+                .text('/ 0')
+                .style('fontFamily', 'monospace')
+                .onupdate(function(state) {
+                    this.text('/ ' + (state.debugs.length-1))
+                })
+        ])
+    ]);
 
-    self.running = false;
+    let root = div().classes('field is-grouped').children([
+        controls,
+        button().classes('control button is-primary').text('Start').onclick(function () {
+            if (state.running) {
+                state.stop();
+                controls.disabled(false);
+                this.text('Start');
+            } else {
+                state.start();
+                state.index = -1;
+                controls.disabled(true);
+                this.text('Stop');
+            }
+        }),
+        button().classes('control button is-danger').text('Reset').onclick(function() {
+            state.reset()
+        }),
+    ]);
 
-    self.time = document.createElement('span');
-    self.root.append(self.time);
+    parent.append(root.el);
 
-    self.reset = document.createElement('button');
-    self.reset.className ='button is-danger is-pulled-right';
-    self.reset.innerText = "Reset";
-    self.reset.onclick = function() {
-        send({name: 'reset', data: {}})
+    self.update = function(state) {
+        root.update(state);
+    }
+}
+
+function p() {
+    return new El('p');
+}
+
+function div() {
+    return new El('div');
+}
+
+function button() {
+    return new El('button');
+}
+
+function fieldset() {
+    return new El('fieldset');
+}
+
+function input(type) {
+    let input = new El('input');
+    input.el.type = type;
+    input.value = function(value) {
+        input.el.value = value;
     };
-    self.root.append(self.reset);
+    input.min = function(min) {
+        input.el.min = min;
+    };
+    input.max = function(max) {
+        input.el.max = max;
+    };
+    return input;
+}
 
-    self.startstop = document.createElement('button');
-    self.startstop.className = 'button is-primary is-pulled-right';
-    self.startstop.innerText = "Start";
-    self.startstop.onclick = function() {
-        if (self.running) {
-            self.running = false;
-            self.startstop.innerText = "Start";
-            send({name: 'stop', data: {}});
-        } else {
-            self.running = true;
-            self.startstop.innerText = "Stop";
-            send({name: 'start', data: {}});
+function El(tag) {
+    let self = this;
+
+    self.el = document.createElement(tag);
+
+    let children = [];
+    let update = undefined;
+
+    self.classes = function(classes) {
+        self.el.className += classes;
+        return self;
+    };
+
+    self.text = function(text) {
+        self.el.innerText = text;
+        return self;
+    };
+
+    self.children = function(c) {
+        for (let i = 0; i < c.length; i++) {
+            self.el.append(c[i].el);
+            children.push(c[i]);
+        }
+        return self;
+    };
+
+    self.onclick = function(f) {
+        self.el.onclick = f.bind(self);
+        return self;
+    };
+
+    self.oninput = function(f) {
+        self.el.oninput = f.bind(self);
+        return self;
+    }
+
+    self.disabled = function(d) {
+        self.el.disabled = d;
+        return self;
+    };
+
+    self.style = function(s, v) {
+        self.el.style[s] = v;
+        return self;
+    }
+
+    self.onupdate = function(f) {
+        update = f.bind(self);
+        return self;
+    };
+
+    self.update = function(state) {
+        if (update) {
+            update(state);
+        }
+
+        for (let i = 0; i < children.length; i++) {
+            children[i].update(state);
         }
     };
-    self.root.append(self.startstop);
-
-    self.update = function(config, debug) {
-        self.time.innerText = debug.time;
-    }
 }
 
 function DebugUi(parent, config) {
     let self = this;
 
     self.root = document.createElement('div');
-    self.root.className += 'box';
     parent.append(self.root);
 
     self.node = new Node('debug');
     self.root.append(self.node.root);
 
-    self.update = function(config, debug) {
-        self.node.update(debug);
+    self.update = function(state) {
+        self.node.update(state.debug());
     }
 }
 
@@ -282,9 +409,10 @@ function Node(key) {
     };
 }
 
-function MazeUi(parent, config) {
+function MazeUi(parent, state) {
     let self = this;
 
+    const config = state.config;
     const maze_config = config.simulation.mouse.map.maze;
     const maze_width_mm = MAZE_WIDTH * maze_config.cell_width + maze_config.wall_width;
     const maze_height_mm = MAZE_HEIGHT * maze_config.cell_width + maze_config.wall_width;
@@ -350,42 +478,46 @@ function MazeUi(parent, config) {
     self.mouse_ext = world.group()
     self.mouse_ext.rect(mech.length, mech.width).fill(config.mouse_ext_color).translate(mech.front_offset - mech.length, -mech.width/2);
 
-    self.update = function (config, debug) {
-        for (let i = 1; i < MAZE_WIDTH; i++) {
-            for (let j = 1; j < MAZE_HEIGHT; j++) {
-                if (i < MAZE_WIDTH) {
-                    let wall = debug.mouse_debug.map.maze.horizontal_edges[i][j - 1];
-                    if (wall === "Closed") {
-                        self.horizontal_walls[i][j].fill(config.wall_closed_color)
-                    } else if (wall === "Open") {
-                        self.horizontal_walls[i][j].fill(config.wall_open_color)
-                    } else if (wall === "Unknown") {
-                        self.horizontal_walls[i][j].fill(config.wall_unknown_color)
-                    } else {
-                        self.horizontal_walls[i][j].fill(config.wall_err_color)
+    self.update = function (state) {
+        if (state.debug()) {
+            let config = state.config;
+            let debug = state.debug();
+            for (let i = 1; i < MAZE_WIDTH; i++) {
+                for (let j = 1; j < MAZE_HEIGHT; j++) {
+                    if (i < MAZE_WIDTH) {
+                        let wall = debug.mouse_debug.map.maze.horizontal_edges[i][j - 1];
+                        if (wall === "Closed") {
+                            self.horizontal_walls[i][j].fill(config.wall_closed_color)
+                        } else if (wall === "Open") {
+                            self.horizontal_walls[i][j].fill(config.wall_open_color)
+                        } else if (wall === "Unknown") {
+                            self.horizontal_walls[i][j].fill(config.wall_unknown_color)
+                        } else {
+                            self.horizontal_walls[i][j].fill(config.wall_err_color)
+                        }
                     }
-                }
 
-                if (j < MAZE_HEIGHT) {
-                    let wall = debug.mouse_debug.map.maze.vertical_edges[i - 1][j];
-                    if (wall === "Closed") {
-                        self.vertical_walls[i][j].fill(config.wall_closed_color)
-                    } else if (wall === "Open") {
-                        self.vertical_walls[i][j].fill(config.wall_open_color)
-                    } else if (wall === "Unknown") {
-                        self.vertical_walls[i][j].fill(config.wall_unknown_color)
-                    } else {
-                        self.vertical_walls[i][j].fill(config.wall_err_color)
+                    if (j < MAZE_HEIGHT) {
+                        let wall = debug.mouse_debug.map.maze.vertical_edges[i - 1][j];
+                        if (wall === "Closed") {
+                            self.vertical_walls[i][j].fill(config.wall_closed_color)
+                        } else if (wall === "Open") {
+                            self.vertical_walls[i][j].fill(config.wall_open_color)
+                        } else if (wall === "Unknown") {
+                            self.vertical_walls[i][j].fill(config.wall_unknown_color)
+                        } else {
+                            self.vertical_walls[i][j].fill(config.wall_err_color)
+                        }
                     }
                 }
             }
+
+            let orientation_int = debug.mouse_debug.orientation;
+            self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
+
+            let orientation_ext = debug.orientation;
+            self.mouse_ext.rotate(orientation_ext.direction * 180 / Math.PI).translate(orientation_ext.position.x, orientation_ext.position.y);
         }
-
-        let orientation_int = debug.mouse_debug.orientation;
-        self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
-
-        let orientation_ext = debug.orientation;
-        self.mouse_ext.rotate(orientation_ext.direction * 180 / Math.PI).translate(orientation_ext.position.x, orientation_ext.position.y);
     }
 }
 
