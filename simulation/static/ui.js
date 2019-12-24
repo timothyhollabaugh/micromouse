@@ -186,8 +186,7 @@ function SimulationUi(parent, state) {
     ]);
 
     let root = div().classes('field is-grouped').children([
-        controls,
-        button().classes('control button is-primary').text('Start').onclick(function () {
+        button().classes('control button is-primary').text('Start').style('width', '4em').onclick(function () {
             if (state.running) {
                 state.stop();
                 controls.disabled(false);
@@ -199,9 +198,10 @@ function SimulationUi(parent, state) {
                 this.text('Stop');
             }
         }),
-        button().classes('control button is-danger').text('Reset').onclick(function() {
+        button().classes('control button is-danger').text('Reset').style('width', '4em').onclick(function() {
             state.reset()
         }),
+        controls,
     ]);
 
     parent.append(root.el);
