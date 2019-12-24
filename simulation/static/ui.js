@@ -323,87 +323,89 @@ function Node(key) {
 
     self.root = document.createElement('div');
 
-    self.header = document.createElement('div');
-    self.root.append(self.header);
+    let header = document.createElement('div');
+    self.root.append(header);
 
-    self.name = document.createElement('span');
-    self.name.innerText = key;
-    self.header.append(self.name);
+    let name = document.createElement('span');
+    name.innerText = key;
+    header.append(name);
 
-    self.value = document.createElement('span');
-    self.value.className += 'is-pulled-right';
-    self.value.style.fontFamily = 'monospace';
-    self.value.style.width = '6em';
-    self.header.append(self.value);
+    let value = document.createElement('span');
+    value.className += 'is-pulled-right';
+    value.style.fontFamily = 'monospace';
+    value.style.width = '6em';
+    header.append(value);
 
-    self.nodes = {};
-    self.data = null;
-    self.open = false;
+    let icon = null;
+    let nodes = {};
+    let olddata = null;
+    let open = false;
+    let children = null;
 
     self.update = function(data) {
         if (data !== null && typeof data === 'object') {
-            if (!self.header.onclick) {
-                self.header.onclick = function() {
-                    if (self.open) {
-                        self.open = false;
-                        self.icon.innerHTML = feather.icons['chevron-right'].toSvg({height: '1em'});
+            if (!header.onclick) {
+                header.onclick = function() {
+                    if (open) {
+                        open = false;
+                        icon.innerHTML = feather.icons['chevron-right'].toSvg({height: '1em'});
                     } else {
-                        self.open = true;
-                        self.icon.innerHTML = feather.icons['chevron-down'].toSvg({height: '1em'});
+                        open = true;
+                        icon.innerHTML = feather.icons['chevron-down'].toSvg({height: '1em'});
                     }
                 };
-                self.header.style.cursor = 'pointer';
+                header.style.cursor = 'pointer';
             }
-            if (!self.icon) {
-                self.icon = document.createElement('span');
-                self.icon.innerHTML = feather.icons['chevron-right'].toSvg({height: '1em'});
-                self.header.prepend(self.icon);
+            if (!icon) {
+                icon = document.createElement('span');
+                icon.innerHTML = feather.icons['chevron-right'].toSvg({height: '1em'});
+                header.prepend(icon);
             }
-            if (self.open) {
-                if (!self.children) {
-                    self.children = document.createElement('div');
-                    self.children.style.paddingLeft = '0.5em';
-                    self.children.style.marginLeft = '0.5em';
-                    self.children.style.borderLeft = 'solid black 1px';
-                    self.root.append(self.children);
+            if (open) {
+                if (!children) {
+                    children = document.createElement('div');
+                    children.style.paddingLeft = '0.5em';
+                    children.style.marginLeft = '0.5em';
+                    children.style.borderLeft = 'solid black 1px';
+                    self.root.append(children);
                 }
                 for (let key in data) {
                     if (data.hasOwnProperty(key)) {
-                        if (self.nodes[key]) {
-                            self.nodes[key].update(data[key])
+                        if (nodes[key]) {
+                            nodes[key].update(data[key])
                         } else {
                             let node = new Node(key);
                             node.update(data[key]);
-                            self.nodes[key] = node;
-                            self.children.append(node.root);
+                            nodes[key] = node;
+                            children.append(node.root);
                         }
                     }
                 }
             } else {
-                if (self.children) {
-                    self.children.remove();
-                    self.children = undefined;
+                if (children) {
+                    children.remove();
+                    children = undefined;
                 }
 
-                if (self.nodes !== {}) {
-                    self.nodes = {};
+                if (nodes !== {}) {
+                    nodes = {};
                 }
 
-                if (self.data) {
-                    self.data = null;
+                if (olddata) {
+                    olddata = null;
                 }
             }
-            self.value.innerText = Object.keys(data).length + " items";
+            value.innerText = Object.keys(data).length + " items";
         } else {
-            if (data !== self.data) {
+            if (olddata !== data) {
                 if (typeof data === 'number') {
-                    self.value.innerText = math.format(data, {precision: 4, upperExp: 4});
+                    value.innerText = math.format(data, {precision: 4, upperExp: 4});
                 } else if (typeof data === 'string') {
-                    self.value.innerText = data;
+                    value.innerText = data;
                 } else {
-                    self.value.innerText = String(data);
+                    value.innerText = String(data);
                 }
-                self.data = data;
+                olddata = data;
             }
         }
     };
