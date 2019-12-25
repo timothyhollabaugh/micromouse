@@ -54,8 +54,6 @@ const config = {
         max_wheel_accel: 60000.0,
     },
 
-    px_per_mm: 0.2,
-
     wall_open_color: '#ffffff',
     wall_closed_color: '#444444',
     wall_unknown_color: '#999999',
@@ -131,25 +129,21 @@ function run_worker(config) {
 function Ui(parent, state) {
     let self = this;
 
-    self.root = document.createElement('div');
-    self.root.className = 'columns container';
-    parent.append(self.root);
+    let debug = div().classes('column is-narrow').style('width', '24em');
+    let maze = div().classes('column is-6');
+    let graph = div().classes('column');
 
+    self.root = div().classes('columns is-multiline').children([
+        debug,
+        maze,
+        graph,
+    ]);
+    parent.append(self.root.el);
 
-    self.debug_div = document.createElement('div');
-    self.debug_div.className = 'column is-narrow';
-    self.debug_div.style.width = '25em';
-    self.root.append(self.debug_div);
-
-    self.simulation_ui = new SimulationUi(self.debug_div, state);
-
-    self.maze_div = document.createElement('div');
-    self.maze_div.className = 'column is-narrow';
-    self.root.append(self.maze_div);
-    self.maze_ui = new MazeUi(self.maze_div, state);
-    self.graph_ui = new GraphUi(self.maze_div, state);
-
-    self.debug_ui = new DebugUi(self.debug_div, state);
+    self.simulation_ui = new SimulationUi(debug.el, state);
+    self.debug_ui = new DebugUi(debug.el, state);
+    self.maze_ui = new MazeUi(maze.el, state);
+    self.graph_ui = new GraphUi(graph.el, state);
 
     self.update = function(state) {
         self.simulation_ui.update(state);
@@ -168,7 +162,7 @@ function SimulationUi(parent, state) {
                 .classes('input')
                 .style('text-align', 'right')
                 .style('font-family', 'monospace')
-                //.style('width', '1em')
+                .style('width', '6em')
                 .oninput(function(){
                     if (!state.running && this.el.value > 0 && this.el.value < state.debugs.length) {
                         state.index = Number(this.el.value);
@@ -611,15 +605,18 @@ function MazeUi(parent, state) {
     let self = this;
 
     const config = state.config;
+
     const maze_config = config.simulation.mouse.map.maze;
     const maze_width_mm = MAZE_WIDTH * maze_config.cell_width + maze_config.wall_width;
     const maze_height_mm = MAZE_HEIGHT * maze_config.cell_width + maze_config.wall_width;
 
-    let draw = SVG(parent).size(maze_width_mm * config.px_per_mm, maze_height_mm * config.px_per_mm);
+    const px_per_mm = parent.clientWidth / maze_width_mm;
+
+    let draw = SVG(parent).size(maze_width_mm * px_per_mm, maze_height_mm * px_per_mm);
 
     let world = draw.group();
 
-    world.scale(config.px_per_mm);
+    world.scale(px_per_mm);
 
     let maze = world.group();
 
