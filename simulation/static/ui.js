@@ -95,6 +95,8 @@ function UiState(send) {
         send({name: 'reset', data: {}});
         self.debugs = [];
     };
+
+    self.graphs = [];
 }
 
 function run_worker(config) {
@@ -314,15 +316,15 @@ function DebugUi(parent, config) {
     self.root = document.createElement('div');
     parent.append(self.root);
 
-    self.node = new Node('debug');
+    self.node = new Node('debug', function(debug) { return debug });
     self.root.append(self.node.root);
 
     self.update = function(state) {
-        self.node.update(state.debug());
+        self.node.update(state);
     }
 }
 
-function Node(key) {
+function Node(path, f) {
     let self = this;
 
     self.root = document.createElement('div');
@@ -331,7 +333,8 @@ function Node(key) {
     self.root.append(header);
 
     let name = document.createElement('span');
-    name.innerText = key;
+    let paths = path.split('/');
+    name.innerText = paths[paths.length-1];
     header.append(name);
 
     let value = document.createElement('span');
@@ -345,8 +348,10 @@ function Node(key) {
     let olddata = null;
     let open = false;
     let children = null;
+    let graphcheck = null;
 
-    self.update = function(data) {
+    self.update = function(state) {
+        let data = f(state.debug());
         if (data !== null && typeof data === 'object') {
             if (!header.onclick) {
                 header.onclick = function() {
@@ -376,10 +381,10 @@ function Node(key) {
                 for (let key in data) {
                     if (data.hasOwnProperty(key)) {
                         if (nodes[key]) {
-                            nodes[key].update(data[key])
+                            nodes[key].update(state)
                         } else {
-                            let node = new Node(key);
-                            node.update(data[key]);
+                            let node = new Node(path + "/" + key, function(debug) { return f(debug)[key] });
+                            node.update(state);
                             nodes[key] = node;
                             children.append(node.root);
                         }
@@ -400,7 +405,7 @@ function Node(key) {
                 }
             }
             value.innerText = Object.keys(data).length + " items";
-        } else {
+        } else if (data !== undefined) {
             if (olddata !== data) {
                 if (typeof data === 'number') {
                     value.innerText = math.format(data, {precision: 4, upperExp: 4});
@@ -410,6 +415,21 @@ function Node(key) {
                     value.innerText = String(data);
                 }
                 olddata = data;
+            }
+
+            if (!graphcheck) {
+                graphcheck = document.createElement('input');
+                graphcheck.type = "checkbox";
+                graphcheck.className += 'is-pulled-right';
+                graphcheck.style.marginRight = "1em";
+                graphcheck.onchange = function() {
+                    if (graphcheck.checked) {
+                        state.graphs[path] = f;
+                    } else {
+                        delete state.graphs[path];
+                    }
+                }
+                header.append(graphcheck);
             }
         }
     };
@@ -421,12 +441,27 @@ function GraphUi(parent, state) {
     let root = div();
     parent.append(root.el);
 
-    let graph = new Graph(root.el);
+    let oldgraphs = {};
 
     self.update = function(state) {
-        graph.update(1000, 1000, 2000, state, function(state, index) {
-            return state.debugs[index].mouse_debug.orientation.position.x;
-        })
+        for (let key in state.graphs) {
+            if (state.graphs.hasOwnProperty(key)) {
+                let f = state.graphs[key];
+                if (!(key in oldgraphs)) {
+                    oldgraphs[key] = new Graph(root.el)
+                }
+                oldgraphs[key].update(1000, 1000, 2000, state, function(state, index) { return f(state.debugs[index]) })
+            }
+        }
+
+        for (let key in oldgraphs) {
+            if (oldgraphs.hasOwnProperty(key)) {
+                if (!(key in state.graphs)) {
+                    oldgraphs[key].root.remove();
+                    delete oldgraphs[key];
+                }
+            }
+        }
     }
 
 }
@@ -434,10 +469,13 @@ function GraphUi(parent, state) {
 function Graph(parent) {
     let self = this;
 
-    const WIDTH = 1000;
-    const HEIGHT = 200;
+    const WIDTH = parent.clientWidth;
+    const HEIGHT = 100;
 
-    let draw = SVG(parent).size(WIDTH, HEIGHT);
+    self.root = document.createElement('div');
+    parent.append(self.root);
+
+    let draw = SVG(self.root).size(WIDTH, HEIGHT);
     let line = draw.polyline([]).fill('none').stroke({width: 2});
 
     let centerline = draw.line(WIDTH/2, 0, WIDTH/2, HEIGHT).stroke({width: 1, color: '#999999'});
