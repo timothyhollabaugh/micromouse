@@ -163,12 +163,12 @@ function SimulationUi(parent, state) {
     let self = this;
 
     let controls = fieldset().classes('control field has-addons').disabled(true).children([
-        p().classes('control').children([
+        div().classes('control').children([
             input('number')
                 .classes('input')
                 .style('text-align', 'right')
-                .style('fontFamily', 'monospace')
-                .style('width', '6em')
+                .style('font-family', 'monospace')
+                //.style('width', '1em')
                 .oninput(function(){
                     if (!state.running && this.el.value > 0 && this.el.value < state.debugs.length) {
                         state.index = Number(this.el.value);
@@ -180,11 +180,11 @@ function SimulationUi(parent, state) {
                     }
                 })
         ]),
-        p().classes('control').children([
+        div().classes('control').children([
             button()
                 .classes('button is-static')
                 .text('/ 0')
-                .style('fontFamily', 'monospace')
+                .style('font-family', 'monospace')
                 .onupdate(function(state) {
                     this.text('/ ' + (state.debugs.length-1))
                 })
@@ -238,12 +238,15 @@ function input(type) {
     input.el.type = type;
     input.value = function(value) {
         input.el.value = value;
+        return input;
     };
     input.min = function(min) {
         input.el.min = min;
+        return input;
     };
     input.max = function(max) {
         input.el.max = max;
+        return input;
     };
     return input;
 }
@@ -438,7 +441,36 @@ function Node(path, f) {
 function GraphUi(parent, state) {
     let self = this;
 
-    let root = div();
+    let range = 1000;
+
+    let root = div().children([
+        div().classes('level').children([
+            div().classes('level-left has-text-centered').children([
+                p().classes('level-item').text("Graphs"),
+            ]),
+            div().classes('level-right').children([
+                div().classes('level-item field has-addons').children([
+                    div().classes('control').children([
+                        button().classes('button is-static').text("Range: "),
+                    ]),
+                    div().classes('control').children([
+                        input('number')
+                            .classes('input')
+                            .style('text-align', 'right')
+                            .style('font-family', 'monospace')
+                            .value(range)
+                            .oninput(function() {
+                                range = Number(this.el.value);
+                                console.log(range);
+                            }),
+                    ]),
+                    div().classes('control').children([
+                        button().classes('button is-static').text("steps"),
+                    ]),
+                ]),
+            ])
+        ]),
+    ]) ;
     parent.append(root.el);
 
     let oldgraphs = {};
@@ -450,7 +482,7 @@ function GraphUi(parent, state) {
                 if (!(key in oldgraphs)) {
                     oldgraphs[key] = new Graph(root.el)
                 }
-                oldgraphs[key].update(1000, 1000, 2000, state, function(state, index) { return f(state.debugs[index]) })
+                oldgraphs[key].update(range, 1000, 2000, state, function(state, index) { return f(state.debugs[index]) })
             }
         }
 
