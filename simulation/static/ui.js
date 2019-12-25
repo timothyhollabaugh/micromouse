@@ -133,18 +133,19 @@ function Ui(parent, state) {
     self.root.className = 'columns container';
     parent.append(self.root);
 
-    self.maze_div = document.createElement('div');
-    self.maze_div.className = 'column is-narrow';
-    self.root.append(self.maze_div);
-
-    self.simulation_ui = new SimulationUi(self.maze_div, state);
-    self.maze_ui = new MazeUi(self.maze_div, state);
-    self.graph_ui = new GraphUi(self.maze_div, state);
 
     self.debug_div = document.createElement('div');
     self.debug_div.className = 'column is-narrow';
     self.debug_div.style.width = '25em';
     self.root.append(self.debug_div);
+
+    self.simulation_ui = new SimulationUi(self.debug_div, state);
+
+    self.maze_div = document.createElement('div');
+    self.maze_div.className = 'column is-narrow';
+    self.root.append(self.maze_div);
+    self.maze_ui = new MazeUi(self.maze_div, state);
+    self.graph_ui = new GraphUi(self.maze_div, state);
 
     self.debug_ui = new DebugUi(self.debug_div, state);
 
@@ -165,6 +166,7 @@ function SimulationUi(parent, state) {
                 .classes('input')
                 .style('text-align', 'right')
                 .style('fontFamily', 'monospace')
+                .style('width', '6em')
                 .oninput(function(){
                     if (!state.running && this.el.value > 0 && this.el.value < state.debugs.length) {
                         state.index = Number(this.el.value);
@@ -432,37 +434,61 @@ function GraphUi(parent, state) {
 function Graph(parent) {
     let self = this;
 
-    const WIDTH = 1500;
-    const HEIGHT = 500;
+    const WIDTH = 1000;
+    const HEIGHT = 200;
 
     let draw = SVG(parent).size(WIDTH, HEIGHT);
     let line = draw.polyline([]).fill('none').stroke({width: 2});
 
+    let centerline = draw.line(WIDTH/2, 0, WIDTH/2, HEIGHT).stroke({width: 1, color: '#999999'});
+    let zeroline = draw.line(0, HEIGHT/2, WIDTH, HEIGHT/2).stroke({width: 1, color: '#999999'});
+
     self.update = function(range, min, max, state, f) {
         let points = [];
 
-        let center = state.index;
+        let index = state.index;
 
-        if (center < 0) {
-            center = state.debugs.length - range/2;
+        if (index < 0) {
+            index = state.debugs.length;
         }
 
-        if (center < range/2) {
-            center = range/2;
+        let start = index - range;
+
+        if (state.debugs.length > range && index > state.debugs.length - range/2) {
+            start = state.debugs.length - range;
+        } else if (state.debugs.length > range && index > state.debugs.length - range) {
+            start = index - range/2;
         }
 
-        let start = center - range/2;
+        if (start < 0) {
+            start = 0;
+        }
 
-        for (let i = 0; i < range; i ++) {
+        for (let i = 0; i < range; i++) {
             let index = i + start;
             if (index < state.debugs.length) {
                 let value = f(state, index) - min;
-                points[i] = [i * WIDTH / range, value * HEIGHT / (max - min)];
+                points[i] = [i * WIDTH / range, HEIGHT - value * HEIGHT / (max - min)];
             }
         }
 
-        line.clear();
+        //line.clear();
         line.plot(points);
+
+        let center = index - start;
+        centerline.plot(center * WIDTH/range, 0, center * WIDTH/range, HEIGHT);
+
+        let zero = -min * HEIGHT / (max - min);
+
+        if (min > 0 && max > 0) {
+            zero = 0;
+        }
+
+        if (min < 0 && max < 0) {
+            zero = HEIGHT;
+        }
+
+        zeroline.plot(0, HEIGHT-zero, WIDTH, HEIGHT-zero);
     }
 }
 
