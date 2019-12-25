@@ -461,6 +461,7 @@ function GraphUi(parent, state) {
                             .classes('input')
                             .style('text-align', 'right')
                             .style('font-family', 'monospace')
+                            .style('width', '6em')
                             .value(range)
                             .oninput(function() {
                                 range = Number(this.el.value);
@@ -483,16 +484,16 @@ function GraphUi(parent, state) {
             if (state.graphs.hasOwnProperty(key)) {
                 let f = state.graphs[key];
                 if (!(key in oldgraphs)) {
-                    oldgraphs[key] = new Graph(root.el)
+                    oldgraphs[key] = new Graph(root.el, key)
                 }
-                oldgraphs[key].update(range, 1000, 2000, state, function(state, index) { return f(state.debugs[index]) })
+                oldgraphs[key].update(range, state, function(state, index) { return f(state.debugs[index]) })
             }
         }
 
         for (let key in oldgraphs) {
             if (oldgraphs.hasOwnProperty(key)) {
                 if (!(key in state.graphs)) {
-                    oldgraphs[key].root.remove();
+                    oldgraphs[key].root.el.remove();
                     delete oldgraphs[key];
                 }
             }
@@ -501,22 +502,63 @@ function GraphUi(parent, state) {
 
 }
 
-function Graph(parent) {
+function Graph(parent, path) {
     let self = this;
 
     const WIDTH = parent.clientWidth;
     const HEIGHT = 100;
 
-    self.root = document.createElement('div');
-    parent.append(self.root);
+    let min = 0;
+    let max = 1;
 
-    let draw = SVG(self.root).size(WIDTH, HEIGHT);
+    self.root = div().children([
+        div().classes('level').children([
+            div().classes('level-left has-text-centered').children([
+                p().classes('level-item').text(path),
+            ]),
+            div().classes('level-right').children([
+                div().classes('level-item field is-grouped').children([
+                    div().classes('control field has-addons').children([
+                        div().classes('control').children([
+                            button().classes('button is-static').text("Max: "),
+                        ]),
+                        div().classes('control').children([
+                            input('number')
+                                .classes('input')
+                                .style('text-align', 'right')
+                                .style('font-family', 'monospace')
+                                .style('width', '6em')
+                                .value(max)
+                                .oninput(function() { max = Number(this.el.value); }),
+                        ]),
+                    ]),
+                    div().classes('control field has-addons').children([
+                        div().classes('control').children([
+                            button().classes('button is-static').text("Min: "),
+                        ]),
+                        div().classes('control').children([
+                            input('number')
+                                .classes('input')
+                                .style('text-align', 'right')
+                                .style('font-family', 'monospace')
+                                .style('width', '6em')
+                                .value(min)
+                                .oninput(function() { min = Number(this.el.value); }),
+                        ]),
+                    ]),
+                ]),
+            ]),
+        ]),
+    ]);
+    parent.append(self.root.el);
+
+    let draw = SVG(self.root.el).size(WIDTH, HEIGHT);
     let line = draw.polyline([]).fill('none').stroke({width: 2});
 
     let centerline = draw.line(WIDTH/2, 0, WIDTH/2, HEIGHT).stroke({width: 1, color: '#999999'});
     let zeroline = draw.line(0, HEIGHT/2, WIDTH, HEIGHT/2).stroke({width: 1, color: '#999999'});
 
-    self.update = function(range, min, max, state, f) {
+    self.update = function(range, state, f) {
         let points = [];
 
         let index = state.index;
