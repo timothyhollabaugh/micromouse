@@ -432,6 +432,9 @@ function Node(path, f) {
                         delete state.graphs[path];
                     }
                 }
+                if (path in state.graphs) {
+                    graphcheck.checked = true;
+                }
                 header.append(graphcheck);
             }
         }
