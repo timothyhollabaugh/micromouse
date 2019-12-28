@@ -54,40 +54,7 @@ impl<R: Read> RemoteMouse<R> {
         RemoteMouse {
             reader,
             buf: String::new(),
-            debug: SimulationDebug {
-                mouse_debug: MouseDebug {
-                    orientation: config.initial_orientation,
-                    path: PathDebug {
-                        path: None,
-                        distance_from: None,
-                        distance_along: None,
-                        centered_direction: None,
-                        tangent_direction: None,
-                        target_direction: None,
-                    },
-                    map: MapDebug {
-                        maze: Maze::new(Edge::Unknown),
-                        front_edge: None,
-                        left_edge: None,
-                        right_edge: None,
-                    },
-                    motion: MotionDebug {
-                        target_left_power: 0.0,
-                        target_right_power: 0.0,
-                        normalized_left_power: 0.0,
-                        normalized_right_power: 0.0,
-                        limited_left_power: 0.0,
-                        limited_right_power: 0.0,
-                        left_delta_power: 0.0,
-                        right_delta_power: 0.0,
-                    },
-                },
-                orientation: config.initial_orientation,
-                left_encoder: 0,
-                right_encoder: 0,
-                time: 0,
-                config: config.clone(),
-            },
+            debug: SimulationDebug::default(),
         }
     }
 

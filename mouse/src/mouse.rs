@@ -20,6 +20,7 @@ pub struct MouseDebug {
     pub path: PathDebug,
     pub map: MapDebug,
     pub motion: MotionDebug,
+    pub time: u32,
 }
 
 pub struct Mouse {
@@ -96,6 +97,7 @@ impl Mouse {
             path: path_debug,
             map: map_debug,
             motion: motion_debug,
+            time,
         };
 
         (left_power, right_power, debug)

@@ -40,12 +40,6 @@ pub enum TxError {
     NotInitialized,
 }
 
-impl<T> From<arrayvec::CapacityError<T>> for TxError {
-    fn from(_err: arrayvec::CapacityError<T>) -> TxError {
-        TxError::BufferFull
-    }
-}
-
 #[derive(PartialEq)]
 pub enum RxError {
     BufferEmpty,

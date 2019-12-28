@@ -29,28 +29,24 @@ pub mod time;
 pub mod uart;
 pub mod vl6180x;
 
-use mouse::config::MouseConfig;
-#[allow(unused_imports)]
-use mouse::config::MOUSE_2019_MECH;
-#[allow(unused_imports)]
-use mouse::config::MOUSE_2019_PATH;
-#[allow(unused_imports)]
-use mouse::config::MOUSE_2020_MECH;
-#[allow(unused_imports)]
-use mouse::config::MOUSE_2020_MECH2;
-#[allow(unused_imports)]
-use mouse::config::MOUSE_2020_PATH;
-use mouse::config::MOUSE_MAZE_MAP;
-use mouse::map::Direction;
-use mouse::map::Orientation;
-use mouse::map::Vector;
-use mouse::mouse::Mouse;
-
 use core::fmt::Write;
 use cortex_m_rt::entry;
 use stm32f4xx_hal as stm32f4;
 use stm32f4xx_hal::prelude::*;
 use stm32f4xx_hal::stm32 as stm32f405;
+
+use serde::Serialize;
+
+use postcard;
+
+use typenum::consts::U1024;
+
+#[allow(unused_imports)]
+use mouse::config::*;
+use mouse::map::Direction;
+use mouse::map::Orientation;
+use mouse::map::Vector;
+use mouse::mouse::Mouse;
 
 use crate::battery::Battery;
 use crate::time::Time;
@@ -214,6 +210,7 @@ fn main() -> ! {
         mechanical: MOUSE_2020_MECH2,
         path: MOUSE_2020_PATH,
         map: MOUSE_MAZE_MAP,
+        motion: MOUSE_2020_MOTION,
     };
 
     let initial_orientation = Orientation {
@@ -273,32 +270,12 @@ fn main() -> ! {
                 left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
 
                 if let Ok(0) = uart.tx_len() {
-                    writeln!(
-                        uart,
-                        "{:05}\t{:01.03}\t{:01.03}\t{:01.03}\t{:02.00}",
-                        now,
-                        f32::from(debug.orientation.direction),
-                        debug.path_debug.centered_direction.unwrap_or(0.0),
-                        debug
-                            .path_debug
-                            .target_direction
-                            .map(f32::from)
-                            .unwrap_or(0.0),
-                        debug.path_debug.distance_from.unwrap_or(0.0),
-                    );
-
-                    /*
-                    writeln!(
-                        uart,
-                        "{}, {}, {}, {}, {}",
-                        left,
-                        right,
-                        left_distance.range(),
-                        front_distance.range(),
-                        right_distance.range()
-                    )
-                    .ok();
-                    */
+                    match postcard::to_vec::<U1024, _>(&debug) {
+                        Ok(bytes) => {
+                            uart.add_bytes(&bytes).ok();
+                        }
+                        Err(_e) => {}
+                    }
 
                     orange_led.toggle().ok();
                 }

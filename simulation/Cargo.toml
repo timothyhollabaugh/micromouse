@@ -14,6 +14,6 @@ default = ["console_error_panic_hook"]
 mouse = { path = "../mouse" }
 libm = "0.1"
 serde = "1.0"
-wasm-bindgen = { versione = "0.2", features = ["serde-serialize"] }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 console_error_panic_hook = { version = "0.1", optional = true }
-
+postcard = "0.4"

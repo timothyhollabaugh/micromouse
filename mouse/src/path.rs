@@ -5,7 +5,9 @@ use serde::Serialize;
 
 use libm::F32Ext;
 
-use arrayvec::ArrayVec;
+use heapless::consts::U64;
+use heapless::Vec;
+use typenum::Unsigned;
 
 use pid_control::Controller;
 use pid_control::DerivativeMode;
@@ -285,11 +287,12 @@ mod tests {
     }
 }
 
-pub const PATH_BUF_LEN: usize = 64;
+type PathBufLen = U64;
+type PathBuf = Vec<Segment, PathBufLen>;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PathDebug {
-    pub path: Option<ArrayVec<[Segment; PATH_BUF_LEN]>>,
+    pub path: Option<PathBuf>,
     pub distance_from: Option<f32>,
     pub distance_along: Option<f32>,
     pub centered_direction: Option<f32>,
@@ -308,7 +311,7 @@ pub struct PathConfig {
 #[derive(Clone, Debug)]
 pub struct Path {
     pub pid: PIDController,
-    pub segment_buffer: ArrayVec<[Segment; PATH_BUF_LEN]>,
+    pub segment_buffer: PathBuf,
     pub time: u32,
 }
 
@@ -319,19 +322,19 @@ impl Path {
         pid.set_limits(-1.0, 1.0);
         Path {
             pid,
-            segment_buffer: ArrayVec::new(),
+            segment_buffer: Vec::new(),
             time,
         }
     }
 
     pub fn add_segments(&mut self, segments: &[Segment]) -> Result<usize, usize> {
         for (i, segment) in segments.iter().enumerate() {
-            if self.segment_buffer.try_push(*segment).is_err() {
+            if self.segment_buffer.push(*segment).is_err() {
                 return Err(i);
             }
         }
 
-        Ok(PATH_BUF_LEN - self.segment_buffer.len())
+        Ok(PathBufLen::to_usize() - self.segment_buffer.len())
     }
 
     pub fn update(
