@@ -1,5 +1,6 @@
 #![no_std]
 
+pub mod comms;
 pub mod config;
 pub mod map;
 pub mod maze;

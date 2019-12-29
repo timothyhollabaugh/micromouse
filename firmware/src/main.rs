@@ -31,22 +31,29 @@ pub mod vl6180x;
 
 use core::fmt::Write;
 use cortex_m_rt::entry;
+use cortex_m_rt::exception;
+use cortex_m_rt::ExceptionFrame;
 use stm32f4xx_hal as stm32f4;
 use stm32f4xx_hal::prelude::*;
 use stm32f4xx_hal::stm32 as stm32f405;
 
 use serde::Serialize;
 
+use heapless::Vec;
+
 use postcard;
 
 use typenum::consts::U1024;
 
+use mouse::comms::DebugMsg;
+use mouse::comms::DebugPacket;
 #[allow(unused_imports)]
 use mouse::config::*;
 use mouse::map::Direction;
 use mouse::map::Orientation;
 use mouse::map::Vector;
 use mouse::mouse::Mouse;
+use mouse::mouse::MouseDebug;
 
 use crate::battery::Battery;
 use crate::time::Time;
@@ -106,7 +113,7 @@ fn main() -> ! {
     orange_led.set_high().ok();
     blue_led.set_low().ok();
 
-    writeln!(uart, "Initializing").ok();
+    uart.add_bytes(b"Initializing").ok();
 
     let mut front_distance = {
         let scl = gpiob.pb8.into_open_drain_output().into_alternate_af4();
@@ -180,32 +187,6 @@ fn main() -> ! {
     blue_led.set_low().ok();
     orange_led.set_low().ok();
 
-    writeln!(uart, "Reading id registers").ok();
-
-    for _ in 0..2 {
-        let buf = front_distance.get_id_bytes();
-
-        writeln!(uart, "{:x?}", buf).ok();
-
-        orange_led.toggle().ok();
-    }
-
-    for _ in 0..2 {
-        let buf = left_distance.get_id_bytes();
-
-        writeln!(uart, "{:x?}", buf).ok();
-
-        orange_led.toggle().ok();
-    }
-
-    for _ in 0..2 {
-        let buf = right_distance.get_id_bytes();
-
-        writeln!(uart, "{:x?}", buf).ok();
-
-        orange_led.toggle().ok();
-    }
-
     let config = MouseConfig {
         mechanical: MOUSE_2020_MECH2,
         path: MOUSE_2020_PATH,
@@ -221,7 +202,7 @@ fn main() -> ! {
         direction: Direction::from(0.0),
     };
 
-    writeln!(uart, "\n\nstart").ok();
+    uart.add_bytes(b"\n\nstart").ok();
 
     let mut last_time: u32 = time.now();
 
@@ -238,6 +219,9 @@ fn main() -> ! {
     right_distance.start_ranging();
 
     let mut running = false;
+
+    let mut debug = MouseDebug::default();
+    let mut packet_count = 0;
 
     loop {
         let now: u32 = time.now();
@@ -256,7 +240,7 @@ fn main() -> ! {
                 let front_distance_range = front_distance.range();
                 let right_distance_range = right_distance.range();
 
-                let (left_power, right_power, debug) = mouse.update(
+                let (left_power, right_power, d) = mouse.update(
                     &config,
                     now,
                     left_encoder_count,
@@ -269,16 +253,7 @@ fn main() -> ! {
                 right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
                 left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
 
-                if let Ok(0) = uart.tx_len() {
-                    match postcard::to_vec::<U1024, _>(&debug) {
-                        Ok(bytes) => {
-                            uart.add_bytes(&bytes).ok();
-                        }
-                        Err(_e) => {}
-                    }
-
-                    orange_led.toggle().ok();
-                }
+                debug = d;
             } else {
                 right_motor.change_power(0);
                 left_motor.change_power(0);
@@ -299,6 +274,30 @@ fn main() -> ! {
             }
 
             last_time = now;
+        }
+
+        if uart.tx_len() == Ok(0) {
+            let mut msgs = Vec::new();
+            if now % 10 == 0 {
+                msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
+            }
+
+            if now % 20 == 0 {
+                msgs.push(DebugMsg::Path(debug.path.clone()));
+            }
+
+            if msgs.len() > 0 {
+                let packet = DebugPacket {
+                    msgs,
+                    time: now,
+                    count: packet_count,
+                };
+
+                if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
+                    uart.add_bytes(&bytes);
+                    orange_led.toggle().ok();
+                }
+            }
         }
 
         battery.update(now);

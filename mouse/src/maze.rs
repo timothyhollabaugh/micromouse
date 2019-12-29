@@ -1,10 +1,6 @@
-use core::ops::Index;
-use core::ops::IndexMut;
-
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::map::MapConfig;
 use crate::map::Orientation;
 use crate::map::Vector;
 

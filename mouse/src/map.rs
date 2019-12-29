@@ -1,7 +1,5 @@
-use core::f32::consts::FRAC_PI_2;
 use core::f32::consts::PI;
 use core::fmt::{Error, Formatter};
-use core::ops::Mul;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -318,9 +316,9 @@ impl Map {
 
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_edge: None,
-            left_edge: None,
-            right_edge: None,
+            front_edge,
+            left_edge,
+            right_edge,
         };
 
         (self.orientation, debug)

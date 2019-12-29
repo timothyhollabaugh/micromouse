@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use libm::F32Ext;
 
-use heapless::consts::U64;
+use heapless::consts::U16;
 use heapless::Vec;
 use typenum::Unsigned;
 
@@ -287,8 +287,8 @@ mod tests {
     }
 }
 
-type PathBufLen = U64;
-type PathBuf = Vec<Segment, PathBufLen>;
+pub type PathBufLen = U16;
+pub type PathBuf = Vec<Segment, PathBufLen>;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PathDebug {

@@ -5,7 +5,7 @@ use std::io::Read;
 
 use postcard;
 
-use mouse::mouse::MouseDebug;
+use mouse::comms::DebugPacket;
 
 fn main() {
     let mut buf = Vec::new();
@@ -14,7 +14,7 @@ fn main() {
             Ok(byte) => {
                 //println!("0x{:02x}", byte);
                 buf.push(byte);
-                match postcard::take_from_bytes::<MouseDebug>(&buf) {
+                match postcard::take_from_bytes::<DebugPacket>(&buf) {
                     Ok((debug, remaining)) => {
                         println!("{:#?}", debug);
                         buf = Vec::from(remaining.clone());
