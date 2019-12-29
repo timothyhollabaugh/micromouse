@@ -220,8 +220,8 @@ fn main() -> ! {
 
     let mut running = false;
 
-    let mut debug = MouseDebug::default();
     let mut packet_count = 0;
+    let mut step_count = 0;
 
     loop {
         let now: u32 = time.now();
@@ -240,7 +240,7 @@ fn main() -> ! {
                 let front_distance_range = front_distance.range();
                 let right_distance_range = right_distance.range();
 
-                let (left_power, right_power, d) = mouse.update(
+                let (left_power, right_power, debug) = mouse.update(
                     &config,
                     now,
                     left_encoder_count,
@@ -253,7 +253,29 @@ fn main() -> ! {
                 right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
                 left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
 
-                debug = d;
+                if uart.tx_len() == Ok(0) {
+                    let mut msgs = Vec::new();
+                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
+
+                    if step_count % 2 == 0 {
+                        msgs.push(DebugMsg::Path(debug.path.clone()));
+                    }
+
+                    let packet = DebugPacket {
+                        msgs,
+                        time: debug.time,
+                        count: packet_count,
+                    };
+
+                    if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
+                        uart.add_bytes(&bytes);
+                        orange_led.toggle().ok();
+                    }
+
+                    packet_count += 1;
+                }
+
+                step_count += 1;
             } else {
                 right_motor.change_power(0);
                 left_motor.change_power(0);
@@ -274,30 +296,6 @@ fn main() -> ! {
             }
 
             last_time = now;
-        }
-
-        if uart.tx_len() == Ok(0) {
-            let mut msgs = Vec::new();
-            if now % 10 == 0 {
-                msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
-            }
-
-            if now % 20 == 0 {
-                msgs.push(DebugMsg::Path(debug.path.clone()));
-            }
-
-            if msgs.len() > 0 {
-                let packet = DebugPacket {
-                    msgs,
-                    time: debug.time,
-                    count: packet_count,
-                };
-
-                if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
-                    uart.add_bytes(&bytes);
-                    orange_led.toggle().ok();
-                }
-            }
         }
 
         battery.update(now);
