@@ -289,7 +289,7 @@ fn main() -> ! {
             if msgs.len() > 0 {
                 let packet = DebugPacket {
                     msgs,
-                    time: now,
+                    time: debug.time,
                     count: packet_count,
                 };
 
