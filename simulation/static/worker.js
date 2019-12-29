@@ -21,6 +21,7 @@ let config = null;
 let interval_id = null;
 
 function reset_simulation() {
+    console.log(config);
     simulation = new wasm_bindgen.JsSimulation(config);
 }
 

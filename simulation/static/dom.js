@@ -16,9 +16,16 @@ function fieldset() {
     return new El('fieldset');
 }
 
-function input(type) {
+function label() {
+    return new El('label');
+}
+
+function input() {
     let input = new El('input');
-    input.el.type = type;
+    input.type = function(type) {
+        input.el.type = type;
+        return input;
+    }
     input.value = function(value) {
         input.el.value = value;
         return input;
