@@ -9,20 +9,41 @@ console.log("imported scripts");
 
 async function init() {
     await wasm_bindgen('pkg/simulation_bg.wasm');
+    inited = true;
 }
 
 init();
 
 console.log("inited");
-inited = true;
+
+function Simulaton() {
+    let self = this;
+
+    let simulation = null;
+    let config = null;
+    let interval_id = null
+
+
+}
 
 let simulation = null;
+let remote = null;
 let config = null;
 let interval_id = null;
 
 function reset_simulation() {
     console.log(config);
     simulation = new wasm_bindgen.JsSimulation(config);
+}
+
+function reset_remote() {
+    remote = new wasm_bindgen.JsRemote(config);
+}
+
+function run_remote() {
+    if (remote && inited) {
+        let debugs = simulation.update()
+    }
 }
 
 function run_simulation() {

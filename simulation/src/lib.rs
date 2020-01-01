@@ -1,3 +1,4 @@
+pub mod remote;
 pub mod simulation;
 
 use std::panic;
@@ -8,7 +9,14 @@ use console_error_panic_hook;
 
 use simulation::Simulation;
 use simulation::SimulationConfig;
-use simulation::SimulationDebug;
+
+use remote::Remote;
+use remote::RemoteConfig;
+
+#[wasm_bindgen]
+pub fn init_wasm() {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
+}
 
 /// A wrapper for an actual Simulation that handles javascript
 /// type conversions
@@ -22,7 +30,6 @@ impl JsSimulation {
     /// Create a new simulation
     #[wasm_bindgen(constructor)]
     pub fn new(config: JsValue) -> JsSimulation {
-        panic::set_hook(Box::new(console_error_panic_hook::hook));
         let config: SimulationConfig = config.into_serde().expect("Could not parse config");
         JsSimulation {
             simulation: Simulation::new(&config),
@@ -36,5 +43,27 @@ impl JsSimulation {
         let config: SimulationConfig = config.into_serde().unwrap();
         let debug = self.simulation.update(&config);
         JsValue::from_serde(&debug).unwrap()
+    }
+}
+
+#[wasm_bindgen]
+pub struct JsRemote {
+    remote: Remote,
+}
+
+#[wasm_bindgen]
+impl JsRemote {
+    #[wasm_bindgen(constructor)]
+    pub fn new(config: JsValue) -> JsRemote {
+        let config: RemoteConfig = config.into_serde().expect("Could not parse config");
+        JsRemote {
+            remote: Remote::new(&config),
+        }
+    }
+
+    pub fn update(&mut self, bytes: JsValue) -> JsValue {
+        let bytes: Vec<u8> = bytes.into_serde().unwrap();
+        let debugs = self.remote.update(&bytes);
+        JsValue::from_serde(&debugs).unwrap()
     }
 }

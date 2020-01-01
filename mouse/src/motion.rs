@@ -1,7 +1,8 @@
+#[allow(unused_imports)]
+use libm::F32Ext;
+
 use serde::Deserialize;
 use serde::Serialize;
-
-use libm::F32Ext;
 
 fn max(f1: f32, f2: f32) -> f32 {
     if f1 > f2 {
@@ -32,7 +33,7 @@ pub struct MotionDebug {
 /// Takes the angular and linear power and combines them to form a left and right power for the motors
 /// Also limits the max change in power for each wheel
 pub struct Motion {
-    time: u32,
+    _time: u32,
     last_left_power: f32,
     last_right_power: f32,
 }
@@ -41,9 +42,9 @@ pub struct Motion {
 // Cafe du moire
 
 impl Motion {
-    pub fn new(config: &MotionConfig, time: u32) -> Motion {
+    pub fn new(_config: &MotionConfig, time: u32) -> Motion {
         Motion {
-            time,
+            _time: time,
             last_left_power: 0.0,
             last_right_power: 0.0,
         }
@@ -52,7 +53,7 @@ impl Motion {
     pub fn update(
         &mut self,
         config: &MotionConfig,
-        time: u32,
+        _time: u32,
         linear_power: f32,
         angular_power: f32,
     ) -> (f32, f32, MotionDebug) {

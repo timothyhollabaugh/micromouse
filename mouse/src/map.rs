@@ -273,9 +273,9 @@ impl Map {
         maze_config: &MazeConfig,
         left_encoder: i32,
         right_encoder: i32,
-        left_distance: u8,
-        front_distance: u8,
-        right_distance: u8,
+        _left_distance: u8,
+        _front_distance: u8,
+        _right_distance: u8,
     ) -> (Orientation, MapDebug) {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;

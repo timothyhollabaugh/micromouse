@@ -1,28 +1,19 @@
-use std::cmp::min;
 use std::f32;
-use std::io::Read;
 
 use serde::Deserialize;
 use serde::Serialize;
 
-use mouse::config::MouseConfig;
-use mouse::map::Direction;
-use mouse::map::MapDebug;
 use mouse::map::Orientation;
-use mouse::maze::Edge;
-use mouse::maze::Maze;
-use mouse::motion::MotionDebug;
 use mouse::mouse::Mouse;
+use mouse::mouse::MouseConfig;
 use mouse::mouse::MouseDebug;
-use mouse::path::PathDebug;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SimulationDebug {
-    pub mouse_debug: MouseDebug,
+    pub mouse: MouseDebug,
     pub left_encoder: i32,
     pub right_encoder: i32,
     pub orientation: Orientation,
-    pub time: u32,
     pub config: SimulationConfig,
 }
 
@@ -40,66 +31,6 @@ pub struct SimulationConfig {
 impl SimulationConfig {
     pub fn sec_per_step(&self) -> f32 {
         self.millis_per_step as f32 / 1000.0
-    }
-}
-
-pub struct RemoteMouse<R: Read> {
-    reader: R,
-    buf: String,
-    debug: SimulationDebug,
-}
-
-impl<R: Read> RemoteMouse<R> {
-    pub fn new(config: &SimulationConfig, reader: R) -> RemoteMouse<R> {
-        RemoteMouse {
-            reader,
-            buf: String::new(),
-            debug: SimulationDebug::default(),
-        }
-    }
-
-    pub fn update(&mut self, _config: &SimulationConfig) -> SimulationDebug {
-        self.reader.read_to_string(&mut self.buf).ok();
-
-        if let Some(index) = self.buf.find('\n') {
-            let line: String = self.buf.drain(0..(index + 1)).collect();
-
-            eprintln!("line: {}", line);
-
-            let mut parts = line.split(',').map(|s| s.trim());
-
-            if let Some(Ok(centered_direction)) = parts.next().map(|p| p.parse()) {
-                self.debug.mouse_debug.path.centered_direction = Some(centered_direction);
-            }
-
-            if let Some(Ok(target_direction)) = parts.next().map(|p| p.parse::<f32>()) {
-                self.debug.mouse_debug.path.target_direction =
-                    Some(Direction::from(target_direction));
-            }
-
-            /*
-            if let Some(Ok(left_encoder)) = parts.next().map(|p| p.parse()) {
-                self.left_encoder = left_encoder;
-            }
-
-            if let Some(Ok(right_encoder)) = parts.next().map(|p| p.parse()) {
-                self.right_encoder = right_encoder;
-            }
-
-            if let Some(Ok(x)) = parts.next().map(|p| p.parse()) {
-                self.orientation.position.x = x;
-            }
-
-            if let Some(Ok(y)) = parts.next().map(|p| p.parse()) {
-                self.orientation.position.y = y;
-            }
-
-            if let Some(Ok(d)) = parts.next().map(|p| p.parse::<f32>()) {
-                self.orientation.direction = Direction::from(d)
-            }
-            */
-        }
-        self.debug.clone()
     }
 }
 
@@ -126,6 +57,10 @@ impl Simulation {
             last_right_wheel_speed: 0.0,
             time: 0,
         }
+    }
+
+    pub fn default_config() -> SimulationConfig {
+        SimulationConfig::default()
     }
 
     pub fn update(&mut self, config: &SimulationConfig) -> SimulationDebug {
@@ -197,11 +132,10 @@ impl Simulation {
 
         // Collect debug info from this run
         let debug = SimulationDebug {
-            mouse_debug,
+            mouse: mouse_debug,
             left_encoder: self.left_encoder,
             right_encoder: self.right_encoder,
             orientation: self.orientation,
-            time: self.time,
             config: config.clone(),
         };
 

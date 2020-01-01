@@ -3,15 +3,18 @@ use core::f32;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::config::MouseConfig;
+use crate::config::MechanicalConfig;
 use crate::map::Map;
+use crate::map::MapConfig;
 use crate::map::MapDebug;
 use crate::map::Orientation;
 use crate::map::Vector;
 use crate::motion::Motion;
+use crate::motion::MotionConfig;
 use crate::motion::MotionDebug;
 use crate::path;
 use crate::path::Path;
+use crate::path::PathConfig;
 use crate::path::PathDebug;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -21,6 +24,14 @@ pub struct MouseDebug {
     pub map: MapDebug,
     pub motion: MotionDebug,
     pub time: u32,
+}
+
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct MouseConfig {
+    pub mechanical: MechanicalConfig,
+    pub path: PathConfig,
+    pub map: MapConfig,
+    pub motion: MotionConfig,
 }
 
 pub struct Mouse {
