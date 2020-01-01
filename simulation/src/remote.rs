@@ -63,9 +63,9 @@ impl Remote {
                         DebugMsg::Path(path) => self.debug.mouse.path = path,
                     }
                 }
-            }
 
-            debugs.push(self.debug.clone());
+                debugs.push(self.debug.clone());
+            }
         }
 
         debugs

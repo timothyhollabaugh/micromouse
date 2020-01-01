@@ -61,8 +61,7 @@ impl JsRemote {
         }
     }
 
-    pub fn update(&mut self, bytes: JsValue) -> JsValue {
-        let bytes: Vec<u8> = bytes.into_serde().unwrap();
+    pub fn update(&mut self, bytes: Vec<u8>) -> JsValue {
         let debugs = self.remote.update(&bytes);
         JsValue::from_serde(&debugs).unwrap()
     }

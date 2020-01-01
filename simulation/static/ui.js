@@ -186,7 +186,7 @@ function SetupUi(parent, state) {
 
     let simulated = div();
 
-    let remote_url = input().classes('input').style('font-family', 'monospace');
+    let remote_url = input().classes('input').style('font-family', 'monospace').value("ws://192.168.4.1:8080");
 
     let remote = div().children([
         fieldset().classes('field has-addons').children([
@@ -266,9 +266,7 @@ function StateUi(parent, state) {
                     }
                 })
                 .onupdate(function(state) {
-                    if (state.running) {
-                        this.value(state.debugs.length);
-                    }
+                    this.value(state.debugs.length);
                 })
         ]),
         div().classes('control').children([
@@ -377,6 +375,7 @@ function Node(path, f) {
                         open = true;
                         icon.innerHTML = feather.icons['chevron-down'].toSvg({height: '1em'});
                     }
+                    self.update(state);
                 };
                 header.style.cursor = 'pointer';
             }
@@ -858,8 +857,10 @@ function MazeUi(parent) {
         let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
 
-        let orientation_ext = debug.orientation;
-        self.mouse_ext.rotate(orientation_ext.direction * 180 / Math.PI).translate(orientation_ext.position.x, orientation_ext.position.y);
+        if (debug.orientation) {
+            let orientation_ext = debug.orientation;
+            self.mouse_ext.rotate(orientation_ext.direction * 180 / Math.PI).translate(orientation_ext.position.x, orientation_ext.position.y);
+        }
     }
 
     let oldconfig = null;

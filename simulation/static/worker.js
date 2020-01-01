@@ -46,12 +46,14 @@ onmessage = function (event) {
                 simulation = new wasm_bindgen.JsRemote(msg.data.config);
 
                 websocket = new WebSocket(msg.data.options.url);
+                websocket.binaryType = 'arraybuffer';
 
                 websocket.onmessage = function(event) {
-                    console.log("websocket data: ", event.data);
-
-                    let debug = simulation.update(event.data);
-                    self.postMessage({name: 'debug', data: debug});
+                    let data = new Uint8Array(event.data);
+                    let debugs = simulation.update(data);
+                    debugs.forEach(function(debug) {
+                        self.postMessage({name: 'debug', data: debug});
+                    });
                 };
 
                 websocket.onopen = function(event) {
