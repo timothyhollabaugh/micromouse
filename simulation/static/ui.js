@@ -121,32 +121,32 @@ function run_worker(config) {
 function Ui(parent, state) {
     let self = this;
 
-    let debug = div().classes('column is-narrow').style('width', '24em');
-    let maze = div().classes('column is-6');
+    let debug = div().classes('column is-narrow').style('width', '27em');
+    let maze = div().classes('column is-5');
     let graph = div().classes('column');
 
-    self.root = div().classes('columns is-multiline').children([
+    self.root = div().classes('columns is-multiline').style("margin", "1em").children([
         debug,
         maze,
         graph,
     ]);
     parent.append(self.root.el);
 
-    self.simulation_ui = new SimulationUi(debug.el, state);
+    self.state_ui = new StateUi(debug.el, state);
     self.debug_ui = new DebugUi(debug.el, state);
     self.config_ui = new ConfigUi(debug.el, state);
     self.maze_ui = new MazeUi(maze.el, state);
     self.graph_ui = new GraphUi(graph.el, state);
 
     self.update = function(state) {
-        self.simulation_ui.update(state);
+        self.state_ui.update(state);
         self.maze_ui.update(state);
         self.graph_ui.update(state);
         self.debug_ui.update(state);
     }
 }
 
-function SimulationUi(parent, state) {
+function StateUi(parent, state) {
     let self = this;
 
     let controls = fieldset().classes('control field has-addons').disabled(true).children([
@@ -156,7 +156,7 @@ function SimulationUi(parent, state) {
                 .classes('input')
                 .style('text-align', 'right')
                 .style('font-family', 'monospace')
-                .style('width', '6em')
+                .style('width', '7em')
                 .oninput(function(){
                     if (!state.running && this.el.value > 0 && this.el.value < state.debugs.length) {
                         state.index = Number(this.el.value);
@@ -179,23 +179,32 @@ function SimulationUi(parent, state) {
         ])
     ]);
 
-    let root = div().classes('field is-grouped').children([
-        button().classes('control button is-primary').text('Start').style('width', '4em').onclick(function () {
-            if (state.running) {
-                state.stop();
-                controls.disabled(false);
-                this.text('Start');
-            } else {
-                state.start();
-                state.index = -1;
-                controls.disabled(true);
-                this.text('Stop');
-            }
-        }),
-        button().classes('control button is-danger').text('Reset').style('width', '4em').onclick(function() {
-            state.reset()
-        }),
-        controls,
+    let root = div().classes("card").style("margin-bottom", "1em").children([
+        p().classes("card-header").children([
+            p().classes("card-header-title").text("State"),
+        ]),
+        div().classes("card-content").children([
+            div().classes("content").children([
+                div().classes('field is-grouped').children([
+                    button().classes('control button is-primary').text('Start').style('width', '4em').onclick(function () {
+                        if (state.running) {
+                            state.stop();
+                            controls.disabled(false);
+                            this.text('Start');
+                        } else {
+                            state.start();
+                            state.index = -1;
+                            controls.disabled(true);
+                            this.text('Stop');
+                        }
+                    }),
+                    button().classes('control button is-danger').text('Reset').style('width', '4em').onclick(function() {
+                        state.reset()
+                    }),
+                    controls,
+                ])
+            ])
+        ])
     ]);
 
     parent.append(root.el);
@@ -208,14 +217,22 @@ function SimulationUi(parent, state) {
 function DebugUi(parent) {
     let self = this;
 
-    self.root = document.createElement('div');
-    parent.append(self.root);
+    let content = div().classes("content");
 
-    self.node = new Node('debug', function(debug) { return debug });
-    self.root.append(self.node.root);
+    let root = div().classes("card").style("margin-bottom", "1em").children([
+        p().classes("card-header").children([
+            p().classes("card-header-title").text("Debug"),
+        ]),
+        div().classes("card-content").children([content])
+    ]);
+
+    parent.append(root.el);
+
+    let node = new Node('debug', function(debug) { return debug });
+    content.el.append(node.root);
 
     self.update = function(state) {
-        self.node.update(state);
+        node.update(state);
     }
 }
 
@@ -336,25 +353,29 @@ function Node(path, f) {
 function ConfigUi(parent, state) {
     let self = this;
 
-    self.root = document.createElement('div');
-    parent.append(self.root);
-
     let local_config = initial_config;
 
-    self.node = new ConfigNode('config', initial_config, function(c) {
+    let content = div().classes("content");
+
+    let root = div().classes("panel").style("margin-bottom", "1em").children([
+        p().classes("card-header").children([
+            p().classes("card-header-title").text("Config"),
+        ]),
+        div().classes("card-content").children([content]),
+        div().classes("card-footer").children([
+            button().classes("button card-footer-item is-primary").text("Set Config").onclick(function() {
+                console.log(local_config);
+                state.send_config(local_config);
+            })
+        ])
+    ]);
+
+    parent.append(root.el);
+
+    let node = new ConfigNode('config', initial_config, function(c) {
         local_config = c;
     });
-    self.root.append(self.node.root);
-
-    let button = document.createElement('button');
-    button.className = "button is-primary";
-    button.innerText = "Set Config";
-    button.onclick = function() {
-        console.log(local_config);
-        state.send_config(local_config);
-    };
-
-    self.root.append(button);
+    content.el.append(node.root);
 }
 
 function ConfigNode(key, initial_value, f) {
@@ -428,7 +449,7 @@ function GraphUi(parent, state) {
 
     let range = 1000;
 
-    let root = div().children([
+    let content = div().classes("card-content").children([
         div().classes('level').children([
             div().classes('level-left has-text-centered').children([
                 p().classes('level-item').text("Graphs"),
@@ -457,7 +478,9 @@ function GraphUi(parent, state) {
                 ]),
             ])
         ]),
-    ]) ;
+    ]);
+
+    let root = div().classes("card").children([content]) ;
     parent.append(root.el);
 
     let oldgraphs = {};
@@ -467,7 +490,7 @@ function GraphUi(parent, state) {
             if (state.graphs.hasOwnProperty(key)) {
                 let f = state.graphs[key];
                 if (!(key in oldgraphs)) {
-                    oldgraphs[key] = new Graph(root.el, key)
+                    oldgraphs[key] = new Graph(content.el, key)
                 }
                 oldgraphs[key].update(range, state, function(state, index) { return f(state.debugs[index]) })
             }
@@ -487,9 +510,6 @@ function GraphUi(parent, state) {
 
 function Graph(parent, path) {
     let self = this;
-
-    const WIDTH = parent.clientWidth;
-    const HEIGHT = 100;
 
     let min = 0;
     let max = 1;
@@ -537,13 +557,20 @@ function Graph(parent, path) {
     ]);
     parent.append(self.root.el);
 
-    let draw = SVG(self.root.el).size(WIDTH, HEIGHT);
+    let draw = SVG(self.root.el).size("100%", 100);
     let line = draw.polyline([]).fill('none').stroke({width: 2});
+
+    let WIDTH = draw.node.clientWidth;
+    let HEIGHT = draw.node.clientHeight;
 
     let centerline = draw.line(WIDTH/2, 0, WIDTH/2, HEIGHT).stroke({width: 1, color: '#999999'});
     let zeroline = draw.line(0, HEIGHT/2, WIDTH, HEIGHT/2).stroke({width: 1, color: '#999999'});
 
     self.update = function(range, state, f) {
+
+        let WIDTH = draw.node.clientWidth;
+        let HEIGHT = draw.node.clientHeight;
+
         let points = [];
 
         let index = state.index;
@@ -602,7 +629,18 @@ function MazeUi(parent) {
     const mouse_int_color = '#00ff00';
     const mouse_ext_color = '#ff0000';
 
-    let draw = SVG(parent);
+    let content = div().classes("card-content");
+
+    let root = div().classes("card").children([
+        div().classes("card-header").children([
+            p().classes("card-header-title").text("Maze")
+        ]),
+        content,
+    ]);
+
+    parent.append(root.el);
+
+    let draw = SVG(content.el);
     let world = undefined;
 
     function redraw(config) {
@@ -611,9 +649,12 @@ function MazeUi(parent) {
         const maze_width_mm = MAZE_WIDTH * maze_config.cell_width + maze_config.wall_width;
         const maze_height_mm = MAZE_HEIGHT * maze_config.cell_width + maze_config.wall_width;
 
-        const px_per_mm = parent.clientWidth / maze_width_mm;
+        draw.size("100%");
 
-        draw.size(maze_width_mm * px_per_mm, maze_height_mm * px_per_mm);
+        const px_per_mm = draw.node.clientWidth / maze_width_mm;
+
+        draw.size("100%", maze_height_mm * px_per_mm);
+
 
         if (world) {
             world.remove()
@@ -684,7 +725,7 @@ function MazeUi(parent) {
         for (let i = 1; i < MAZE_WIDTH; i++) {
             for (let j = 1; j < MAZE_HEIGHT; j++) {
                 if (i < MAZE_WIDTH) {
-                    let wall = debug.mouse_debug.map.maze.horizontal_edges[i][j - 1];
+                    let wall = debug.mouse.map.maze.horizontal_edges[i][j - 1];
                     if (wall === "Closed") {
                         self.horizontal_walls[i][j].fill(wall_closed_color)
                     } else if (wall === "Open") {
@@ -697,7 +738,7 @@ function MazeUi(parent) {
                 }
 
                 if (j < MAZE_HEIGHT) {
-                    let wall = debug.mouse_debug.map.maze.vertical_edges[i - 1][j];
+                    let wall = debug.mouse.map.maze.vertical_edges[i - 1][j];
                     if (wall === "Closed") {
                         self.vertical_walls[i][j].fill(wall_closed_color)
                     } else if (wall === "Open") {
@@ -711,7 +752,7 @@ function MazeUi(parent) {
             }
         }
 
-        let orientation_int = debug.mouse_debug.orientation;
+        let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
 
         let orientation_ext = debug.orientation;
