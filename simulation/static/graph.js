@@ -2,7 +2,7 @@
 function GraphUi(parent, state) {
     let self = this;
 
-    let range = 1000;
+    let range = 10000;
 
     let content = div().classes("card-content").children([
         div().classes('level').children([
@@ -28,7 +28,7 @@ function GraphUi(parent, state) {
                             }),
                     ]),
                     div().classes('control').children([
-                        button().classes('button is-static').text("steps"),
+                        button().classes('button is-static').text("ms"),
                     ]),
                 ]),
             ])
@@ -128,36 +128,36 @@ function Graph(parent, path) {
 
         let points = [];
 
-        let index = state.index;
+        let time = state.debug().mouse.time;
+        let last_time = state.debug(state.debugs.length).mouse.time;
 
-        if (index < 0) {
-            index = state.debugs.length;
-        }
+        let start = time - range;
 
-        let start = index - range;
-
-        if (state.debugs.length > range && index > state.debugs.length - range/2) {
-            start = state.debugs.length - range;
-        } else if (state.debugs.length > range && index > state.debugs.length - range) {
-            start = index - range/2;
+        if (last_time > range && time > last_time - range/2) {
+            start = last_time - range;
+        } else if (last_time > range && time > last_time - range) {
+            start = time - range/2;
         }
 
         if (start < 0) {
             start = 0;
         }
 
-        for (let i = 0; i < range; i++) {
-            let index = i + start;
-            if (index < state.debugs.length) {
-                let value = f(state, index) - min;
-                points[i] = [i * WIDTH / range, HEIGHT - value * HEIGHT / (max - min)];
-            }
+        let debugs = state.debugs
+            .map(function(debug, index) { return {time: debug.mouse.time, index: index} })
+            .filter(function(debug) { return debug.time > start && debug.time < start + range })
+
+        for (let i = 0; i < debugs.length; i++) {
+            let index = debugs[i].index;
+            let time = debugs[i].time;
+            let value = f(state, index) - min;
+            points[i] = [(time - start) * WIDTH / range, HEIGHT - value * HEIGHT / (max - min)];
         }
 
         //line.clear();
         line.plot(points);
 
-        let center = index - start;
+        let center = time - start;
         centerline.plot(center * WIDTH/range, 0, center * WIDTH/range, HEIGHT);
 
         let zero = -min * HEIGHT / (max - min);
