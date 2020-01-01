@@ -20,6 +20,18 @@ function label() {
     return new El('label');
 }
 
+function ul() {
+    return new El('ul');
+}
+
+function li() {
+    return new El('li');
+}
+
+function a() {
+    return new El('a');
+}
+
 function input() {
     let input = new El('input');
     input.type = function(type) {
@@ -49,8 +61,13 @@ function El(tag) {
     let children = [];
     let update = undefined;
 
-    self.classes = function(classes) {
-        self.el.className += classes;
+    self.classes = function(c) {
+        self.el.className += c;
+        return self;
+    };
+
+    self.remove_class= function(c) {
+        self.el.classList.remove(c);
         return self;
     };
 

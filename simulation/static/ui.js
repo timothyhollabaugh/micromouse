@@ -31,7 +31,7 @@ const MOUSE_2020_MOTION = {
     max_wheel_delta_power: 10000.0,
 };
 
-const initial_config = {
+const initial_simulation_config = {
     mouse: {
         mechanical: MOUSE_2019_MECH,
         path: MOUSE_SIM_PATH,
@@ -53,12 +53,37 @@ const initial_config = {
     max_wheel_accel: 60000.0,
 };
 
-function UiState(send) {
+const initial_remote_config = {
+    mouse: {
+        mechanical: MOUSE_2019_MECH,
+        path: MOUSE_SIM_PATH,
+        map: MOUSE_MAZE_MAP,
+        motion: MOUSE_2020_MOTION,
+    },
+};
+
+function Simulation() {
     let self = this;
 
-    self.send_config = function(config) {
-        send({name: "config", data: config})
+    const STATE_DISCONNECTED = "disconnected";
+    const STATE_CONNECTING = "connecting";
+    const STATE_CONNECTED = "connected";
+
+    let worker = new Worker('worker.js');
+
+    self.state = STATE_DISCONNECTED;
+
+    self.onupdate = function() {};
+
+    let last_time = 0;
+    let do_update = function(time) {
+        if (time - last_time > 33) {
+            self.onupdate();
+
+            last_time = time;
+        }
     };
+
     self.debugs = [];
     self.index = -1;
     self.debug = function() {
@@ -68,53 +93,57 @@ function UiState(send) {
             return self.debugs[self.index]
         }
     };
-    self.running = false;
-    self.start = function() {
-        if (!self.running) {
-            send({name: 'start', data: {}});
-            self.running = true;
-        }
-    };
-    self.stop = function() {
-        if (self.running) {
-            send({name: 'stop', data: {}});
-            self.running = false;
-        }
-    };
-    self.reset = function() {
-        send({name: 'reset', data: {}});
-        self.debugs = [];
-    };
 
     self.graphs = [];
-}
 
-function run_worker(config) {
-    if (window.Worker) {
-        let worker = new Worker('worker.js');
-        worker.postMessage({name: 'config', data: config});
+    self.connect = function(type, config, options) {
+        console.log("Connecting");
+        worker.postMessage({
+            name: 'connect',
+            data: {
+                type: type,
+                config: config,
+                options: options,
+            },
+        });
+    };
 
-        let ui_state = new UiState(function(m) { worker.postMessage(m) } );
+    self.disconnect = function() {
+        console.log("Disconnecting");
+        worker.postMessage({
+            name: 'disconnect',
+            data: null,
+        });
+    };
 
-        worker.onmessage = function (event) {
-            ui_state.debugs.push(event.data);
-        };
-
-        let root = document.getElementById('ui');
-
-        let ui = new Ui(root, ui_state);
-
-        let last_time = 0;
-
-        function simulate(time) {
-            if (time - last_time > 33 ){
-                ui.update(ui_state);
-                last_time = time;
-            }
-            requestAnimationFrame(simulate);
+    worker.onmessage = function(event) {
+        let msg = event.data;
+        if (msg.name === "disconnected") {
+            self.state = STATE_DISCONNECTED;
+        } else if (msg.name === "connecting") {
+            self.state = STATE_CONNECTING;
+        } else if (msg.name === "connected") {
+            self.debugs = [];
+            self.index = -1;
+            self.graphs = [];
+            self.state = STATE_CONNECTED;
+        } else if (msg.name === "debug") {
+            self.debugs.push(msg.data)
         }
 
-        requestAnimationFrame(simulate);
+        requestAnimationFrame(do_update);
+    };
+}
+
+function run_worker() {
+    if (window.Worker) {
+        let root = document.getElementById('ui');
+
+        let simulation = new Simulation();
+        let ui = new Ui(root, simulation);
+        simulation.onupdate = function() {
+            ui.update(simulation);
+        };
     }
 }
 
@@ -132,6 +161,7 @@ function Ui(parent, state) {
     ]);
     parent.append(self.root.el);
 
+    self.setup_ui = new SetupUi(debug.el, state);
     self.state_ui = new StateUi(debug.el, state);
     self.debug_ui = new DebugUi(debug.el, state);
     self.config_ui = new ConfigUi(debug.el, state);
@@ -144,6 +174,79 @@ function Ui(parent, state) {
         self.graph_ui.update(state);
         self.debug_ui.update(state);
     }
+}
+
+function SetupUi(parent, state) {
+    let self = this;
+
+    let selected_tab = "simulated";
+
+    let simulated_tab = li();
+    let remote_tab = li();
+
+    let simulated = div();
+
+    let remote_url = input().classes('input').style('font-family', 'monospace');
+
+    let remote = div().children([
+        fieldset().classes('field has-addons').children([
+            div().classes("control").children([
+                button().classes("is-static button").text("URL"),
+            ]),
+            div().classes("control is-expanded").children([remote_url])
+        ])
+    ]);
+
+    let content = div();
+
+    let root = div().classes("card").style("margin-bottom", "1em").children([
+        div().classes("card-header").children([
+            p().classes("card-header-title").text("Setup"),
+        ]),
+        div().classes("card-content").children([
+            div().classes("tabs is-fullwidth").children([
+                ul().children([
+                    simulated_tab.classes("is-active").children([
+                        a().text("Simulated").onclick(function() {
+                            if (selected_tab === "remote") {
+                                remote.el.remove();
+                                content.el.append(simulated.el);
+                                simulated_tab.classes("is-active");
+                                remote_tab.remove_class("is-active");
+                                selected_tab = "simulated";
+                            }
+                        }),
+                    ]),
+                    remote_tab.children([
+                        a().text("Remote").onclick(function() {
+                            if (selected_tab === "simulated") {
+                                simulated.el.remove();
+                                content.el.append(remote.el);
+                                remote_tab.classes("is-active");
+                                simulated_tab.remove_class("is-active");
+                                selected_tab = "remote";
+                            }
+                        }),
+                    ]),
+                ]),
+            ]),
+            content.children(simulated),
+        ]),
+        div().classes("card-footer").children([
+            button().classes("button card-footer-item is-primary").text("Connect").onclick(function() {
+                if (selected_tab === 'simulated') {
+                    state.connect('simulated', initial_simulation_config, null);
+                } else if (selected_tab === 'remote') {
+                    state.connect('remote', initial_remote_config, {url: remote_url.el.value});
+                }
+            }),
+            button().classes("button card-footer-item is-danger").text("Disconnect").onclick(function() {
+                state.disconnect();
+            }),
+        ]),
+    ]);
+
+    parent.append(root.el);
 }
 
 function StateUi(parent, state) {
@@ -353,7 +456,7 @@ function Node(path, f) {
 function ConfigUi(parent, state) {
     let self = this;
 
-    let local_config = initial_config;
+    let local_config = initial_simulation_config;
 
     let content = div().classes("content");
 
@@ -372,7 +475,7 @@ function ConfigUi(parent, state) {
 
     parent.append(root.el);
 
-    let node = new ConfigNode('config', initial_config, function(c) {
+    let node = new ConfigNode('config', initial_simulation_config, function(c) {
         local_config = c;
     });
     content.el.append(node.root);
@@ -782,4 +885,4 @@ function MazeUi(parent) {
 function isEqual(a, b) {}
 
 
-run_worker(initial_config);
+run_worker();

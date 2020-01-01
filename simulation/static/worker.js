@@ -16,62 +16,70 @@ init();
 
 console.log("inited");
 
-function Simulaton() {
-    let self = this;
+let simulation = undefined;
+let remote = undefined;
+let interval_id = undefined;
+let websocket = undefined;
 
-    let simulation = null;
-    let config = null;
-    let interval_id = null
+postMessage({name: 'start'});
 
+onmessage = function (event) {
 
-}
+    console.log(event.data);
 
-let simulation = null;
-let remote = null;
-let config = null;
-let interval_id = null;
+    let msg = event.data;
 
-function reset_simulation() {
-    console.log(config);
-    simulation = new wasm_bindgen.JsSimulation(config);
-}
+    if (msg.name === 'connect') {
+        if (!simulation) {
+            if (msg.data.type === 'simulated') {
+                simulation = new wasm_bindgen.JsSimulation(msg.data.config);
 
-function reset_remote() {
-    remote = new wasm_bindgen.JsRemote(config);
-}
+                interval_id = setInterval(function() {
+                    if (simulation && inited) {
+                        let debug = simulation.update();
+                        self.postMessage({name: 'debug', data: debug});
+                    }
+                }, msg.data.config.millis_per_step);
 
-function run_remote() {
-    if (remote && inited) {
-        let debugs = simulation.update()
-    }
-}
+                postMessage({name: 'connected', data: 'simulated'});
+            } else if (msg.data.type === 'remote') {
+                simulation = new wasm_bindgen.JsRemote(msg.data.config);
 
-function run_simulation() {
-    if (simulation && inited) {
-        let debug = simulation.update(config);
-        self.postMessage(debug);
-    }
-}
+                websocket = new WebSocket(msg.data.options.url);
 
-self.onmessage = function (event) {
-    if (event.data.name === 'config') {
-        config = event.data.data;
-    } else if (event.data.name === 'start') {
-        if (config && !interval_id) {
-            interval_id = setInterval(function() {
-                if (!simulation && inited && config !== null) {
-                    reset_simulation();
-                }
-                run_simulation();
-            }, config.millis_per_step)
+                websocket.onmessage = function(event) {
+                    console.log("websocket data: ", event.data);
+
+                    let debug = simulation.update(event.data);
+                    self.postMessage({name: 'debug', data: debug});
+                };
+
+                websocket.onopen = function(event) {
+                    console.log("websocket open");
+                    self.postMessage({name: 'connected', data: 'remote'});
+                };
+
+                websocket.onclose = function(event) {
+                    console.log("websocket closed");
+                    self.postMessage({name: 'disconnected'});
+                };
+
+                self.postMessage({name: 'connecting', data: 'remote'});
+            }
         }
-    } else if (event.data.name === 'stop') {
-        if (interval_id) {
-            clearInterval(interval_id);
-            interval_id = null;
+    } else if (msg.name === 'disconnect') {
+        if (simulation) {
+            simulation = undefined;
+
+            if (interval_id) {
+                clearInterval(interval_id);
+                interval_id = undefined;
+            }
+
+            if (websocket) {
+                websocket.close(1000);
+                websocket = undefined;
+            }
         }
-    } else if (event.data.name === 'reset') {
-        reset_simulation();
-        run_simulation()
     }
 };

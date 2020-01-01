@@ -23,6 +23,7 @@ pub fn init_wasm() {
 #[wasm_bindgen]
 pub struct JsSimulation {
     simulation: Simulation,
+    config: SimulationConfig,
 }
 
 #[wasm_bindgen]
@@ -33,15 +34,14 @@ impl JsSimulation {
         let config: SimulationConfig = config.into_serde().expect("Could not parse config");
         JsSimulation {
             simulation: Simulation::new(&config),
+            config,
         }
     }
 
     /// Update the simulation
-    /// The config argument is a SimulationConfig,
-    /// and the return is a SimulationDebug.
-    pub fn update(&mut self, config: JsValue) -> JsValue {
-        let config: SimulationConfig = config.into_serde().unwrap();
-        let debug = self.simulation.update(&config);
+    /// The return is a SimulationDebug.
+    pub fn update(&mut self) -> JsValue {
+        let debug = self.simulation.update(&self.config);
         JsValue::from_serde(&debug).unwrap()
     }
 }
