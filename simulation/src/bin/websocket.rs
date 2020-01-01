@@ -19,7 +19,8 @@ fn main() {
                         println!("{:#?}", debug);
                         buf = Vec::from(remaining.clone());
                     }
-                    Err(e) => {} //println!("{:?}", e),
+                    Err(postcard::Error::DeserializeUnexpectedEnd) => {}
+                    Err(e) => println!("{:?}", e),
                 }
             }
             Err(e) => println!("{:?}", e),

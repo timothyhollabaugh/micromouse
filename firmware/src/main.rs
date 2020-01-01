@@ -53,6 +53,7 @@ use mouse::map::Direction;
 use mouse::map::Orientation;
 use mouse::map::Vector;
 use mouse::mouse::Mouse;
+use mouse::mouse::MouseConfig;
 use mouse::mouse::MouseDebug;
 
 use crate::battery::Battery;
@@ -113,7 +114,7 @@ fn main() -> ! {
     orange_led.set_high().ok();
     blue_led.set_low().ok();
 
-    uart.add_bytes(b"Initializing").ok();
+    uart.add_bytes(b"Initializing\n").ok();
 
     let mut front_distance = {
         let scl = gpiob.pb8.into_open_drain_output().into_alternate_af4();
@@ -219,6 +220,7 @@ fn main() -> ! {
     right_distance.start_ranging();
 
     let mut running = false;
+    let mut debugging = false;
 
     let mut packet_count = 0;
     let mut step_count = 0;
@@ -229,6 +231,17 @@ fn main() -> ! {
         front_distance.update();
         right_distance.update();
         left_distance.update();
+
+        if let Ok(byte) = uart.read_byte() {
+            match byte {
+                0 => {}
+                1 => debugging = false,
+                2 => debugging = true,
+                3 => running = false,
+                4 => running = true,
+                _ => {}
+            }
+        }
 
         if now - last_time >= 10 {
             green_led.toggle().ok();
@@ -253,7 +266,7 @@ fn main() -> ! {
                 right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
                 left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
 
-                if uart.tx_len() == Ok(0) {
+                if debugging && uart.tx_len() == Ok(0) {
                     let mut msgs = Vec::new();
                     msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
 

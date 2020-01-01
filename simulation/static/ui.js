@@ -116,6 +116,24 @@ function Simulation() {
         });
     };
 
+    self.running = false;
+
+    self.start = function() {
+        worker.postMessage({
+            name: 'start',
+            data: null,
+        });
+        self.running = true;
+    };
+
+    self.stop = function() {
+        worker.postMessage({
+            name: 'stop',
+            data: null,
+        });
+        self.running = false;
+    };
+
     worker.onmessage = function(event) {
         let msg = event.data;
         if (msg.name === "disconnected") {

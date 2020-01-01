@@ -70,7 +70,12 @@ impl Uart {
         gpioa.afrh.modify(|_, w| w.afrh9().af7().afrh10().af7());
 
         // set buadrate
-        uart.brr.write(|w| unsafe { w.bits(0x683) });
+
+        // 9600 baud
+        //uart.brr.write(|w| unsafe { w.bits(0x683) });
+
+        // 115200 baud
+        uart.brr.write(|w| unsafe { w.bits(0x008b) });
 
         // enable rx and tx
         uart.cr1.write(|w| {
