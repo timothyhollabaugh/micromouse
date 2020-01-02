@@ -134,6 +134,10 @@ function Simulation() {
         self.running = false;
     };
 
+    self.update = function() {
+        requestAnimationFrame(do_update);
+    };
+
     worker.onmessage = function(event) {
         let msg = event.data;
         if (msg.name === "disconnected") {

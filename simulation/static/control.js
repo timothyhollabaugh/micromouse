@@ -13,10 +13,13 @@ function StateUi(parent, state) {
                 .oninput(function(){
                     if (!state.running && this.el.value > 0 && this.el.value < state.debugs.length) {
                         state.index = Number(this.el.value);
+                        state.update();
                     }
                 })
                 .onupdate(function(state) {
-                    this.value(state.debugs.length);
+                    if (state.running) {
+                        this.value(state.debugs.length);
+                    }
                 })
         ]),
         div().classes('control').children([
