@@ -126,6 +126,7 @@ function Node(path, f) {
                     } else {
                         delete state.graphs[path];
                     }
+                    state.update();
                 }
                 if (path in state.graphs) {
                     graphcheck.checked = true;

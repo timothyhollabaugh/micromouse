@@ -45,7 +45,7 @@ function GraphUi(parent, state) {
             if (state.graphs.hasOwnProperty(key)) {
                 let f = state.graphs[key];
                 if (!(key in oldgraphs)) {
-                    oldgraphs[key] = new Graph(content.el, key)
+                    oldgraphs[key] = new Graph(content.el, key, state)
                 }
                 oldgraphs[key].update(range, state, function(state, index) { return f(state.debugs[index]) })
             }
@@ -63,7 +63,7 @@ function GraphUi(parent, state) {
 
 }
 
-function Graph(parent, path) {
+function Graph(parent, path, state) {
     let self = this;
 
     let min = 0;
@@ -88,7 +88,10 @@ function Graph(parent, path) {
                                 .style('font-family', 'monospace')
                                 .style('width', '6em')
                                 .value(max)
-                                .oninput(function() { max = Number(this.el.value); }),
+                                .oninput(function() {
+                                    max = Number(this.el.value);
+                                    state.update();
+                                }),
                         ]),
                     ]),
                     div().classes('control field has-addons').children([
@@ -103,7 +106,10 @@ function Graph(parent, path) {
                                 .style('font-family', 'monospace')
                                 .style('width', '6em')
                                 .value(min)
-                                .oninput(function() { min = Number(this.el.value); }),
+                                .oninput(function() {
+                                    min = Number(this.el.value);
+                                    state.update();
+                                }),
                         ]),
                     ]),
                 ]),
