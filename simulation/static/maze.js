@@ -99,6 +99,8 @@ function MazeUi(parent) {
 
         self.mouse_ext = world.group()
         self.mouse_ext.rect(mech.length, mech.width).fill(mouse_ext_color).translate(mech.front_offset - mech.length, -mech.width / 2);
+
+        self.path = world.path('').fill('none').stroke({color: '#0000ff', width: 2});
     }
 
     function update(debug) {
@@ -138,6 +140,61 @@ function MazeUi(parent) {
         if (debug.orientation) {
             let orientation_ext = debug.orientation;
             self.mouse_ext.rotate(orientation_ext.direction * 180 / Math.PI).translate(orientation_ext.position.x, orientation_ext.position.y);
+        }
+
+        if (debug.mouse.path.path && debug.mouse.path.path.length > 0) {
+            let path_string = debug.mouse.path.path.reduce(function(str, segment) {
+                if ("Arc" in segment) {
+                    let arc = segment["Arc"];
+
+                    let x1 = arc[0].x;
+                    let y1 = arc[0].y;
+
+                    let cx = arc[1].x;
+                    let cy = arc[1].y;
+
+                    let theta = arc[2];
+
+                    let radius = Math.sqrt((x1 - cx) * (x1 - cx) + (y1 - cy) * (y1 - cy));
+
+                    let theta_end = Math.atan2((y1-cy), (x1-cx)) + theta;
+
+                    let large_flag = 0;
+
+                    if (theta > Math.PI) {
+                        large_flag = 1;
+                    } else {
+                        large_flag = 0;
+                    }
+
+                    let sweep_flag = 0;
+
+                    if (theta > 0) {
+                        sweep_flag = 1;
+                    } else {
+                        sweep_flag = 0;
+                    }
+
+                    let x2 = cx + radius * Math.cos(theta_end);
+                    let y2 = cy + radius * Math.sin(theta_end);
+
+                    return str + "M " + x1 + " " + y1 + " A " + " " + radius + " " + radius + " 0 " + large_flag + " " + sweep_flag + " " + x2 + " " + y2 + " ";
+                } else if ("Line" in segment) {
+                    let line = segment["Line"];
+                    let x1 = line[0].x;
+                    let y1 = line[0].y;
+                    let x2 = line[1].x;
+                    let y2 = line[1].y;
+
+                    return str + "M " + x1 + " " + y1 + " L " + x2 + " " + y2 + " ";
+                } else {
+                    return str;
+                }
+            }, "");
+
+            self.path.plot(path_string);
+        } else {
+            self.path.plot("");
         }
     }
 
