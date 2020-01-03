@@ -11,9 +11,13 @@ function ControlUi(parent, state) {
                 .style('font-family', 'monospace')
                 .style('width', '7em')
                 .oninput(function(){
-                    if (state.state !== state.STATE_RUNNING && this.el.value > 0 && this.el.value < state.debugs.length) {
+                    if (state.state !== state.STATE_RUNNING && this.el.value >= 0 && this.el.value < state.debugs.length) {
                         state.index = Number(this.el.value);
                         state.update();
+                    } else if (this.el.value < 0) {
+                        this.value(0);
+                    } else if (this.el.value >= state.debugs.length) {
+                        this.value(state.debugs.length-1);
                     }
                 })
                 .onupdate(function(state) {
