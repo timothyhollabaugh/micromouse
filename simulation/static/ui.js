@@ -65,13 +65,15 @@ const initial_remote_config = {
 function Simulation() {
     let self = this;
 
-    const STATE_DISCONNECTED = "disconnected";
-    const STATE_CONNECTING = "connecting";
-    const STATE_CONNECTED = "connected";
+    self.STATE_LOADING = "loading";
+    self.STATE_DISCONNECTED = "disconnected";
+    self.STATE_CONNECTING = "connecting";
+    self.STATE_STOPPED = "stopped";
+    self.STATE_RUNNING = "running";
 
     let worker = new Worker('worker.js');
 
-    self.state = STATE_DISCONNECTED;
+    self.state = self.STATE_LOADING;
 
     self.onupdate = function() {};
 
@@ -97,7 +99,6 @@ function Simulation() {
     self.graphs = [];
 
     self.connect = function(type, config, options) {
-        console.log("Connecting");
         worker.postMessage({
             name: 'connect',
             data: {
@@ -109,21 +110,17 @@ function Simulation() {
     };
 
     self.disconnect = function() {
-        console.log("Disconnecting");
         worker.postMessage({
             name: 'disconnect',
             data: null,
         });
     };
 
-    self.running = false;
-
     self.start = function() {
         worker.postMessage({
             name: 'start',
             data: null,
         });
-        self.running = true;
     };
 
     self.stop = function() {
@@ -140,15 +137,21 @@ function Simulation() {
 
     worker.onmessage = function(event) {
         let msg = event.data;
-        if (msg.name === "disconnected") {
-            self.state = STATE_DISCONNECTED;
+        if (msg.name === "loaded") {
+            self.state = self.STATE_LOADING
+        } else if (msg.name === "disconnected") {
+            self.state = self.STATE_DISCONNECTED;
         } else if (msg.name === "connecting") {
-            self.state = STATE_CONNECTING;
+            self.state = self.STATE_CONNECTING;
         } else if (msg.name === "connected") {
             self.debugs = [];
             self.index = -1;
             self.graphs = [];
-            self.state = STATE_CONNECTED;
+            self.state = self.STATE_STOPPED;
+        } else if (msg.name === "running") {
+            self.state = self.STATE_RUNNING;
+        } else if (msg.name === "stopped") {
+            self.state = self.STATE_STOPPED;
         } else if (msg.name === "debug") {
             self.debugs.push(msg.data)
         }

@@ -14,6 +14,8 @@ function Simulation(config, send) {
 
     let interval_id = undefined;
 
+    send({name: 'connected'});
+
     self.start = function() {
         if (!interval_id) {
             console.log(config.millis_per_step);
@@ -76,6 +78,7 @@ function Remote(config, url, send) {
         console.log("websocket open");
         send_byte(BYTE_START_DEBUG);
         state = STATE_OK;
+        send({name: 'connected'});
     };
 
     socket.onclose = function(event) {
@@ -126,13 +129,11 @@ async function init() {
 
     console.log("start");
 
-    postMessage({name: 'start'});
+    postMessage({name: 'loaded'});
 
     let handler = undefined;
 
     onmessage = function (event) {
-        console.log(event.data);
-
         let msg = event.data;
 
         if (msg.name === 'connect') {
@@ -142,14 +143,19 @@ async function init() {
                 } else if (msg.data.type === 'remote') {
                     handler = new Remote(msg.data.config, msg.data.options.url, function(m) { postMessage(m) });
                 }
+                postMessage({name: 'connecting'});
             }
         } else if (msg.name === 'disconnect') {
+            handler.stop();
             handler.disconnect();
             handler = undefined;
+            postMessage({name: 'disconnected'});
         } else if (msg.name === 'start') {
             handler.start();
+            postMessage({name: 'running'});
         } else if (msg.name === 'stop') {
             handler.stop();
+            postMessage({name: 'stopped'});
         }
     };
 }

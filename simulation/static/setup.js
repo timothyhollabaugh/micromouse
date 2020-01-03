@@ -22,6 +22,16 @@ function SetupUi(parent, state) {
 
     let content = div();
 
+    let connect = a().text("Connect").onclick(function() {
+        if (selected_tab === 'simulated') {
+            state.connect('simulated', initial_simulation_config, null);
+        } else if (selected_tab === 'remote') {
+            state.connect('remote', initial_remote_config, {url: remote_url.el.value});
+        }
+    });
+
+    let disconnect = a().text("Disconnect").onclick(function() { state.disconnect(); });
+
     let root =  card().title("Setup").content([
         div().classes("tabs is-fullwidth").children([
             ul().children([
@@ -50,18 +60,7 @@ function SetupUi(parent, state) {
             ]),
         ]),
         content.children(simulated),
-    ]).footer([
-        a().text("Connect").onclick(function() {
-            if (selected_tab === 'simulated') {
-                state.connect('simulated', initial_simulation_config, null);
-            } else if (selected_tab === 'remote') {
-                state.connect('remote', initial_remote_config, {url: remote_url.el.value});
-            }
-        }),
-        a().text("Disconnect").onclick(function() {
-            state.disconnect();
-        }),
-    ]);
+    ]).footer([ connect, disconnect ]);
 
     parent.append(root.el);
 }
