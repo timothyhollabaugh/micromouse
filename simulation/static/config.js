@@ -6,17 +6,13 @@ function ConfigUi(parent, state) {
 
     let content = div().classes("content");
 
-    let root = div().classes("panel").style("margin-bottom", "1em").children([
-        p().classes("card-header").children([
-            p().classes("card-header-title").text("Config"),
-        ]),
-        div().classes("card-content").children([content]),
-        div().classes("card-footer").children([
-            button().classes("button card-footer-item is-primary").text("Set Config").onclick(function() {
-                console.log(local_config);
-                state.send_config(local_config);
-            })
-        ])
+    let root = card().title('Config').content([
+        content
+    ]).footer([
+        a().text("Set Config").onclick(function() {
+            console.log(local_config);
+            state.send_config(local_config);
+        })
     ]);
 
     parent.append(root.el);

@@ -2,13 +2,10 @@
 function DebugUi(parent) {
     let self = this;
 
-    let content = div().classes("content");
+    let content = div();
 
-    let root = div().classes("card").style("margin-bottom", "1em").children([
-        p().classes("card-header").children([
-            p().classes("card-header-title").text("Debug"),
-        ]),
-        div().classes("card-content").children([content])
+    let root = card().title("Debug").content([
+        content
     ]);
 
     parent.append(root.el);

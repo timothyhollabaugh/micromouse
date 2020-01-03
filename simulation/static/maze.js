@@ -9,14 +9,9 @@ function MazeUi(parent) {
     const mouse_int_color = '#00ff00';
     const mouse_ext_color = '#ff0000';
 
-    let content = div().classes("card-content");
+    let content = div();
 
-    let root = div().classes("card").children([
-        div().classes("card-header").children([
-            p().classes("card-header-title").text("Maze")
-        ]),
-        content,
-    ]);
+    let root = card().title("Maze").content([content]);
 
     parent.append(root.el);
 

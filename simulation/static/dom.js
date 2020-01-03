@@ -32,6 +32,49 @@ function a() {
     return new El('a');
 }
 
+function card() {
+    let content = div().classes('card-content');
+
+    let footer = div().classes('card-footer');
+
+    let title = a().classes('card-header-title').onclick(function() {
+        content.el.classList.toggle('is-hidden');
+        footer.el.classList.toggle('is-hidden');
+    });
+    let header = div().classes('card-header has-background-light').children([title]);
+
+    let root = div().classes('card').style("margin-bottom", "1em").children([
+        header,
+        content,
+        footer,
+    ]);
+
+    root.title = function(t) {
+        title.text(t);
+        return root;
+    };
+
+    root.content = function(c) {
+        content.children(c);
+        return root;
+    };
+
+    root.footer = function(f) {
+        f.forEach(function(item) {
+            if (item.el) {
+                item.el.classList += ' card-footer-item';
+            } else {
+                item.classList += ' card-footer-item';
+            }
+        });
+
+        footer.children(f);
+        return root;
+    };
+
+    return root;
+}
+
 function input() {
     let input = new El('input');
     input.type = function(type) {

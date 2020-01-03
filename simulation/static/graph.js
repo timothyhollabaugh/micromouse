@@ -4,38 +4,32 @@ function GraphUi(parent, state) {
 
     let range = 10000;
 
-    let content = div().classes("card-content").children([
-        div().classes('level').children([
-            div().classes('level-left has-text-centered').children([
-                p().classes('level-item').text("Graphs"),
-            ]),
-            div().classes('level-right').children([
-                div().classes('level-item field has-addons').children([
-                    div().classes('control').children([
-                        button().classes('button is-static').text("Range: "),
-                    ]),
-                    div().classes('control').children([
-                        input()
-                            .type('number')
-                            .classes('input')
-                            .style('text-align', 'right')
-                            .style('font-family', 'monospace')
-                            .style('width', '6em')
-                            .value(range)
-                            .oninput(function() {
-                                range = Number(this.el.value);
-                                console.log(range);
-                            }),
-                    ]),
-                    div().classes('control').children([
-                        button().classes('button is-static').text("ms"),
-                    ]),
-                ]),
-            ])
-        ]),
-    ]);
+    let content = div();
 
-    let root = div().classes("card").children([content]) ;
+    let root = card().title("Graphs").content([
+        div().classes('field has-addons').children([
+            div().classes('control').children([
+                button().classes('button is-static').text("Range: "),
+            ]),
+            div().classes('control').children([
+                input()
+                    .type('number')
+                    .classes('input')
+                    .style('text-align', 'right')
+                    .style('font-family', 'monospace')
+                    .style('width', '6em')
+                    .value(range)
+                    .oninput(function() {
+                        range = Number(this.el.value);
+                        console.log(range);
+                    }),
+            ]),
+            div().classes('control').children([
+                button().classes('button is-static').text("ms"),
+            ]),
+        ]),
+        content
+    ]);
     parent.append(root.el);
 
     let oldgraphs = {};

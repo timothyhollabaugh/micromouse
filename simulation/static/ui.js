@@ -184,14 +184,14 @@ function Ui(parent, state) {
     parent.append(self.root.el);
 
     self.setup_ui = new SetupUi(debug.el, state);
-    self.state_ui = new StateUi(debug.el, state);
+    self.control_ui = new ControlUi(debug.el, state);
     self.debug_ui = new DebugUi(debug.el, state);
     self.config_ui = new ConfigUi(debug.el, state);
     self.maze_ui = new MazeUi(maze.el, state);
     self.graph_ui = new GraphUi(graph.el, state);
 
     self.update = function(state) {
-        self.state_ui.update(state);
+        self.control_ui.update(state);
         self.maze_ui.update(state);
         self.graph_ui.update(state);
         self.debug_ui.update(state);

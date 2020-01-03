@@ -1,5 +1,5 @@
 
-function StateUi(parent, state) {
+function ControlUi(parent, state) {
     let self = this;
 
     let controls = fieldset().classes('control field has-addons').disabled(true).children([
@@ -33,32 +33,25 @@ function StateUi(parent, state) {
         ])
     ]);
 
-    let root = div().classes("card").style("margin-bottom", "1em").children([
-        p().classes("card-header").children([
-            p().classes("card-header-title").text("State"),
-        ]),
-        div().classes("card-content").children([
-            div().classes("content").children([
-                div().classes('field is-grouped').children([
-                    button().classes('control button is-primary').text('Start').style('width', '4em').onclick(function () {
-                        if (state.running) {
-                            state.stop();
-                            controls.disabled(false);
-                            this.text('Start');
-                        } else {
-                            state.start();
-                            state.index = -1;
-                            controls.disabled(true);
-                            this.text('Stop');
-                        }
-                    }),
-                    button().classes('control button is-danger').text('Reset').style('width', '4em').onclick(function() {
-                        state.reset()
-                    }),
-                    controls,
-                ])
+    let root = card().title("Control").content([
+            div().classes('field is-grouped').children([
+                button().classes('control button is-primary').text('Start').style('width', '4em').onclick(function () {
+                    if (state.running) {
+                        state.stop();
+                        controls.disabled(false);
+                        this.text('Start');
+                    } else {
+                        state.start();
+                        state.index = -1;
+                        controls.disabled(true);
+                        this.text('Stop');
+                    }
+                }),
+                button().classes('control button is-danger').text('Reset').style('width', '4em').onclick(function() {
+                    state.reset()
+                }),
+                controls,
             ])
-        ])
     ]);
 
     parent.append(root.el);
