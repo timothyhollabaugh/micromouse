@@ -18,7 +18,6 @@ function Simulation(config, send) {
 
     self.start = function() {
         if (!interval_id) {
-            console.log(config.millis_per_step);
             interval_id = setInterval(function() {
                 let debug = simulation.update();
                 send({

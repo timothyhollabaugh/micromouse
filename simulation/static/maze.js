@@ -38,7 +38,8 @@ function MazeUi(parent) {
 
         world = draw.group();
 
-        world.scale(px_per_mm);
+        world.scale(px_per_mm, -px_per_mm);
+        world.move(0, -maze_height_mm);
 
         let maze = world.group();
 
@@ -201,7 +202,6 @@ function MazeUi(parent) {
             let debug = state.debug();
             let config = debug.config;
             if (!_.isEqual(config, oldconfig)) {
-                console.log("r");
                 redraw(config);
                 oldconfig = config;
             }
