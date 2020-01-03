@@ -15,11 +15,13 @@ fn max(f1: f32, f2: f32) -> f32 {
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionConfig {
     /// The max power change for each wheel before the linear speed is reduced.
-    pub max_wheel_delta_power: f32,
+    pub max_delta_power: f32,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionDebug {
+    pub linear_power: f32,
+    pub angular_power: f32,
     pub target_left_power: f32,
     pub target_right_power: f32,
     pub normalized_left_power: f32,
@@ -73,9 +75,26 @@ impl Motion {
             (target_left_power, target_right_power)
         };
 
-        let left_delta_power = target_left_power - self.last_left_power;
-        let right_delta_power = target_right_power - self.last_right_power;
+        let left_delta_power = normalized_left_power - self.last_left_power;
+        let right_delta_power = normalized_right_power - self.last_right_power;
 
+        let limited_left_power = if left_delta_power > config.max_delta_power {
+            self.last_left_power + config.max_delta_power
+        } else if left_delta_power < -config.max_delta_power {
+            self.last_left_power - config.max_delta_power
+        } else {
+            normalized_left_power
+        };
+
+        let limited_right_power = if right_delta_power > config.max_delta_power {
+            self.last_right_power + config.max_delta_power
+        } else if right_delta_power < -config.max_delta_power {
+            self.last_right_power - config.max_delta_power
+        } else {
+            normalized_right_power
+        };
+
+        /*
         let max_delta_power = max(left_delta_power.abs(), right_delta_power.abs());
 
         let (limited_left_power, limited_right_power) =
@@ -90,11 +109,14 @@ impl Motion {
             } else {
                 (target_left_power, target_right_power)
             };
+            */
 
         self.last_left_power = limited_left_power;
         self.last_right_power = limited_right_power;
 
         let debug = MotionDebug {
+            linear_power,
+            angular_power,
             target_left_power,
             target_right_power,
             normalized_left_power,

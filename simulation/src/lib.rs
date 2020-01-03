@@ -44,6 +44,10 @@ impl JsSimulation {
         let debug = self.simulation.update(&self.config);
         JsValue::from_serde(&debug).unwrap()
     }
+
+    pub fn config(&mut self, config: JsValue) {
+        self.config = config.into_serde().expect("Could not parse config");
+    }
 }
 
 #[wasm_bindgen]

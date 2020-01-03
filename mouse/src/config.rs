@@ -23,7 +23,7 @@ pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
 };
 
 pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
-    max_wheel_delta_power: 10000.0,
+    max_delta_power: 10000.0,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {

@@ -28,7 +28,7 @@ const MOUSE_MAZE_MAP = {
 };
 
 const MOUSE_2020_MOTION = {
-    max_wheel_delta_power: 10000.0,
+    max_delta_power: 10000.0,
 };
 
 const initial_simulation_config = {
@@ -133,6 +133,13 @@ function Simulation() {
 
     self.update = function() {
         requestAnimationFrame(do_update);
+    };
+
+    self.send_config = function(config) {
+        worker.postMessage({
+            name: 'config',
+            data: config,
+        });
     };
 
     worker.onmessage = function(event) {

@@ -35,6 +35,10 @@ function Simulation(config, send) {
         }
     };
 
+    self.config = function(config) {
+        simulation.config(config);
+    };
+
     self.disconnect = function() { }
 }
 
@@ -68,7 +72,7 @@ function Remote(config, url, send) {
         console.log("err timed out");
         send_byte(BYTE_START_DEBUG);
         state = STATE_OK;
-    }
+    };
 
     let socket = new WebSocket(url);
     socket.binaryType = 'arraybuffer';
@@ -121,6 +125,8 @@ function Remote(config, url, send) {
     self.disconnect = function() {
         socket.close();
     }
+
+    self.config = function () {};
 }
 
 async function init() {
@@ -155,6 +161,8 @@ async function init() {
         } else if (msg.name === 'stop') {
             handler.stop();
             postMessage({name: 'stopped'});
+        } else if (msg.name === 'config') {
+            handler.config(msg.data);
         }
     };
 }
