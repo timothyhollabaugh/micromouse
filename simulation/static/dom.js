@@ -138,14 +138,16 @@ function El(tag) {
     }
 
     self.disabled = function(d) {
-        self.el.disabled = d;
+        if (self.el.disabled !== d) {
+            self.el.disabled = d;
+        }
         return self;
     };
 
     self.style = function(s, v) {
         self.el.style[s] = v;
         return self;
-    }
+    };
 
     self.onupdate = function(f) {
         update = f.bind(self);

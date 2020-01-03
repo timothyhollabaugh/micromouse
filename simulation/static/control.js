@@ -11,7 +11,7 @@ function ControlUi(parent, state) {
                 .style('font-family', 'monospace')
                 .style('width', '7em')
                 .oninput(function(){
-                    if (!state.state === state.STATE_RUNNING && this.el.value > 0 && this.el.value < state.debugs.length) {
+                    if (state.state !== state.STATE_RUNNING && this.el.value > 0 && this.el.value < state.debugs.length) {
                         state.index = Number(this.el.value);
                         state.update();
                     }
@@ -31,26 +31,20 @@ function ControlUi(parent, state) {
                     this.text('/ ' + (state.debugs.length-1))
                 })
         ])
-    ]).onupdate(function(state) {
-        if (state.state === state.STATE_STOPPED) {
-            this.disabled(false);
-        } else {
-            this.disabled(true);
-        }
-    });
+    ]);
 
     let root = card().title("Control").content([
             div().classes('field is-grouped').children([
                 button().classes('control button is-primary').text('Start').style('width', '4em').onclick(function () {
-                    if (state.running) {
+                    if (state.state === state.STATE_RUNNING) {
                         state.stop();
-                        controls.disabled(false);
                         this.text('Start');
+                        controls.disabled(false);
                     } else {
                         state.start();
                         state.index = -1;
-                        controls.disabled(true);
                         this.text('Stop');
+                        controls.disabled(true);
                     }
                 }),
                 button().classes('control button is-danger').text('Reset').style('width', '4em').onclick(function() {
