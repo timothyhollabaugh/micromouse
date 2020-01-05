@@ -65,7 +65,7 @@ impl Simulation {
 
     pub fn update(&mut self, config: &SimulationConfig) -> SimulationDebug {
         // Update the mouse for the current time
-        let (left_power, right_power, mouse_debug) = self.mouse.update(
+        let (raw_left_power, raw_right_power, mouse_debug) = self.mouse.update(
             &config.mouse,
             self.time,
             self.left_encoder,
@@ -75,7 +75,23 @@ impl Simulation {
             255,
         );
 
-        //let (left_power, right_power, mouse_debug): (f32, f32, MouseDebug) = Default::default();
+        // Make sure the wheel powers are in range -1.0 to 1.0
+
+        let left_power = if raw_left_power > 1.0 {
+            1.0
+        } else if raw_left_power < -1.0 {
+            -1.0
+        } else {
+            raw_left_power
+        };
+
+        let right_power = if raw_right_power > 1.0 {
+            1.0
+        } else if raw_right_power < -1.0 {
+            -1.0
+        } else {
+            raw_right_power
+        };
 
         // Update the state for the next run
         let left_wheel_speed = left_power * config.max_speed;
