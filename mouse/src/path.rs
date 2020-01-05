@@ -256,11 +256,11 @@ mod tests {
     }
     #[test]
     fn segment_line_distance_from() {
-        assert_close(LINE_SEGMENT.distance_from(MOUSE), 1.41421356237);
+        assert_close(LINE_SEGMENT.distance_from(MOUSE), -1.41421356237);
     }
     #[test]
     fn segment_line_distance_from2() {
-        assert_close(LINE_SEGMENT.distance_from(MOUSE2), -1.41421356237);
+        assert_close(LINE_SEGMENT.distance_from(MOUSE2), 1.41421356237);
     }
 
     fn assert_close2(left: Vector, right: Vector) {
@@ -298,6 +298,7 @@ pub struct PathDebug {
     pub centered_direction: Option<f32>,
     pub tangent_direction: Option<Direction>,
     pub target_direction: Option<Direction>,
+    pub error: Option<f32>,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -319,7 +320,7 @@ impl Path {
     pub fn new(config: &PathConfig, time: u32) -> Path {
         let mut pid = PIDController::new(config.p as f64, config.i as f64, config.d as f64);
         pid.d_mode = DerivativeMode::OnError;
-        pid.set_limits(-1.0, 1.0);
+        //pid.set_limits(-1.0, 1.0);
         Path {
             pid,
             segment_buffer: Vec::new(),
@@ -350,6 +351,7 @@ impl Path {
             centered_direction: None,
             tangent_direction: None,
             target_direction: None,
+            error: None,
         };
 
         self.pid.p_gain = config.p as f64;
@@ -384,6 +386,8 @@ impl Path {
         let centered_direction = orientation.direction.centered_at(target_direction);
 
         debug.centered_direction = Some(centered_direction);
+
+        debug.error = Some(f32::from(target_direction) - centered_direction);
 
         self.pid.set_target(target_direction.into());
         let angular_power =
