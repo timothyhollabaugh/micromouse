@@ -72,6 +72,7 @@ impl Mouse {
         right_distance: u8,
     ) -> (f32, f32, MouseDebug) {
         if self.done {
+            /*
             self.path
                 .add_segments(&path::rounded_rectangle(
                     Vector {
@@ -81,6 +82,20 @@ impl Mouse {
                     540.0,
                     180.0,
                     80.0,
+                ))
+                .ok();
+                */
+
+            self.path
+                .add_segments(&path::circle(
+                    Vector {
+                        x: 1250.0,
+                        y: 1350.0,
+                    },
+                    Vector {
+                        x: 1250.0,
+                        y: 1350.0 + 90.0,
+                    },
                 ))
                 .ok();
         }
