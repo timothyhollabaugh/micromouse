@@ -23,7 +23,11 @@ pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
 };
 
 pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
-    max_delta_power: 10000.0,
+    max_delta_power: 0.1,
+};
+
+pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
+    max_delta_power: 1.0,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
@@ -57,16 +61,16 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2019_PATH_SLOW: PathConfig = PathConfig {
-    p: 1000.0,
+    p: 1.0,
     i: 0.0,
-    d: 200000.0,
+    d: 0.0,
     offset_p: 0.002,
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 100.0,
+    p: 1.0,
     i: 0.0,
-    d: 20000.0,
+    d: 0.0,
     offset_p: 0.002,
 };
 
