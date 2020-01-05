@@ -90,10 +90,13 @@ function MazeUi(parent) {
 
         let mech = config.mouse.mechanical;
 
-        self.mouse_int = world.group()
+        self.mouse_int = world.group();
         self.mouse_int.rect(mech.length, mech.width).fill(mouse_int_color).translate(mech.front_offset - mech.length, -mech.width / 2);
 
-        self.mouse_ext = world.group()
+        self.mouse_target = world.group();
+        self.mouse_target.line(0, 0, 100, 0).stroke({color: '#000000', width: 2});
+
+        self.mouse_ext = world.group();
         self.mouse_ext.rect(mech.length, mech.width).fill(mouse_ext_color).translate(mech.front_offset - mech.length, -mech.width / 2);
 
         self.path = world.path('').fill('none').stroke({color: '#0000ff', width: 2});
@@ -132,6 +135,7 @@ function MazeUi(parent) {
 
         let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
+        self.mouse_target.rotate(debug.mouse.path.target_direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
 
         if (debug.orientation) {
             let orientation_ext = debug.orientation;
