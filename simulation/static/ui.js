@@ -153,13 +153,16 @@ function Simulation() {
         } else if (msg.name === "connected") {
             self.debugs = [];
             self.index = -1;
-            self.graphs = [];
             self.state = self.STATE_STOPPED;
         } else if (msg.name === "running") {
             self.state = self.STATE_RUNNING;
         } else if (msg.name === "stopped") {
             self.state = self.STATE_STOPPED;
         } else if (msg.name === "debug") {
+            if (msg.data.time < self.debugs[self.debugs.length]) {
+                self.debugs = [];
+                self.index = -1;
+            }
             self.debugs.push(msg.data)
         }
 
