@@ -189,10 +189,10 @@ fn main() -> ! {
     orange_led.set_low().ok();
 
     let config = MouseConfig {
-        mechanical: MOUSE_2020_MECH2,
-        path: MOUSE_2020_PATH,
+        mechanical: MOUSE_2019_MECH,
+        path: MOUSE_2019_PATH,
         map: MOUSE_MAZE_MAP,
-        motion: MOUSE_2020_MOTION,
+        motion: MOUSE_2019_MOTION,
     };
 
     let initial_orientation = Orientation {
