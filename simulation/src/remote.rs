@@ -53,6 +53,7 @@ impl Remote {
                     self.buf = Vec::from(remaining.clone());
 
                     self.debug.mouse.time = packet.time;
+                    self.debug.mouse.battery = packet.battery;
 
                     for msg in packet.msgs {
                         match msg {

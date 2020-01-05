@@ -1,7 +1,7 @@
 use heapless::Vec;
 use serde::Deserialize;
 use serde::Serialize;
-use typenum::consts::U2;
+use typenum::consts::U3;
 
 use crate::map::MapDebug;
 use crate::map::Orientation;
@@ -18,7 +18,8 @@ pub enum DebugMsg {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DebugPacket {
-    pub msgs: Vec<DebugMsg, U2>,
+    pub msgs: Vec<DebugMsg, U3>,
+    pub battery: u16,
     pub time: u32,
     pub count: u16,
 }

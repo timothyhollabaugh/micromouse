@@ -68,6 +68,7 @@ impl Simulation {
         let (raw_left_power, raw_right_power, mouse_debug) = self.mouse.update(
             &config.mouse,
             self.time,
+            0,
             self.left_encoder,
             self.right_encoder,
             255,

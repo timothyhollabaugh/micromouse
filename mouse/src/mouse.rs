@@ -23,6 +23,7 @@ pub struct MouseDebug {
     pub path: PathDebug,
     pub map: MapDebug,
     pub motion: MotionDebug,
+    pub battery: u16,
     pub time: u32,
 }
 
@@ -63,6 +64,7 @@ impl Mouse {
         &mut self,
         config: &MouseConfig,
         time: u32,
+        battery: u16,
         left_encoder: i32,
         right_encoder: i32,
         left_distance: u8,
@@ -97,7 +99,7 @@ impl Mouse {
 
         self.done = done;
 
-        let linear_power = if done { 0.0 } else { 1.0 };
+        let linear_power = if done { 0.0 } else { 0.5 };
 
         let (left_power, right_power, motion_debug) =
             self.motion
@@ -108,6 +110,7 @@ impl Mouse {
             path: path_debug,
             map: map_debug,
             motion: motion_debug,
+            battery,
             time,
         };
 

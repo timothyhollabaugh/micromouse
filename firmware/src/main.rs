@@ -256,6 +256,7 @@ fn main() -> ! {
                 let (left_power, right_power, debug) = mouse.update(
                     &config,
                     now,
+                    battery.raw(),
                     left_encoder_count,
                     right_encoder_count,
                     left_distance_range,
@@ -269,13 +270,15 @@ fn main() -> ! {
                 if debugging && uart.tx_len() == Ok(0) {
                     let mut msgs = Vec::new();
                     msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
+                    msgs.push(DebugMsg::Motion(debug.motion.clone()));
 
-                    if step_count % 2 == 0 {
-                        msgs.push(DebugMsg::Path(debug.path.clone()));
-                    }
+                    //if step_count % 2 == 0 {
+                    msgs.push(DebugMsg::Path(debug.path.clone()));
+                    //}
 
                     let packet = DebugPacket {
                         msgs,
+                        battery: debug.battery,
                         time: debug.time,
                         count: packet_count,
                     };
