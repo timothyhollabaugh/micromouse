@@ -1,4 +1,5 @@
 use core::f32::consts::FRAC_PI_2;
+use core::f32::consts::PI;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -17,6 +18,13 @@ use crate::map::Direction;
 use crate::map::Orientation;
 use crate::map::Vector;
 use crate::map::DIRECTION_PI_2;
+
+pub fn circle(start: Vector, center: Vector) -> [Segment; 2] {
+    [
+        Segment::Arc(start, center, PI),
+        Segment::Arc(start + 2.0 * (center - start), center, PI),
+    ]
+}
 
 pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) -> [Segment; 8] {
     [
@@ -298,6 +306,7 @@ pub struct PathDebug {
     pub centered_direction: Option<f32>,
     pub tangent_direction: Option<Direction>,
     pub target_direction: Option<Direction>,
+    pub target_direction_offset: Option<f32>,
     pub error: Option<f32>,
 }
 
@@ -351,6 +360,7 @@ impl Path {
             centered_direction: None,
             tangent_direction: None,
             target_direction: None,
+            target_direction_offset: None,
             error: None,
         };
 
@@ -371,12 +381,15 @@ impl Path {
         let (target_direction, done) = if let Some(segment) = self.segment_buffer.last() {
             let offset = segment.distance_from(orientation.position);
             let tangent_direction = segment.tangent_direction(orientation.position);
-            let target_direction = tangent_direction - Direction::from(config.offset_p * offset);
+            let target_direction_offset =
+                PI / (1.0 + F32Ext::exp(config.offset_p * offset)) - FRAC_PI_2;
+            let target_direction = tangent_direction + Direction::from(target_direction_offset);
 
             debug.distance_from = Some(offset);
             debug.distance_along = Some(segment.distance_along(orientation.position));
             debug.tangent_direction = Some(tangent_direction);
             debug.target_direction = Some(target_direction);
+            debug.target_direction_offset = Some(target_direction_offset);
 
             (target_direction, false)
         } else {
