@@ -113,10 +113,10 @@ function Graph(parent, path, state) {
     parent.append(self.root.el);
 
     let draw = SVG(self.root.el).size("100%", 100);
-    let line = draw.polyline([]).fill('none').stroke({width: 2});
+    let line = draw.polyline([]).fill('none').stroke({width: 1, color: '#444444'});
 
-    let WIDTH = draw.node.clientWidth;
-    let HEIGHT = draw.node.clientHeight;
+    let WIDTH = draw.node.clientWidth+2;
+    let HEIGHT = draw.node.clientHeight+2;
 
     let centerline = draw.line(WIDTH/2, 0, WIDTH/2, HEIGHT).stroke({width: 1, color: '#999999'});
     let zeroline = draw.line(0, HEIGHT/2, WIDTH, HEIGHT/2).stroke({width: 1, color: '#999999'});
@@ -129,13 +129,13 @@ function Graph(parent, path, state) {
         let points = [];
 
         let time = state.debug().mouse.time;
-        let last_time = state.debug(state.debugs.length).mouse.time;
+        let end_time = state.debugs[state.debugs.length-1].mouse.time;
 
         let start = time - range;
 
-        if (last_time > range && time > last_time - range/2) {
-            start = last_time - range;
-        } else if (last_time > range && time > last_time - range) {
+        if (end_time > range && time > end_time - range/2) {
+            start = end_time - range;
+        } else if (end_time > range && time > range/2) {
             start = time - range/2;
         }
 
@@ -151,7 +151,7 @@ function Graph(parent, path, state) {
             let index = debugs[i].index;
             let time = debugs[i].time;
             let value = f(state, index) - min;
-            points[i] = [(time - start) * WIDTH / range, HEIGHT - value * HEIGHT / (max - min)];
+            points[i] = [(time - start) * WIDTH / range, HEIGHT - value * HEIGHT / (max - min)+1];
         }
 
         //line.clear();
@@ -160,7 +160,7 @@ function Graph(parent, path, state) {
         let center = time - start;
         centerline.plot(center * WIDTH/range, 0, center * WIDTH/range, HEIGHT);
 
-        let zero = -min * HEIGHT / (max - min);
+        let zero = -min * HEIGHT / (max - min) + 1;
 
         if (min > 0 && max > 0) {
             zero = 0;
