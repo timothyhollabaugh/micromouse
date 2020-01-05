@@ -68,10 +68,10 @@ pub const MOUSE_2019_PATH_SLOW: PathConfig = PathConfig {
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 1.0,
+    p: 40.0,
     i: 0.0,
-    d: 0.0,
-    offset_p: 0.002,
+    d: 500.0,
+    offset_p: 0.010,
 };
 
 pub const MOUSE_2020_PATH: PathConfig = PathConfig {
