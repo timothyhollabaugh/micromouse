@@ -197,8 +197,8 @@ fn main() -> ! {
 
     let initial_orientation = Orientation {
         position: Vector {
-            x: 1000.0,
-            y: 1000.0,
+            x: 1250.0,
+            y: 1350.0,
         },
         direction: Direction::from(0.0),
     };
