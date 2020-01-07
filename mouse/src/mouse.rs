@@ -72,20 +72,27 @@ impl Mouse {
         right_distance: u8,
     ) -> (f32, f32, MouseDebug) {
         if self.done {
+            let start = Vector {
+                x: 1170.0,
+                y: 1350.0,
+            };
+
             /*
             self.path
                 .add_segments(&path::rounded_rectangle(
-                    Vector {
-                        x: 1170.0,
-                        y: 1350.0,
-                    },
+                    start,
                     540.0,
                     180.0,
                     80.0,
                 ))
                 .ok();
-                */
+            */
 
+            self.path
+                .add_segments(&path::oval(start, 540.0, 180.0))
+                .ok();
+
+            /*
             self.path
                 .add_segments(&path::circle(
                     Vector {
@@ -98,6 +105,7 @@ impl Mouse {
                     },
                 ))
                 .ok();
+                */
         }
 
         let (orientation, map_debug) = self.map.update(
@@ -114,7 +122,7 @@ impl Mouse {
 
         self.done = done;
 
-        let linear_power = if done { 0.0 } else { 0.5 };
+        let linear_power = if done { 0.0 } else { 0.2 };
 
         let (left_power, right_power, motion_debug) =
             self.motion

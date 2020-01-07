@@ -26,6 +26,76 @@ pub fn circle(start: Vector, center: Vector) -> [Segment; 2] {
     ]
 }
 
+pub fn oval(start: Vector, width: f32, height: f32) -> [Segment; 6] {
+    let radius = height / 2.0;
+    [
+        Segment::Arc(
+            Vector {
+                x: start.x,
+                y: start.y + radius,
+            },
+            Vector {
+                x: start.x + radius,
+                y: start.y + radius,
+            },
+            FRAC_PI_2,
+        ),
+        Segment::Arc(
+            Vector {
+                x: start.x + radius,
+                y: start.y + height,
+            },
+            Vector {
+                x: start.x + radius,
+                y: start.y + radius,
+            },
+            FRAC_PI_2,
+        ),
+        Segment::Line(
+            Vector {
+                x: start.x + width - radius,
+                y: start.y + height,
+            },
+            Vector {
+                x: start.x + radius,
+                y: start.y + height,
+            },
+        ),
+        Segment::Arc(
+            Vector {
+                x: start.x + width,
+                y: start.y + radius,
+            },
+            Vector {
+                x: start.x + width - radius,
+                y: start.y + radius,
+            },
+            FRAC_PI_2,
+        ),
+        Segment::Arc(
+            Vector {
+                x: start.x + width - radius,
+                y: start.y,
+            },
+            Vector {
+                x: start.x + width - radius,
+                y: start.y + radius,
+            },
+            FRAC_PI_2,
+        ),
+        Segment::Line(
+            Vector {
+                x: start.x + radius,
+                y: start.y,
+            },
+            Vector {
+                x: start.x + width - radius,
+                y: start.y,
+            },
+        ),
+    ]
+}
+
 pub fn rounded_rectangle(start: Vector, width: f32, height: f32, radius: f32) -> [Segment; 8] {
     [
         Segment::Arc(
@@ -301,6 +371,7 @@ pub type PathBuf = Vec<Segment, PathBufLen>;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PathDebug {
     pub path: Option<PathBuf>,
+    pub segment_length: Option<f32>,
     pub distance_from: Option<f32>,
     pub distance_along: Option<f32>,
     pub centered_direction: Option<f32>,
@@ -355,6 +426,7 @@ impl Path {
     ) -> (f32, bool, PathDebug) {
         let mut debug = PathDebug {
             path: None,
+            segment_length: None,
             distance_from: None,
             distance_along: None,
             centered_direction: None,
@@ -372,6 +444,7 @@ impl Path {
 
         // Check if we are done with the current segment
         if let Some(segment) = self.segment_buffer.last() {
+            debug.segment_length = Some(segment.total_distance());
             if segment.distance_along(orientation.position) >= segment.total_distance() {
                 self.segment_buffer.pop();
             }
