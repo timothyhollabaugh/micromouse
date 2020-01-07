@@ -134,6 +134,8 @@ async function init() {
 
     console.log("start");
 
+    wasm_bindgen.init_wasm();
+
     postMessage({name: 'loaded'});
 
     let handler = undefined;
