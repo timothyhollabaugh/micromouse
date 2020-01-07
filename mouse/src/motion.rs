@@ -99,6 +99,9 @@ fn clip_delta_angular_ratio_to_delta_angular_wheel_max(
 pub struct MotionConfig {
     /// The max power change for each wheel before the linear speed is reduced.
     pub max_delta_power: f32,
+
+    /// The max power to send to the wheel before linear speed is reduced
+    pub max_wheel_power: f32,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -157,7 +160,7 @@ impl Motion {
         angular_ratio: f32,
     ) -> (f32, f32, MotionDebug) {
         // Limit the linear power so that the power for each wheel is in the range -1.0 to 1.0
-        let power_clipped = clip_linear_to_wheel_max(1.0, power, angular_ratio);
+        let power_clipped = clip_linear_to_wheel_max(config.max_wheel_power, power, angular_ratio);
 
         // Limit the change in power for each wheel due to linear power change
         let delta_power = power_clipped - self.power;

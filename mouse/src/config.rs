@@ -23,11 +23,13 @@ pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
 };
 
 pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
-    max_delta_power: 0.1,
+    max_delta_power: 1.0,
+    max_wheel_power: 0.6,
 };
 
 pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
     max_delta_power: 1.0,
+    max_wheel_power: 0.6,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
@@ -42,17 +44,24 @@ pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
 
 pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
     wheel_diameter: 32.0,
-    gearbox_ratio: 30.0,
+    gearbox_ratio: 29.86,
     ticks_per_rev: 12.0,
-    wheelbase: 77.0,
+    wheelbase: 85.0,
     width: 64.0,
     length: 57.5,
     front_offset: 40.0,
 };
 
+pub const MOUSE_2020_PATH: PathConfig = PathConfig {
+    p: 1.0,
+    i: 0.0,
+    d: 0.0,
+    offset_p: 0.005,
+};
+
 pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     wheel_diameter: 32.0,
-    gearbox_ratio: 75.0,
+    gearbox_ratio: 75.81,
     ticks_per_rev: 12.0,
     wheelbase: 74.0,
     width: 64.0,
@@ -68,17 +77,10 @@ pub const MOUSE_2019_PATH_SLOW: PathConfig = PathConfig {
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 40.0,
+    p: 30.0,
     i: 0.0,
-    d: 500.0,
+    d: 4000.0,
     offset_p: 0.010,
-};
-
-pub const MOUSE_2020_PATH: PathConfig = PathConfig {
-    p: 100.0,
-    i: 0.0,
-    d: 20000.0,
-    offset_p: 0.002,
 };
 
 /**

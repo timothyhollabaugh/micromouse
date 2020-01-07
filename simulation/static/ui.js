@@ -28,7 +28,8 @@ const MOUSE_MAZE_MAP = {
 };
 
 const MOUSE_2020_MOTION = {
-    max_delta_power: 10000.0,
+    max_delta_power: 1.0,
+    max_wheel_power: 0.6,
 };
 
 const initial_simulation_config = {
