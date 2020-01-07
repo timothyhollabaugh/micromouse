@@ -188,11 +188,20 @@ fn main() -> ! {
     blue_led.set_low().ok();
     orange_led.set_low().ok();
 
+    /*
     let config = MouseConfig {
         mechanical: MOUSE_2019_MECH,
         path: MOUSE_2019_PATH,
         map: MOUSE_MAZE_MAP,
         motion: MOUSE_2019_MOTION,
+    };
+    */
+
+    let config = MouseConfig {
+        mechanical: MOUSE_2020_MECH2,
+        path: MOUSE_2020_PATH,
+        map: MOUSE_MAZE_MAP,
+        motion: MOUSE_2020_MOTION,
     };
 
     let initial_orientation = Orientation {
@@ -264,8 +273,8 @@ fn main() -> ! {
                     right_distance_range,
                 );
 
-                right_motor.change_power((right_power * 10000.0 / 6.0) as i32);
-                left_motor.change_power((left_power * 10000.0 / 6.0) as i32);
+                right_motor.change_power((right_power * 10000.0) as i32);
+                left_motor.change_power((left_power * 10000.0) as i32);
 
                 if debugging && uart.tx_len() == Ok(0) {
                     let mut msgs = Vec::new();
