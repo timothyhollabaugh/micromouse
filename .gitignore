@@ -1,5 +1,5 @@
 .cquery_cache
-invoices
+**/invoices
 **/target
 **/.idea
 **/.dat
