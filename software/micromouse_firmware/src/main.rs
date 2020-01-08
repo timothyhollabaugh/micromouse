@@ -43,6 +43,9 @@ use heapless::Vec;
 
 use postcard;
 
+use embedded_hal::blocking::i2c;
+use embedded_hal::digital::v2::{InputPin, OutputPin, ToggleableOutputPin};
+
 use typenum::consts::U1024;
 
 use micromouse_logic::comms::DebugMsg;
@@ -65,6 +68,7 @@ use crate::motors::{Encoder, Motor};
 
 use crate::motors::left::{LeftEncoder, LeftMotor};
 use crate::motors::right::{RightEncoder, RightMotor};
+use crate::vl6180x::VL6180x;
 
 // Setup the master clock out
 pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
@@ -72,6 +76,247 @@ pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
     rcc.cfgr.modify(|_, w| w.mco2().sysclk());
     gpioc.moder.write(|w| w.moder9().alternate());
     gpioc.afrh.write(|w| w.afrh9().af0());
+}
+
+pub fn do_characterize<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
+    mut time: Time,
+    mut battery: Battery,
+    mut red_led: RL,
+    mut green_led: GL,
+    mut blue_led: BL,
+    mut orange_led: OL,
+    mut left_button: LB,
+    mut right_button: RB,
+    mut left_motor: LeftMotor,
+    mut right_motor: RightMotor,
+    left_encoder: LeftEncoder,
+    right_encoder: RightEncoder,
+    mut front_distance: VL6180x<I2C1>,
+    mut left_distance: VL6180x<I2C2>,
+    mut right_distance: VL6180x<I2C3>,
+    mut uart: Uart,
+) -> !
+where
+    RL: OutputPin + ToggleableOutputPin,
+    GL: OutputPin + ToggleableOutputPin,
+    BL: OutputPin + ToggleableOutputPin,
+    OL: OutputPin + ToggleableOutputPin,
+    LB: InputPin,
+    RB: InputPin,
+    I2C1: i2c::Read + i2c::Write + i2c::WriteRead,
+    I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
+    I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
+{
+    green_led.set_high();
+
+    while let Ok(false) = right_button.is_low() {}
+
+    blue_led.set_high();
+
+    let mut n_steps = 16;
+
+    let mut step = 0;
+
+    let mut last_step = time.now();
+    let mut last_report = time.now();
+
+    loop {
+        let now = time.now();
+        let power = step * 10000 / n_steps;
+
+        left_motor.change_power(power);
+
+        if now - last_report > 50 {
+            orange_led.toggle();
+            writeln!(
+                uart,
+                "{}\t{}\t{}\t{}",
+                time.now(),
+                battery.raw(),
+                power,
+                left_encoder.count(),
+            )
+            .ok();
+            last_report = now;
+        }
+
+        if now - last_step > 2000 {
+            if step < n_steps {
+                step += 1;
+            } else {
+                step = 0;
+
+                if n_steps > 1 {
+                    n_steps /= 2;
+                } else {
+                    n_steps = 16;
+                }
+            }
+            last_step = now;
+        }
+    }
+}
+
+pub fn do_mouse<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
+    mut time: Time,
+    mut battery: Battery,
+    mut red_led: RL,
+    mut green_led: GL,
+    mut blue_led: BL,
+    mut orange_led: OL,
+    mut left_button: LB,
+    mut right_button: RB,
+    mut left_motor: LeftMotor,
+    mut right_motor: RightMotor,
+    left_encoder: LeftEncoder,
+    right_encoder: RightEncoder,
+    mut front_distance: VL6180x<I2C1>,
+    mut left_distance: VL6180x<I2C2>,
+    mut right_distance: VL6180x<I2C3>,
+    mut uart: Uart,
+) -> !
+where
+    RL: OutputPin + ToggleableOutputPin,
+    GL: OutputPin + ToggleableOutputPin,
+    BL: OutputPin + ToggleableOutputPin,
+    OL: OutputPin + ToggleableOutputPin,
+    LB: InputPin,
+    RB: InputPin,
+    I2C1: i2c::Read + i2c::Write + i2c::WriteRead,
+    I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
+    I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
+{
+    /*
+    let config = MouseConfig {
+        mechanical: MOUSE_2019_MECH,
+        path: MOUSE_2019_PATH,
+        map: MOUSE_MAZE_MAP,
+        motion: MOUSE_2019_MOTION,
+    };
+    */
+
+    let config = MouseConfig {
+        mechanical: MOUSE_2020_MECH2,
+        path: MOUSE_2020_PATH,
+        map: MOUSE_MAZE_MAP,
+        motion: MOUSE_2020_MOTION,
+    };
+
+    let initial_orientation = Orientation {
+        position: Vector {
+            x: 1250.0,
+            y: 1350.0,
+        },
+        direction: Direction::from(0.0),
+    };
+
+    let mut last_time: u32 = time.now();
+
+    let mut mouse = Mouse::new(
+        &config,
+        initial_orientation,
+        last_time,
+        left_encoder.count(),
+        right_encoder.count(),
+    );
+
+    let mut running = false;
+    let mut debugging = false;
+
+    let mut packet_count = 0;
+    let mut step_count = 0;
+
+    loop {
+        let now: u32 = time.now();
+
+        front_distance.update();
+        right_distance.update();
+        left_distance.update();
+
+        if let Ok(byte) = uart.read_byte() {
+            match byte {
+                0 => {}
+                1 => debugging = false,
+                2 => debugging = true,
+                3 => running = false,
+                4 => running = true,
+                _ => {}
+            }
+        }
+
+        if now - last_time >= 10 {
+            green_led.toggle().ok();
+
+            if running {
+                let left_encoder_count = left_encoder.count();
+                let right_encoder_count = right_encoder.count();
+                let left_distance_range = left_distance.range();
+                let front_distance_range = front_distance.range();
+                let right_distance_range = right_distance.range();
+
+                let (left_power, right_power, debug) = mouse.update(
+                    &config,
+                    now,
+                    battery.raw(),
+                    left_encoder_count,
+                    right_encoder_count,
+                    left_distance_range,
+                    front_distance_range,
+                    right_distance_range,
+                );
+
+                right_motor.change_power((right_power * 10000.0) as i32);
+                left_motor.change_power((left_power * 10000.0) as i32);
+
+                if debugging && uart.tx_len() == Ok(0) {
+                    let mut msgs = Vec::new();
+                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
+                    msgs.push(DebugMsg::Motion(debug.motion.clone()));
+
+                    //if step_count % 2 == 0 {
+                    msgs.push(DebugMsg::Path(debug.path.clone()));
+                    //}
+
+                    let packet = DebugPacket {
+                        msgs,
+                        battery: debug.battery,
+                        time: debug.time,
+                        count: packet_count,
+                    };
+
+                    if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
+                        uart.add_bytes(&bytes);
+                        orange_led.toggle().ok();
+                    }
+
+                    packet_count += 1;
+                }
+
+                step_count += 1;
+            } else {
+                right_motor.change_power(0);
+                left_motor.change_power(0);
+            }
+
+            if let Ok(true) = left_button.is_low() {
+                running = true;
+            }
+
+            if let Ok(true) = right_button.is_low() {
+                running = false;
+            }
+
+            if battery.is_dead() {
+                red_led.set_high().ok();
+            } else {
+                red_led.set_low().ok();
+            }
+
+            last_time = now;
+        }
+
+        battery.update(now);
+    }
 }
 
 #[entry]
@@ -188,141 +433,28 @@ fn main() -> ! {
     blue_led.set_low().ok();
     orange_led.set_low().ok();
 
-    /*
-    let config = MouseConfig {
-        mechanical: MOUSE_2019_MECH,
-        path: MOUSE_2019_PATH,
-        map: MOUSE_MAZE_MAP,
-        motion: MOUSE_2019_MOTION,
-    };
-    */
-
-    let config = MouseConfig {
-        mechanical: MOUSE_2020_MECH2,
-        path: MOUSE_2020_PATH,
-        map: MOUSE_MAZE_MAP,
-        motion: MOUSE_2020_MOTION,
-    };
-
-    let initial_orientation = Orientation {
-        position: Vector {
-            x: 1250.0,
-            y: 1350.0,
-        },
-        direction: Direction::from(0.0),
-    };
-
-    uart.add_bytes(b"\n\nstart").ok();
-
-    let mut last_time: u32 = time.now();
-
-    let mut mouse = Mouse::new(
-        &config,
-        initial_orientation,
-        last_time,
-        left_encoder.count(),
-        right_encoder.count(),
-    );
-
     front_distance.start_ranging();
     left_distance.start_ranging();
     right_distance.start_ranging();
 
-    let mut running = false;
-    let mut debugging = false;
+    uart.add_bytes(b"\n\nstart").ok();
 
-    let mut packet_count = 0;
-    let mut step_count = 0;
-
-    loop {
-        let now: u32 = time.now();
-
-        front_distance.update();
-        right_distance.update();
-        left_distance.update();
-
-        if let Ok(byte) = uart.read_byte() {
-            match byte {
-                0 => {}
-                1 => debugging = false,
-                2 => debugging = true,
-                3 => running = false,
-                4 => running = true,
-                _ => {}
-            }
-        }
-
-        if now - last_time >= 10 {
-            green_led.toggle().ok();
-
-            if running {
-                let left_encoder_count = left_encoder.count();
-                let right_encoder_count = right_encoder.count();
-                let left_distance_range = left_distance.range();
-                let front_distance_range = front_distance.range();
-                let right_distance_range = right_distance.range();
-
-                let (left_power, right_power, debug) = mouse.update(
-                    &config,
-                    now,
-                    battery.raw(),
-                    left_encoder_count,
-                    right_encoder_count,
-                    left_distance_range,
-                    front_distance_range,
-                    right_distance_range,
-                );
-
-                right_motor.change_power((right_power * 10000.0) as i32);
-                left_motor.change_power((left_power * 10000.0) as i32);
-
-                if debugging && uart.tx_len() == Ok(0) {
-                    let mut msgs = Vec::new();
-                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
-                    msgs.push(DebugMsg::Motion(debug.motion.clone()));
-
-                    //if step_count % 2 == 0 {
-                    msgs.push(DebugMsg::Path(debug.path.clone()));
-                    //}
-
-                    let packet = DebugPacket {
-                        msgs,
-                        battery: debug.battery,
-                        time: debug.time,
-                        count: packet_count,
-                    };
-
-                    if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
-                        uart.add_bytes(&bytes);
-                        orange_led.toggle().ok();
-                    }
-
-                    packet_count += 1;
-                }
-
-                step_count += 1;
-            } else {
-                right_motor.change_power(0);
-                left_motor.change_power(0);
-            }
-
-            if left_button.is_low().unwrap() {
-                running = true;
-            }
-
-            if right_button.is_low().unwrap() {
-                running = false;
-            }
-
-            if battery.is_dead() {
-                red_led.set_high().ok();
-            } else {
-                red_led.set_low().ok();
-            }
-
-            last_time = now;
-        }
-
-        battery.update(now);
-    }
+    do_characterize(
+        time,
+        battery,
+        red_led,
+        green_led,
+        blue_led,
+        orange_led,
+        left_button,
+        right_button,
+        left_motor,
+        right_motor,
+        left_encoder,
+        right_encoder,
+        front_distance,
+        left_distance,
+        right_distance,
+        uart,
+    );
 }
