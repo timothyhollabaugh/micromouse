@@ -1,9 +1,10 @@
 [workspace]
 
 members = [
-    "micromouse",
-    "mouse",
-    "simulation",
+    "micromouse_hardware",
+    "micromouse_firmware",
+    "micromouse_logic",
+    "micromouse_simulation",
 ]
 
 # For embedded

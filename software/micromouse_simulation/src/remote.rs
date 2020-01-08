@@ -3,11 +3,11 @@ use postcard;
 use serde::Deserialize;
 use serde::Serialize;
 
-use mouse::comms::DebugMsg;
-use mouse::comms::DebugPacket;
+use micromouse_logic::comms::DebugMsg;
+use micromouse_logic::comms::DebugPacket;
 
-use mouse::mouse::MouseConfig;
-use mouse::mouse::MouseDebug;
+use micromouse_logic::mouse::MouseConfig;
+use micromouse_logic::mouse::MouseDebug;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct RemoteConfig {
@@ -21,7 +21,6 @@ pub struct RemoteDebug {
 }
 
 pub struct Remote {
-    config: RemoteConfig,
     debug: RemoteDebug,
     buf: Vec<u8>,
 }
@@ -33,7 +32,6 @@ impl Remote {
             ..RemoteDebug::default()
         };
         Remote {
-            config: config.clone(),
             debug,
             buf: Vec::new(),
         }
@@ -61,15 +59,19 @@ impl Remote {
                                 self.debug.mouse.orientation = orientation
                             }
                             DebugMsg::Map(map) => self.debug.mouse.map = map,
-                            DebugMsg::Motion(motion) => self.debug.mouse.motion = motion,
-                            DebugMsg::Path(path) => self.debug.mouse.path = path,
+                            DebugMsg::Motion(motion) => {
+                                self.debug.mouse.motion = motion
+                            }
+                            DebugMsg::Path(path) => {
+                                self.debug.mouse.path = path
+                            }
                         }
                     }
 
                     debugs.push(self.debug.clone());
                 }
                 Err(postcard::Error::DeserializeUnexpectedEnd) => {}
-                Err(e) => {
+                Err(_e) => {
                     self.buf = Vec::new();
                     return Err(());
                 }

@@ -4,25 +4,8 @@ use libm::F32Ext;
 use serde::Deserialize;
 use serde::Serialize;
 
-fn max(f1: f32, f2: f32) -> f32 {
-    if f1 > f2 {
-        f1
-    } else {
-        f2
-    }
-}
-
-/// Find the number that is farthest from 0
-fn signed_max(f1: f32, f2: f32) -> f32 {
-    if f1.abs() > f2.abs() {
-        f1
-    } else {
-        f2
-    }
-}
-
 /// Find the number that is closest to 0
-fn nearest_zero(f1: f32, f2: f32) -> f32 {
+pub fn nearest_zero(f1: f32, f2: f32) -> f32 {
     if f1.abs() < f2.abs() {
         f1
     } else {
@@ -33,7 +16,7 @@ fn nearest_zero(f1: f32, f2: f32) -> f32 {
 /// Find the number that is closest to 0, but keep the sign of the first number
 ///
 /// ```rust
-/// use mouse::motion::signed_nearest_zero;
+/// use micromouse_logic::motion::signed_nearest_zero;
 ///
 /// assert_eq!(signed_nearest_zero(1.0, 0.5), 0.5);
 /// assert_eq!(signed_nearest_zero(-1.0, -0.5), -0.5);
@@ -59,7 +42,11 @@ pub fn signed_nearest_zero(f1: f32, f2: f32) -> f32 {
 /// Clips the linear power `power` such that both wheels are within their max powers
 ///
 /// This also works for delta powers because the derivative is the same as the original
-fn clip_linear_to_wheel_max(wheel_max: f32, power: f32, angular_ratio: f32) -> f32 {
+fn clip_linear_to_wheel_max(
+    wheel_max: f32,
+    power: f32,
+    angular_ratio: f32,
+) -> f32 {
     // when the angular ratio is 1.0, the left wheel will be stopped, so it does not care what
     // the linear power is
     let max_for_left = if angular_ratio == 1.0 {
@@ -160,21 +147,29 @@ impl Motion {
         angular_ratio: f32,
     ) -> (f32, f32, MotionDebug) {
         // Limit the linear power so that the power for each wheel is in the range -1.0 to 1.0
-        let power_clipped = clip_linear_to_wheel_max(config.max_wheel_power, power, angular_ratio);
+        let power_clipped = clip_linear_to_wheel_max(
+            config.max_wheel_power,
+            power,
+            angular_ratio,
+        );
 
         // Limit the change in power for each wheel due to linear power change
         let delta_power = power_clipped - self.power;
-        let delta_power_clipped =
-            clip_linear_to_wheel_max(config.max_delta_power, delta_power, angular_ratio);
+        let delta_power_clipped = clip_linear_to_wheel_max(
+            config.max_delta_power,
+            delta_power,
+            angular_ratio,
+        );
         self.power += delta_power_clipped;
 
         // Limit the change in power for each wheel due to angular ratio change
         let delta_angular_ratio = angular_ratio - self.angular_ratio;
-        let delta_angular_ratio_clipped = clip_delta_angular_ratio_to_delta_angular_wheel_max(
-            config.max_delta_power,
-            self.power,
-            delta_angular_ratio,
-        );
+        let delta_angular_ratio_clipped =
+            clip_delta_angular_ratio_to_delta_angular_wheel_max(
+                config.max_delta_power,
+                self.power,
+                delta_angular_ratio,
+            );
         self.angular_ratio += delta_angular_ratio_clipped;
 
         let left_power = self.power * (1.0 - self.angular_ratio);

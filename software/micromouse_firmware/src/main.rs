@@ -45,16 +45,16 @@ use postcard;
 
 use typenum::consts::U1024;
 
-use mouse::comms::DebugMsg;
-use mouse::comms::DebugPacket;
+use micromouse_logic::comms::DebugMsg;
+use micromouse_logic::comms::DebugPacket;
 #[allow(unused_imports)]
-use mouse::config::*;
-use mouse::map::Direction;
-use mouse::map::Orientation;
-use mouse::map::Vector;
-use mouse::mouse::Mouse;
-use mouse::mouse::MouseConfig;
-use mouse::mouse::MouseDebug;
+use micromouse_logic::config::*;
+use micromouse_logic::map::Direction;
+use micromouse_logic::map::Orientation;
+use micromouse_logic::map::Vector;
+use micromouse_logic::mouse::Mouse;
+use micromouse_logic::mouse::MouseConfig;
+use micromouse_logic::mouse::MouseDebug;
 
 use crate::battery::Battery;
 use crate::time::Time;

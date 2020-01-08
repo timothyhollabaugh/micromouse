@@ -2,7 +2,7 @@
 authors = ["Tim <timothyhollabaugh@gmail.com>"]
 edition = "2018"
 readme = "README.md"
-name = "micromouse"
+name = "micromouse_firmware"
 version = "0.1.0"
 
 [dependencies]
@@ -14,7 +14,7 @@ pid_control = { git = "https://github.com/mbr/pid_control-rs" }
 nb = "0.1"
 embedded-hal = "0.2"
 libm = "0.1"
-mouse = { path = "../mouse" }
+micromouse_logic  = { path = "../micromouse_logic" }
 typenum = "1.11"
 postcard = "0.4"
 
@@ -37,9 +37,3 @@ features = ["const-fn"]
 git = "https://github.com/timothyhollabaugh/stm32f4xx-hal"
 #version = "0.3.0"
 features = ["stm32f405", "rt"]
-
-# this lets you use `cargo fix`!
-[[bin]]
-name = "micromouse"
-test = true
-bench = false

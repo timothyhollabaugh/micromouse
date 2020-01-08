@@ -1,11 +1,9 @@
-use std::error::Error;
 use std::io::stdin;
-use std::io::BufRead;
 use std::io::Read;
 
 use postcard;
 
-use mouse::comms::DebugPacket;
+use micromouse_logic::comms::DebugPacket;
 
 fn main() {
     let mut buf = Vec::new();

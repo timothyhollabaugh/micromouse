@@ -1,15 +1,15 @@
-use mouse::map::Direction;
-use mouse::map::MapDebug;
-use mouse::map::Orientation;
-use mouse::map::Vector;
-use mouse::maze::Edge;
-use mouse::maze::EdgeIndex;
-use mouse::maze::Maze;
-use mouse::motion::MotionDebug;
-use mouse::mouse::MouseDebug;
-use mouse::path::PathBuf;
-use mouse::path::PathDebug;
-use mouse::path::Segment;
+use micromouse_logic::map::Direction;
+use micromouse_logic::map::MapDebug;
+use micromouse_logic::map::Orientation;
+use micromouse_logic::map::Vector;
+use micromouse_logic::maze::Edge;
+use micromouse_logic::maze::EdgeIndex;
+use micromouse_logic::maze::Maze;
+use micromouse_logic::motion::MotionDebug;
+use micromouse_logic::mouse::MouseDebug;
+use micromouse_logic::path::PathBuf;
+use micromouse_logic::path::PathDebug;
+use micromouse_logic::path::Segment;
 
 macro_rules! print_size {
     ($t:ty) => {

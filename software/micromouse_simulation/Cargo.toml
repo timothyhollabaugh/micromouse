@@ -1,5 +1,5 @@
 [package]
-name = "simulation"
+name = "micromouse_simulation"
 version = "0.1.0"
 authors = ["Tim <timothyhollabaugh@gmail.com>"]
 edition = "2018"
@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-mouse = { path = "../mouse" }
+micromouse_logic = { path = "../micromouse_logic" }
 libm = "0.1"
 serde = "1.0"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
