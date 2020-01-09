@@ -4,7 +4,7 @@ function MazeUi(parent) {
 
     const wall_open_color = '#ffffff';
     const wall_closed_color = '#444444';
-    const wall_unknown_color = '#999999';
+    const wall_unknown_color = '#f0f0f0';
     const wall_err_color = '#ff0000';
     const mouse_int_color = '#00ff00';
     const mouse_ext_color = '#ff0000';
