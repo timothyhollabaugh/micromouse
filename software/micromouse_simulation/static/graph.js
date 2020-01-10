@@ -22,6 +22,7 @@ function GraphUi(parent, state) {
                     .oninput(function() {
                         range = Number(this.el.value);
                         console.log(range);
+                        state.update();
                     }),
             ]),
             div().classes('control').children([
