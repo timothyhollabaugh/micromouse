@@ -186,26 +186,28 @@ where
     I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
     I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
 {
-    /*
     let config = MouseConfig {
         mechanical: MOUSE_2019_MECH,
         path: MOUSE_2019_PATH,
         map: MOUSE_MAZE_MAP,
         motion: MOUSE_2019_MOTION,
     };
-    */
 
+    /*
     let config = MouseConfig {
         mechanical: MOUSE_2020_MECH2,
         path: MOUSE_2020_PATH,
         map: MOUSE_MAZE_MAP,
         motion: MOUSE_2020_MOTION,
     };
+    */
 
     let initial_orientation = Orientation {
         position: Vector {
-            x: 1250.0,
-            y: 1350.0,
+            x: 90.0,
+            y: 6.0 * 180.0,
+            //x: 1250.0,
+            //y: 1350.0,
         },
         direction: Direction::from(0.0),
     };
@@ -234,14 +236,26 @@ where
         left_distance.update();
 
         if let Ok(byte) = uart.read_byte() {
+            blue_led.set_high();
             match byte {
                 0 => {}
                 1 => debugging = false,
                 2 => debugging = true,
                 3 => running = false,
                 4 => running = true,
+                5 => {
+                    mouse = Mouse::new(
+                        &config,
+                        initial_orientation,
+                        last_time,
+                        left_encoder.count(),
+                        right_encoder.count(),
+                    )
+                }
                 _ => {}
             }
+        } else {
+            blue_led.set_low();
         }
 
         if now - last_time >= 10 {
@@ -286,10 +300,12 @@ where
 
                     if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
                         uart.add_bytes(&bytes);
-                        orange_led.toggle().ok();
+                        orange_led.set_high().ok();
                     }
 
                     packet_count += 1;
+                } else {
+                    orange_led.set_low().ok();
                 }
 
                 step_count += 1;
@@ -439,7 +455,7 @@ fn main() -> ! {
 
     uart.add_bytes(b"\n\nstart").ok();
 
-    do_characterize(
+    do_mouse(
         time,
         battery,
         red_led,

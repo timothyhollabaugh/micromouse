@@ -35,7 +35,12 @@ function Simulation(config, send) {
         }
     };
 
-    self.config = function(config) {
+    self.reset = function() {
+        simulation = new wasm_bindgen.JsSimulation(config);
+    };
+
+    self.config = function(c) {
+        config = c;
         simulation.config(config);
     };
 
@@ -55,6 +60,7 @@ function Remote(config, url, send) {
     const BYTE_START_DEBUG = 2;
     const BYTE_STOP = 3;
     const BYTE_START = 4;
+    const BYTE_RESET = 5;
 
     const STATE_CONNECTING = 'connecting';
     const STATE_OK = 'ok';
@@ -122,11 +128,15 @@ function Remote(config, url, send) {
         send_byte(BYTE_STOP);
     };
 
-    self.disconnect = function() {
-        socket.close();
-    }
+    self.reset = function() {
+        send_byte(BYTE_RESET);
+    };
 
     self.config = function () {};
+
+    self.disconnect = function() {
+        socket.close();
+    };
 }
 
 async function init() {
@@ -142,6 +152,8 @@ async function init() {
 
     onmessage = function (event) {
         let msg = event.data;
+
+        console.log(msg);
 
         if (msg.name === 'connect') {
             if (!handler) {
@@ -163,6 +175,9 @@ async function init() {
         } else if (msg.name === 'stop') {
             handler.stop();
             postMessage({name: 'stopped'});
+        } else if (msg.name === 'reset') {
+            handler.reset();
+            postMessage({name: 'reset'})
         } else if (msg.name === 'config') {
             handler.config(msg.data);
         }

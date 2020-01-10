@@ -132,6 +132,13 @@ function Simulation() {
         self.running = false;
     };
 
+    self.reset = function() {
+        worker.postMessage({
+            name: 'reset',
+            data: null,
+        })
+    };
+
     self.update = function() {
         requestAnimationFrame(do_update);
     };
@@ -159,6 +166,9 @@ function Simulation() {
             self.state = self.STATE_RUNNING;
         } else if (msg.name === "stopped") {
             self.state = self.STATE_STOPPED;
+        } else if (msg.name === 'reset') {
+            self.debugs = [];
+            self.index = -1;
         } else if (msg.name === "debug") {
             if (msg.data.time < self.debugs[self.debugs.length]) {
                 self.debugs = [];
