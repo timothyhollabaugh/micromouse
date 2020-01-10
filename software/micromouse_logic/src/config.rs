@@ -27,11 +27,6 @@ pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
     max_wheel_power: 0.6,
 };
 
-pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
-    max_delta_power: 1.0,
-    max_wheel_power: 0.6,
-};
-
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
     wheel_diameter: 29.5,
     gearbox_ratio: 30.0,
@@ -69,18 +64,16 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     front_offset: 48.0,
 };
 
-pub const MOUSE_2019_PATH_SLOW: PathConfig = PathConfig {
-    p: 1.0,
+pub const MOUSE_2019_PATH: PathConfig = PathConfig {
+    p: 0.5,
     i: 0.0,
     d: 0.0,
-    offset_p: 0.002,
+    offset_p: 0.000,
 };
 
-pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 30.0,
-    i: 0.0,
-    d: 4000.0,
-    offset_p: 0.010,
+pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
+    max_delta_power: 1.0,
+    max_wheel_power: 0.6,
 };
 
 /**
@@ -99,7 +92,8 @@ pub struct MechanicalConfig {
 
 impl MechanicalConfig {
     pub fn ticks_per_mm(&self) -> f32 {
-        (self.ticks_per_rev * self.gearbox_ratio) / (self.wheel_diameter * f32::consts::PI)
+        (self.ticks_per_rev * self.gearbox_ratio)
+            / (self.wheel_diameter * f32::consts::PI)
     }
 
     pub fn ticks_to_mm(&self, ticks: f32) -> f32 {
