@@ -88,9 +88,11 @@ impl Mouse {
                 .ok();
             */
 
+            /*
             self.path
                 .add_segments(&path::oval(start, 540.0, 180.0))
                 .ok();
+                */
 
             /*
             self.path
@@ -106,6 +108,17 @@ impl Mouse {
                 ))
                 .ok();
                 */
+
+            self.path.add_segments(&[path::Segment::Line(
+                Vector {
+                    x: 0.0,
+                    y: 8.0 * 180.0,
+                },
+                Vector {
+                    x: 16.0 * 180.0,
+                    y: 8.0 * 180.0,
+                },
+            )]);
         }
 
         let (orientation, map_debug) = self.map.update(
@@ -118,15 +131,19 @@ impl Mouse {
             right_distance,
         );
 
-        let (angular_power, done, path_debug) = self.path.update(&config.path, time, orientation);
+        let (angular_power, done, path_debug) =
+            self.path.update(&config.path, time, orientation);
 
         self.done = done;
 
         let linear_power = if done { 0.0 } else { 0.2 };
 
-        let (left_power, right_power, motion_debug) =
-            self.motion
-                .update(&config.motion, time, linear_power, angular_power);
+        let (left_power, right_power, motion_debug) = self.motion.update(
+            &config.motion,
+            time,
+            linear_power,
+            angular_power,
+        );
 
         let debug = MouseDebug {
             orientation,
