@@ -7,11 +7,14 @@ function SetupUi(parent, state) {
     let simulated_tab = li();
     let remote_tab = li();
 
-    let simulated = div();
+    let simulated = div().children([
+        p().text("Default config"),
+    ]);
 
     let remote_url = input().classes('input').style('font-family', 'monospace').value("ws://192.168.4.1:8080");
 
     let remote = div().children([
+        p().text("Default config"),
         fieldset().classes('field has-addons').children([
             div().classes("control").children([
                 button().classes("is-static button").text("URL"),
@@ -24,9 +27,9 @@ function SetupUi(parent, state) {
 
     let connect = a().text("Connect").onclick(function() {
         if (selected_tab === 'simulated') {
-            state.connect('simulated', initial_simulation_config, null);
+            state.connect('simulated', state.simulation_config_default, null);
         } else if (selected_tab === 'remote') {
-            state.connect('remote', initial_remote_config, {url: remote_url.el.value});
+            state.connect('remote', state.remote_config_default, {url: remote_url.el.value});
         }
     });
 
@@ -59,7 +62,7 @@ function SetupUi(parent, state) {
                 ]),
             ]),
         ]),
-        content.children(simulated),
+        content.children([simulated]),
     ]).footer([ connect, disconnect ]);
 
     parent.append(root.el);

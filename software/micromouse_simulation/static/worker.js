@@ -3,7 +3,7 @@ let inited = false;
 
 console.log("webworker!");
 
-importScripts('pkg/simulation.js');
+importScripts('pkg/micromouse_simulation.js');
 
 console.log("imported scripts");
 
@@ -140,7 +140,7 @@ function Remote(config, url, send) {
 }
 
 async function init() {
-    await wasm_bindgen('pkg/simulation_bg.wasm');
+    await wasm_bindgen('pkg/micromouse_simulation_bg.wasm');
 
     console.log("start");
 
@@ -182,6 +182,16 @@ async function init() {
             handler.config(msg.data);
         }
     };
+
+    postMessage({
+        name: 'remote_config_default',
+        data: wasm_bindgen.JsRemote.default_config(),
+    });
+
+    postMessage({
+        name: 'simulation_config_default',
+        data: wasm_bindgen.JsSimulation.default_config(),
+    });
 }
 
 init();

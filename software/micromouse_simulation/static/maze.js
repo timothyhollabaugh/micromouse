@@ -187,6 +187,18 @@ function MazeUi(parent) {
                     let y2 = line[1].y;
 
                     return str + "M " + x1 + " " + y1 + " L " + x2 + " " + y2 + " ";
+                } else if ("Bezier" in segment) {
+                    let bezier = segment["Bezier"];
+                    let sx = bezier[0].x;
+                    let sy = bezier[0].y;
+                    let c0x = bezier[1].x;
+                    let c0y = bezier[1].y;
+                    let c1x = bezier[2].x;
+                    let c1y = bezier[2].y;
+                    let ex = bezier[3].x;
+                    let ey = bezier[3].y;
+
+                    return str + "M " + sx + " " + sy + " C " + c0x + " " + c0y + " " + c1x + " " + c1y + " " + ex + " " + ey + " ";
                 } else {
                     return str;
                 }

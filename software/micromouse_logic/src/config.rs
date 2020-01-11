@@ -6,12 +6,13 @@ use serde::Serialize;
 use crate::map::MapConfig;
 use crate::maze::MazeConfig;
 use crate::motion::MotionConfig;
+use crate::mouse::MouseConfig;
 use crate::path::PathConfig;
 
 pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
     maze: MazeConfig {
         cell_width: 180.0,
-        wall_width: 20.0,
+        wall_width: 12.0,
     },
 };
 
@@ -54,6 +55,22 @@ pub const MOUSE_2020_PATH: PathConfig = PathConfig {
     offset_p: 0.005,
 };
 
+pub const MOUSE_2020: MouseConfig = MouseConfig {
+    mechanical: MOUSE_2020_MECH,
+    path: MOUSE_2020_PATH,
+    map: MOUSE_MAZE_MAP,
+    motion: MOUSE_2020_MOTION,
+    linear_power: 1.0,
+};
+
+pub const MOUSE_SIM_2020: MouseConfig = MouseConfig {
+    mechanical: MOUSE_2020_MECH,
+    path: MOUSE_SIM_PATH,
+    map: MOUSE_MAZE_MAP,
+    motion: MOUSE_2020_MOTION,
+    linear_power: 1.0,
+};
+
 pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     wheel_diameter: 32.0,
     gearbox_ratio: 75.81,
@@ -74,6 +91,22 @@ pub const MOUSE_2019_PATH: PathConfig = PathConfig {
 pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
     max_delta_power: 1.0,
     max_wheel_power: 0.6,
+};
+
+pub const MOUSE_2019: MouseConfig = MouseConfig {
+    mechanical: MOUSE_2019_MECH,
+    path: MOUSE_2019_PATH,
+    map: MOUSE_MAZE_MAP,
+    motion: MOUSE_2019_MOTION,
+    linear_power: 1.0,
+};
+
+pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {
+    mechanical: MOUSE_2019_MECH,
+    path: MOUSE_SIM_PATH,
+    map: MOUSE_MAZE_MAP,
+    motion: MOUSE_2019_MOTION,
+    linear_power: 1.0,
 };
 
 /**

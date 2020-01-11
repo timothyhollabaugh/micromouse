@@ -2,7 +2,7 @@
 function ConfigUi(parent, state) {
     let self = this;
 
-    let local_config = initial_simulation_config;
+    //let local_config = state.;
 
     let content = div().classes("content");
 

@@ -11,6 +11,11 @@ libm = "0.1"
 pid_control = { git = "https://github.com/mbr/pid_control-rs" }
 typenum = "1.11"
 
+
+[dependencies.vek]
+version = "0.9"
+features = ["serde"]
+
 [dependencies.heapless]
 version = "0.5"
 features = ["serde"]

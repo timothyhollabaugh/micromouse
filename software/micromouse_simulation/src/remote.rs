@@ -11,7 +11,7 @@ use micromouse_logic::mouse::MouseDebug;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct RemoteConfig {
-    mouse: MouseConfig,
+    pub mouse: MouseConfig,
 }
 
 #[derive(Clone, Default, Serialize, Deserialize)]

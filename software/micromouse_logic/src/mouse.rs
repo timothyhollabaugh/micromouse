@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::MechanicalConfig;
+use crate::map::Direction;
 use crate::map::Map;
 use crate::map::MapConfig;
 use crate::map::MapDebug;
@@ -16,6 +17,7 @@ use crate::path;
 use crate::path::Path;
 use crate::path::PathConfig;
 use crate::path::PathDebug;
+use core::f32::consts::FRAC_PI_2;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MouseDebug {
@@ -33,6 +35,7 @@ pub struct MouseConfig {
     pub path: PathConfig,
     pub map: MapConfig,
     pub motion: MotionConfig,
+    pub linear_power: f32,
 }
 
 pub struct Mouse {
@@ -72,10 +75,12 @@ impl Mouse {
         right_distance: u8,
     ) -> (f32, f32, MouseDebug) {
         if self.done {
+            /*
             let start = Vector {
                 x: 1170.0,
                 y: 1350.0,
             };
+            */
 
             /*
             self.path
@@ -109,16 +114,54 @@ impl Mouse {
                 .ok();
                 */
 
-            self.path.add_segments(&[path::Segment::Line(
-                Vector {
-                    x: 0.0,
-                    y: 8.0 * 180.0,
-                },
-                Vector {
-                    x: 16.0 * 180.0,
-                    y: 8.0 * 180.0,
-                },
-            )]);
+            /*
+            self.path
+                .add_segments(&[path::Segment::Line(
+                    Vector {
+                        x: 0.5 * 180.0,
+                        y: 6.5 * 180.0,
+                    },
+                    Vector {
+                        x: 15.5 * 180.0,
+                        y: 6.5 * 180.0,
+                    },
+                )])
+                .ok();
+                */
+
+            self.path
+                .add_segments(&[
+                    path::Segment::Line(
+                        Vector {
+                            x: 10.5 * 180.0,
+                            y: 7.0 * 180.0,
+                        },
+                        Vector {
+                            x: 10.5 * 180.0,
+                            y: 12.0 * 180.0,
+                        },
+                    ),
+                    path::bezier_corner(
+                        Vector {
+                            x: 10.5 * 180.0,
+                            y: 6.5 * 180.0,
+                        },
+                        Direction::from(0.0),
+                        Direction::from(FRAC_PI_2),
+                        0.5 * 180.0,
+                    ),
+                    path::Segment::Line(
+                        Vector {
+                            x: 0.5 * 180.0,
+                            y: 6.5 * 180.0,
+                        },
+                        Vector {
+                            x: 10.0 * 180.0,
+                            y: 6.5 * 180.0,
+                        },
+                    ),
+                ])
+                .ok();
         }
 
         let (orientation, map_debug) = self.map.update(
@@ -136,7 +179,7 @@ impl Mouse {
 
         self.done = done;
 
-        let linear_power = if done { 0.0 } else { 0.2 };
+        let linear_power = if done { 0.0 } else { config.linear_power };
 
         let (left_power, right_power, motion_debug) = self.motion.update(
             &config.motion,

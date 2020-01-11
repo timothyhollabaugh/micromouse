@@ -1,67 +1,5 @@
-console.log("Starting");
-
 const MAZE_WIDTH = 16;
 const MAZE_HEIGHT = 16;
-
-const MOUSE_2019_MECH = {
-    wheel_diameter: 32.0,
-    gearbox_ratio: 75.0,
-    ticks_per_rev: 12.0,
-    wheelbase: 74.0,
-    width: 64.0,
-    length: 90.0,
-    front_offset: 48.0,
-};
-
-const MOUSE_SIM_PATH = {
-    p: 10.0,
-    i: 0.0,
-    d: 0.0,
-    offset_p: 0.002,
-};
-
-const MOUSE_MAZE_MAP = {
-    maze: {
-        cell_width: 180.0,
-        wall_width: 12.0,
-    },
-};
-
-const MOUSE_2020_MOTION = {
-    max_delta_power: 1.0,
-    max_wheel_power: 0.6,
-};
-
-const initial_simulation_config = {
-    mouse: {
-        mechanical: MOUSE_2019_MECH,
-        path: MOUSE_SIM_PATH,
-        map: MOUSE_MAZE_MAP,
-        motion: MOUSE_2020_MOTION,
-    },
-
-    max_speed: 500.0,
-
-    initial_orientation: {
-        position: {
-            x: 1000.0,
-            y: 1000.0,
-        },
-        direction: 0.0,
-    },
-
-    millis_per_step: 10,
-    max_wheel_accel: 60000.0,
-};
-
-const initial_remote_config = {
-    mouse: {
-        mechanical: MOUSE_2019_MECH,
-        path: MOUSE_SIM_PATH,
-        map: MOUSE_MAZE_MAP,
-        motion: MOUSE_2020_MOTION,
-    },
-};
 
 function Simulation() {
     let self = this;
@@ -143,6 +81,9 @@ function Simulation() {
         requestAnimationFrame(do_update);
     };
 
+    self.remote_config_default = undefined;
+    self.simulation_config_default = undefined;
+
     self.send_config = function(config) {
         worker.postMessage({
             name: 'config',
@@ -169,6 +110,10 @@ function Simulation() {
         } else if (msg.name === 'reset') {
             self.debugs = [];
             self.index = -1;
+        } else if (msg.name === 'remote_config_default') {
+            self.remote_config_default = msg.data;
+        } else if (msg.name === 'simulation_config_default') {
+            self.simulation_config_default = msg.data;
         } else if (msg.name === "debug") {
             if (msg.data.time < self.debugs[self.debugs.length]) {
                 self.debugs = [];
@@ -210,7 +155,7 @@ function Ui(parent, state) {
     self.setup_ui = new SetupUi(debug.el, state);
     self.control_ui = new ControlUi(debug.el, state);
     self.debug_ui = new DebugUi(debug.el, state);
-    self.config_ui = new ConfigUi(debug.el, state);
+    //self.config_ui = new ConfigUi(debug.el, state);
     self.maze_ui = new MazeUi(maze.el, state);
     self.graph_ui = new GraphUi(graph.el, state);
 

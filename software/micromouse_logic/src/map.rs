@@ -31,6 +31,103 @@ impl Vector {
     pub fn direction(&self) -> Direction {
         Direction::from(F32Ext::atan2(self.y, self.x))
     }
+
+    pub fn cross(&self, v: Vector) -> f32 {
+        self.x * v.y - v.x * self.y
+    }
+
+    pub fn dot(&self, v: Vector) -> f32 {
+        self.x * v.x + self.y * v.y
+    }
+
+    /// Project `self` onto vector `v`
+    pub fn project_onto(&self, v: Vector) -> Vector {
+        //(self.dot(v) / v.dot(v)) * v
+        Vector {
+            x: (self.x * v.x * v.x + self.y * v.y * v.x)
+                / (v.x * v.x + v.y * v.y),
+            y: (self.x * v.x * v.y + self.y * v.y * v.y)
+                / (v.x * v.x + v.y * v.y),
+        }
+    }
+}
+
+#[cfg(test)]
+mod vector_tests {
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    use core::f32::consts::FRAC_PI_4;
+    use core::f32::consts::SQRT_2;
+
+    use super::Direction;
+    use super::Vector;
+    use heapless::i::Vec;
+
+    #[test]
+    fn vector_magnitude_test() {
+        assert_close(Vector { x: 1.0, y: 1.0 }.magnitude(), SQRT_2);
+    }
+
+    #[test]
+    fn vector_direction_test() {
+        assert_close(
+            f32::from(Vector { x: 1.0, y: 1.0 }.direction()),
+            FRAC_PI_4,
+        );
+    }
+
+    #[test]
+    fn vector_dot_test_parallel() {
+        assert_close(
+            Vector { x: 1.0, y: 1.0 }.dot(Vector { x: 1.0, y: 1.0 }),
+            2.0,
+        );
+    }
+
+    #[test]
+    fn vector_dot_test_perpendicular() {
+        assert_close(
+            Vector { x: 1.0, y: 1.0 }.dot(Vector { x: -1.0, y: 1.0 }),
+            0.0,
+        );
+    }
+
+    #[test]
+    fn vector_cross_test_parallel() {
+        assert_close(
+            Vector { x: 1.0, y: 1.0 }.cross(Vector { x: 1.0, y: 1.0 }),
+            0.0,
+        )
+    }
+
+    #[test]
+    fn vector_cross_test_perpendicular() {
+        assert_close(
+            Vector { x: 1.0, y: 1.0 }.cross(Vector { x: -1.0, y: 1.0 }),
+            2.0,
+        )
+    }
+
+    #[test]
+    fn vector_project_onto_test() {
+        assert_close2(
+            Vector { x: 2.0, y: 0.0 }.project_onto(Vector { x: 2.0, y: 2.0 }),
+            Vector { x: 1.0, y: 1.0 },
+        )
+    }
+}
+
+impl From<Vector> for vek::Vec2<f32> {
+    fn from(v: Vector) -> Self {
+        vek::Vec2 { x: v.x, y: v.y }
+    }
+}
+
+impl From<vek::Vec2<f32>> for Vector {
+    fn from(v: vek::Vec2<f32>) -> Self {
+        Vector { x: v.x, y: v.y }
+    }
 }
 
 impl core::ops::Sub for Vector {
@@ -196,8 +293,10 @@ impl Orientation {
         delta_left: i32,
         delta_right: i32,
     ) {
-        let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
-        let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
+        let delta_linear =
+            config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
+        let delta_angular =
+            config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
 
         let mid_dir = f32::from(self.direction) + delta_angular / 2.0;
 
@@ -223,9 +322,15 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new(orientation: Orientation, left_encoder: i32, right_encoder: i32) -> Map {
-        let mut horizontal_edges = [[Edge::Unknown; crate::maze::HEIGHT - 1]; crate::maze::WIDTH];
-        let mut vertical_edges = [[Edge::Unknown; crate::maze::HEIGHT]; crate::maze::WIDTH - 1];
+    pub fn new(
+        orientation: Orientation,
+        left_encoder: i32,
+        right_encoder: i32,
+    ) -> Map {
+        let mut horizontal_edges =
+            [[Edge::Unknown; crate::maze::HEIGHT - 1]; crate::maze::WIDTH];
+        let mut vertical_edges =
+            [[Edge::Unknown; crate::maze::HEIGHT]; crate::maze::WIDTH - 1];
 
         horizontal_edges[6][6] = Edge::Closed;
         horizontal_edges[7][6] = Edge::Closed;
@@ -280,8 +385,11 @@ impl Map {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
-        self.orientation
-            .update_from_encoders(&mech_config, delta_left, delta_right);
+        self.orientation.update_from_encoders(
+            &mech_config,
+            delta_left,
+            delta_right,
+        );
 
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
@@ -289,7 +397,8 @@ impl Map {
         let front_edge = maze_config
             .edge_projection_iter(self.orientation)
             .find(|edge_index| {
-                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
+                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed)
+                    == Edge::Closed
             });
 
         let left_distance_orientation = Orientation {
@@ -300,7 +409,8 @@ impl Map {
         let left_edge = maze_config
             .edge_projection_iter(left_distance_orientation)
             .find(|edge_index| {
-                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
+                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed)
+                    == Edge::Closed
             });
 
         let right_distance_orientation = Orientation {
@@ -311,7 +421,8 @@ impl Map {
         let right_edge = maze_config
             .edge_projection_iter(right_distance_orientation)
             .find(|edge_index| {
-                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed) == Edge::Closed
+                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed)
+                    == Edge::Closed
             });
 
         let debug = MapDebug {
