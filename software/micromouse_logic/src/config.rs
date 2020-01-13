@@ -82,7 +82,7 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 0.5,
+    p: 1.0,
     i: 0.0,
     d: 0.0,
     offset_p: 0.000,
@@ -98,7 +98,7 @@ pub const MOUSE_2019: MouseConfig = MouseConfig {
     path: MOUSE_2019_PATH,
     map: MOUSE_MAZE_MAP,
     motion: MOUSE_2019_MOTION,
-    linear_power: 1.0,
+    linear_power: 0.5,
 };
 
 pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {

@@ -30,16 +30,15 @@ function MazeUi(parent) {
 
         draw.size("100%", maze_height_mm * px_per_mm);
 
-
         if (world) {
-            world.remove()
+            world.remove();
             world = undefined;
         }
 
         world = draw.group();
 
         world.scale(px_per_mm, -px_per_mm);
-        world.move(0, -maze_height_mm);
+        world.move(maze_config.wall_width/2.0, -maze_height_mm+maze_config.wall_width/2.0);
 
         let maze = world.group();
 
@@ -53,7 +52,7 @@ function MazeUi(parent) {
             for (let j = 0; j < MAZE_HEIGHT + 1; j++) {
 
                 let post = maze.rect(maze_config.wall_width, maze_config.wall_width);
-                post.move(i * maze_config.cell_width, j * maze_config.cell_width);
+                post.move(i * maze_config.cell_width - maze_config.wall_width/2.0, j * maze_config.cell_width - maze_config.wall_width/2.0);
                 self.posts[i][j] = post;
 
                 if (i < MAZE_WIDTH) {
@@ -67,7 +66,7 @@ function MazeUi(parent) {
 
                     self.horizontal_walls[i][j] = maze
                         .rect(maze_config.cell_width - maze_config.wall_width, maze_config.wall_width)
-                        .move(i * maze_config.cell_width + maze_config.wall_width, j * maze_config.cell_width)
+                        .move(i * maze_config.cell_width + maze_config.wall_width/2.0, j * maze_config.cell_width - maze_config.wall_width/2.0)
                         .fill(wall_color);
                 }
 
@@ -82,7 +81,7 @@ function MazeUi(parent) {
 
                     self.vertical_walls[i][j] = maze
                         .rect(maze_config.wall_width, maze_config.cell_width - maze_config.wall_width)
-                        .move(i * maze_config.cell_width, j * maze_config.cell_width + maze_config.wall_width)
+                        .move(i * maze_config.cell_width - maze_config.wall_width/2.0, j * maze_config.cell_width + maze_config.wall_width/2.0)
                         .fill(wall_color);
                 }
             }
@@ -100,6 +99,7 @@ function MazeUi(parent) {
         self.mouse_ext.rect(mech.length, mech.width).fill(mouse_ext_color).translate(mech.front_offset - mech.length, -mech.width / 2);
 
         self.path = world.path('').fill('none').stroke({color: '#0000ff', width: 2});
+        self.path_closest = world.circle(20.0).fill({color: '#0000ff'});
     }
 
     function update(debug) {
@@ -144,69 +144,18 @@ function MazeUi(parent) {
 
         if (debug.mouse.path.path && debug.mouse.path.path.length > 0) {
             let path_string = debug.mouse.path.path.reduce(function(str, segment) {
-                if ("Arc" in segment) {
-                    let arc = segment["Arc"];
-
-                    let x1 = arc[0].x;
-                    let y1 = arc[0].y;
-
-                    let cx = arc[1].x;
-                    let cy = arc[1].y;
-
-                    let theta = arc[2];
-
-                    let radius = Math.sqrt((x1 - cx) * (x1 - cx) + (y1 - cy) * (y1 - cy));
-
-                    let theta_end = Math.atan2((y1-cy), (x1-cx)) + theta;
-
-                    let large_flag = 0;
-
-                    if (theta > Math.PI) {
-                        large_flag = 1;
-                    } else {
-                        large_flag = 0;
-                    }
-
-                    let sweep_flag = 0;
-
-                    if (theta > 0) {
-                        sweep_flag = 1;
-                    } else {
-                        sweep_flag = 0;
-                    }
-
-                    let x2 = cx + radius * Math.cos(theta_end);
-                    let y2 = cy + radius * Math.sin(theta_end);
-
-                    return str + "M " + x1 + " " + y1 + " A " + " " + radius + " " + radius + " 0 " + large_flag + " " + sweep_flag + " " + x2 + " " + y2 + " ";
-                } else if ("Line" in segment) {
-                    let line = segment["Line"];
-                    let x1 = line[0].x;
-                    let y1 = line[0].y;
-                    let x2 = line[1].x;
-                    let y2 = line[1].y;
-
-                    return str + "M " + x1 + " " + y1 + " L " + x2 + " " + y2 + " ";
-                } else if ("Bezier" in segment) {
-                    let bezier = segment["Bezier"];
-                    let sx = bezier[0].x;
-                    let sy = bezier[0].y;
-                    let c0x = bezier[1].x;
-                    let c0y = bezier[1].y;
-                    let c1x = bezier[2].x;
-                    let c1y = bezier[2].y;
-                    let ex = bezier[3].x;
-                    let ey = bezier[3].y;
-
-                    return str + "M " + sx + " " + sy + " C " + c0x + " " + c0y + " " + c1x + " " + c1y + " " + ex + " " + ey + " ";
-                } else {
-                    return str;
-                }
+                let b = segment.bezier;
+                return str + "M " + b.start.x + " " + b.start.y + " C " + b.ctrl0.x + " " + b.ctrl0.y + " " + b.ctrl1.x + " " + b.ctrl1.y + " " + b.end.x + " " + b.end.y + " ";
             }, "");
 
             self.path.plot(path_string);
         } else {
             self.path.plot("");
+        }
+
+        if (debug.mouse.path.closest_point) {
+            let p = debug.mouse.path.closest_point['1'];
+            self.path_closest.translate(p.x - 10.0, p.y - 10.0);
         }
     }
 

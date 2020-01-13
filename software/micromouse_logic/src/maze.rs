@@ -1,8 +1,8 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::map::Orientation;
-use crate::map::Vector;
+use crate::math::Orientation;
+use crate::math::Vector;
 
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
@@ -55,10 +55,14 @@ impl MazeConfig {
         None
     }
 
-    pub fn edge_projection_iter(&self, from: Orientation) -> EdgeProjectionIterator {
+    pub fn edge_projection_iter(
+        &self,
+        from: Orientation,
+    ) -> EdgeProjectionIterator {
         EdgeProjectionIterator {
             config: self,
-            direction_vector: (self.wall_width / 3.0) * from.direction.into_unit_vector(),
+            direction_vector: (self.wall_width / 3.0)
+                * from.direction.into_unit_vector(),
             current_position: from.position,
         }
     }
@@ -92,7 +96,9 @@ impl<'a> Iterator for EdgeProjectionIterator<'a> {
         loop {
             self.current_position += self.direction_vector;
 
-            if let Some(edge_index) = self.config.edge_on_point(self.current_position) {
+            if let Some(edge_index) =
+                self.config.edge_on_point(self.current_position)
+            {
                 break Some(edge_index);
             }
         }

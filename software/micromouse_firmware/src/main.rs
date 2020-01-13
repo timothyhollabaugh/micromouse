@@ -52,9 +52,9 @@ use micromouse_logic::comms::DebugMsg;
 use micromouse_logic::comms::DebugPacket;
 #[allow(unused_imports)]
 use micromouse_logic::config::*;
-use micromouse_logic::map::Direction;
-use micromouse_logic::map::Orientation;
-use micromouse_logic::map::Vector;
+use micromouse_logic::math::Direction;
+use micromouse_logic::math::Orientation;
+use micromouse_logic::math::Vector;
 use micromouse_logic::mouse::Mouse;
 use micromouse_logic::mouse::MouseConfig;
 use micromouse_logic::mouse::MouseDebug;
@@ -186,26 +186,12 @@ where
     I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
     I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
 {
-    let config = MouseConfig {
-        mechanical: MOUSE_2019_MECH,
-        path: MOUSE_2019_PATH,
-        map: MOUSE_MAZE_MAP,
-        motion: MOUSE_2019_MOTION,
-    };
-
-    /*
-    let config = MouseConfig {
-        mechanical: MOUSE_2020_MECH2,
-        path: MOUSE_2020_PATH,
-        map: MOUSE_MAZE_MAP,
-        motion: MOUSE_2020_MOTION,
-    };
-    */
+    let config = MOUSE_2019;
 
     let initial_orientation = Orientation {
         position: Vector {
-            x: 90.0,
-            y: 6.0 * 180.0,
+            x: 1260.0,
+            y: 1170.0,
             //x: 1250.0,
             //y: 1350.0,
         },

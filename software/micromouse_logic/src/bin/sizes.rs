@@ -1,7 +1,7 @@
-use micromouse_logic::map::Direction;
 use micromouse_logic::map::MapDebug;
-use micromouse_logic::map::Orientation;
-use micromouse_logic::map::Vector;
+use micromouse_logic::math::Direction;
+use micromouse_logic::math::Orientation;
+use micromouse_logic::math::Vector;
 use micromouse_logic::maze::Edge;
 use micromouse_logic::maze::EdgeIndex;
 use micromouse_logic::maze::Maze;

@@ -3,7 +3,7 @@ use std::f32;
 use serde::Deserialize;
 use serde::Serialize;
 
-use micromouse_logic::map::Orientation;
+use micromouse_logic::math::Orientation;
 use micromouse_logic::mouse::Mouse;
 use micromouse_logic::mouse::MouseConfig;
 use micromouse_logic::mouse::MouseDebug;

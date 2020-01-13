@@ -13,7 +13,7 @@ use micromouse_logic::config::*;
 use simulation::Simulation;
 use simulation::SimulationConfig;
 
-use micromouse_logic::map::{Direction, Orientation, Vector};
+use micromouse_logic::math::{Direction, Orientation, Vector};
 use remote::Remote;
 use remote::RemoteConfig;
 
@@ -61,8 +61,8 @@ impl JsSimulation {
             millis_per_step: 10,
             initial_orientation: Orientation {
                 position: Vector {
-                    x: 90.0,
-                    y: 6.0 * 180.0,
+                    x: 7.0 * 180.0,
+                    y: 6.5 * 180.0,
                 },
                 direction: Direction::from(0.0),
             },

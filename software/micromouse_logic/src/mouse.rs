@@ -4,20 +4,18 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::MechanicalConfig;
-use crate::map::Direction;
 use crate::map::Map;
 use crate::map::MapConfig;
 use crate::map::MapDebug;
-use crate::map::Orientation;
-use crate::map::Vector;
+use crate::math::{Orientation, DIRECTION_PI};
+use crate::math::{Vector, DIRECTION_3_PI_2};
+use crate::math::{DIRECTION_0, DIRECTION_PI_2};
 use crate::motion::Motion;
 use crate::motion::MotionConfig;
 use crate::motion::MotionDebug;
-use crate::path;
-use crate::path::Path;
 use crate::path::PathConfig;
 use crate::path::PathDebug;
-use core::f32::consts::FRAC_PI_2;
+use crate::path::{Path, Segment};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MouseDebug {
@@ -75,89 +73,88 @@ impl Mouse {
         right_distance: u8,
     ) -> (f32, f32, MouseDebug) {
         if self.done {
-            /*
             let start = Vector {
-                x: 1170.0,
-                y: 1350.0,
+                x: 6.5 * 180.0,
+                y: 6.5 * 180.0,
             };
-            */
 
-            /*
-            self.path
-                .add_segments(&path::rounded_rectangle(
-                    start,
-                    540.0,
-                    180.0,
-                    80.0,
-                ))
-                .ok();
-            */
-
-            /*
-            self.path
-                .add_segments(&path::oval(start, 540.0, 180.0))
-                .ok();
-                */
-
-            /*
-            self.path
-                .add_segments(&path::circle(
-                    Vector {
-                        x: 1250.0,
-                        y: 1350.0,
-                    },
-                    Vector {
-                        x: 1250.0,
-                        y: 1350.0 + 90.0,
-                    },
-                ))
-                .ok();
-                */
-
-            /*
-            self.path
-                .add_segments(&[path::Segment::Line(
-                    Vector {
-                        x: 0.5 * 180.0,
-                        y: 6.5 * 180.0,
-                    },
-                    Vector {
-                        x: 15.5 * 180.0,
-                        y: 6.5 * 180.0,
-                    },
-                )])
-                .ok();
-                */
+            let width = 3.0 * 180.0;
+            let height = 3.0 * 180.0;
+            let radius = 180.0;
 
             self.path
                 .add_segments(&[
-                    path::Segment::Line(
+                    Segment::corner(
+                        start,
+                        DIRECTION_3_PI_2,
+                        DIRECTION_0,
+                        radius,
+                    ),
+                    Segment::line(
                         Vector {
-                            x: 10.5 * 180.0,
-                            y: 7.0 * 180.0,
+                            x: start.x,
+                            y: start.y + height - radius,
                         },
                         Vector {
-                            x: 10.5 * 180.0,
-                            y: 12.0 * 180.0,
+                            x: start.x,
+                            y: start.y + radius,
                         },
                     ),
-                    path::bezier_corner(
+                    Segment::corner(
                         Vector {
-                            x: 10.5 * 180.0,
-                            y: 6.5 * 180.0,
+                            x: start.x,
+                            y: start.y + height,
                         },
-                        Direction::from(0.0),
-                        Direction::from(FRAC_PI_2),
-                        0.5 * 180.0,
+                        DIRECTION_PI,
+                        DIRECTION_3_PI_2,
+                        radius,
                     ),
-                    path::Segment::Line(
+                    Segment::line(
                         Vector {
-                            x: 0.5 * 180.0,
-                            y: 6.5 * 180.0,
+                            x: start.x + width - radius,
+                            y: start.y + height,
                         },
                         Vector {
-                            x: 10.0 * 180.0,
-                            y: 6.5 * 180.0,
+                            x: start.x + radius,
+                            y: start.y + height,
+                        },
+                    ),
+                    Segment::corner(
+                        Vector {
+                            x: start.x + width,
+                            y: start.y + height,
+                        },
+                        DIRECTION_PI_2,
+                        DIRECTION_PI,
+                        radius,
+                    ),
+                    Segment::line(
+                        Vector {
+                            x: start.x + width,
+                            y: start.y + radius,
+                        },
+                        Vector {
+                            x: start.x + width,
+                            y: start.y + height - radius,
+                        },
+                    ),
+                    Segment::corner(
+                        Vector {
+                            x: start.x + width,
+                            y: start.y,
+                        },
+                        DIRECTION_0,
+                        DIRECTION_PI_2,
+                        radius,
+                    ),
+                    Segment::line(
+                        Vector {
+                            x: start.x + radius,
+                            y: start.y,
+                        },
+                        Vector {
+                            x: start.x + width - radius,
+                            y: start.y,
                         },
                     ),
                 ])

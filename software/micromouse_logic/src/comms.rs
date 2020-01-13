@@ -4,7 +4,7 @@ use serde::Serialize;
 use typenum::consts::U3;
 
 use crate::map::MapDebug;
-use crate::map::Orientation;
+use crate::math::Orientation;
 use crate::motion::MotionDebug;
 use crate::path::PathDebug;
 
