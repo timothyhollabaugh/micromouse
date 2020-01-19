@@ -1,6 +1,10 @@
 #[allow(unused_imports)]
 use libm::F32Ext;
 
+use pid_control::Controller;
+use pid_control::PIDController;
+
+use crate::config::MechanicalConfig;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -82,59 +86,122 @@ fn clip_delta_angular_ratio_to_delta_angular_wheel_max(
     }
 }
 
+/// Calculate the instantaneous curvature
+fn curvature(
+    config: &MechanicalConfig,
+    delta_left: i32,
+    delta_right: i32,
+) -> f32 {
+    if (delta_right == 0 && delta_left == 0) || delta_right == delta_left {
+        return 0.0;
+    }
+
+    let delta_left_mm = config.ticks_to_mm(delta_left as f32);
+    let delta_right_mm = config.ticks_to_mm(delta_right as f32);
+
+    let r = (config.wheelbase as f32 / 2.0) * (delta_left_mm + delta_right_mm)
+        / (delta_right_mm - delta_left_mm);
+
+    1.0 / r
+}
+
+#[cfg(test)]
+mod curvature_test {
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    use super::curvature;
+    use crate::config::MechanicalConfig;
+
+    const CONFIG: MechanicalConfig = crate::config::MOUSE_2019_MECH;
+
+    #[test]
+    fn test_curvature_1m_radius() {
+        assert_close(curvature(&CONFIG, 56625, 57090), 0.000110518115)
+    }
+
+    #[test]
+    fn test_curvature_stopped() {
+        assert_close(curvature(&CONFIG, 0, 0), 0.0)
+    }
+
+    #[test]
+    fn test_curvature_strait() {
+        assert_close(curvature(&CONFIG, 10, 10), 0.0)
+    }
+
+    #[test]
+    fn test_curvature_spin() {
+        assert_close(curvature(&CONFIG, 10, -10), core::f32::NEG_INFINITY)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionConfig {
-    /// The max power change for each wheel before the linear speed is reduced.
-    pub max_delta_power: f32,
-
-    /// The max power to send to the wheel before linear speed is reduced
-    pub max_wheel_power: f32,
+    pub p: f32,
+    pub i: f32,
+    pub d: f32,
+    pub f: f32,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionDebug {
-    pub power: f32,
-    pub angular_ratio: f32,
-    pub power_clipped: f32,
-    pub delta_power: f32,
-    pub delta_power_clipped: f32,
-    pub final_power: f32,
-    pub delta_angular_ratio: f32,
-    pub delta_angular_ratio_clipped: f32,
-    pub final_angular_ratio: f32,
+    pub delta_left: i32,
+    pub delta_right: i32,
+    pub target_curvature: f32,
+    pub current_curvature: f32,
+    pub power_curvature: f32,
+    pub linear_power: f32,
+    pub angular_power: f32,
     pub left_power: f32,
     pub right_power: f32,
 }
 
-/// Takes the angular and linear power and combines them to form a left and right power for the motors
-/// Also limits the max change in power for each wheel
+/// Takes a linear power and a curvature. The curvature is the inverse of the radius of a circle
+/// that it is following instantaneously, and is equal to the angular speed over the linear speed.
+/// If angular velocity is the derivative of angular position with respect to time, curvature is
+/// the derivative of angular position with respect to linear position. Thus, it does not change
+/// if the linear velocity changes.
 ///
-/// The linear power is a -1.0 to 1.0 value, with 0 being stopped, 1.0 being full forward, and -1.0
-/// being full reverse. The angular ratio is a ratio of units angular power per unit linear power.
-/// If the wheel speed is directly proportional to the power, the angular ratio will be inversely
-/// proportional to the radius that the mouse is turning at. This keeps the radius of turn constant
-/// as the linear power changes, and makes it easier to limit the power change for each wheel.
+/// We then do a pidf on the curvature to try and maintain it. If the curvature is held constant,
+/// the mouse should go in a constant-radius circle, even it the linear power changes. The f is a
+/// feed-forward, which gets multiplied by the target value, then added to the result of the pid.
+/// In a sense, the feed-forward tries to set the power directly, and the pid just makes up for the
+/// difference. In a perfect world, the feed-forward would do everything and the pid would not be
+/// needed.
 ///
-/// If we fully characterized the motors to find what speed each power level and battery
-/// voltage gives, we could try to scale the linear power and angular power to be real units
-/// and try to correct for non-linearness of the motors. This might in turn make it possible to
-/// calculate theoretical values for all the pid terms that come before this module. Without
-/// characterizing the motors, all the adjustments would end up in the pid terms determined
-/// experimentally.
+/// It would probable help to try to compensate for the non-linear motors by transforming the motor
+/// powers so that the velocity is roughly linear to the motor power.
 ///
+/// Eventually, I would like to take in a target linear velocity and to pid to control the linear
+/// power, but that is a later problem.
 pub struct Motion {
-    power: f32,
-    angular_ratio: f32,
+    pid: PIDController,
+    last_time: u32,
+    last_left_encoder: i32,
+    last_right_encoder: i32,
 }
 
 // Good food in New Orleans according to my uncle
 // Cafe du moire
 
 impl Motion {
-    pub fn new(_config: &MotionConfig, _time: u32) -> Motion {
+    pub fn new(
+        config: &MotionConfig,
+        time: u32,
+        left_encoder: i32,
+        right_encoder: i32,
+    ) -> Motion {
+        let pid = PIDController::new(
+            config.p as f64,
+            config.i as f64,
+            config.d as f64,
+        );
         Motion {
-            power: 0.0,
-            angular_ratio: 0.0,
+            pid,
+            last_time: time,
+            last_left_encoder: left_encoder,
+            last_right_encoder: right_encoder,
         }
     }
 
@@ -142,52 +209,51 @@ impl Motion {
     pub fn update(
         &mut self,
         config: &MotionConfig,
-        _time: u32,
-        power: f32,
-        angular_ratio: f32,
+        mech: &MechanicalConfig,
+        time: u32,
+        left_encoder: i32,
+        right_encoder: i32,
+        linear_power: f32,
+        target_curvature: f32,
     ) -> (f32, f32, MotionDebug) {
-        // Limit the linear power so that the power for each wheel is in the range -1.0 to 1.0
-        let power_clipped = clip_linear_to_wheel_max(
-            config.max_wheel_power,
-            power,
-            angular_ratio,
-        );
+        let delta_time = time - self.last_time;
+        let delta_left = left_encoder - self.last_left_encoder;
+        let delta_right = right_encoder - self.last_right_encoder;
 
-        // Limit the change in power for each wheel due to linear power change
-        let delta_power = power_clipped - self.power;
-        let delta_power_clipped = clip_linear_to_wheel_max(
-            config.max_delta_power,
-            delta_power,
-            angular_ratio,
-        );
-        self.power += delta_power_clipped;
+        let current_curvature = curvature(mech, delta_left, delta_right);
 
-        // Limit the change in power for each wheel due to angular ratio change
-        let delta_angular_ratio = angular_ratio - self.angular_ratio;
-        let delta_angular_ratio_clipped =
-            clip_delta_angular_ratio_to_delta_angular_wheel_max(
-                config.max_delta_power,
-                self.power,
-                delta_angular_ratio,
-            );
-        self.angular_ratio += delta_angular_ratio_clipped;
+        self.pid.set_target(target_curvature as f64);
 
-        let left_power = self.power * (1.0 - self.angular_ratio);
-        let right_power = self.power * (1.0 + self.angular_ratio);
+        // The pid controls the `power_curvature`, which is I am calling the angular power over the
+        // linear power. This should be proportional-ish to the actual curvature, assuming linear
+        // motors (of which they are not, but close enough). We use this instead of direct
+        // angular power so that it does not affect the current curvature differently at different
+        // linear powers as much
+        let power_curvature = target_curvature * config.f
+            + self.pid.update(current_curvature as f64, delta_time as f64)
+                as f32;
+
+        //let power_curvature = 0.1;
+
+        let angular_power = linear_power * power_curvature;
+
+        let left_power = linear_power - angular_power;
+        let right_power = linear_power + angular_power;
 
         let debug = MotionDebug {
-            power,
-            angular_ratio,
-            power_clipped,
-            delta_power,
-            delta_power_clipped,
-            final_power: self.power,
-            delta_angular_ratio,
-            delta_angular_ratio_clipped,
-            final_angular_ratio: self.angular_ratio,
+            delta_left,
+            delta_right,
+            target_curvature,
+            current_curvature,
+            power_curvature,
+            linear_power,
+            angular_power,
             left_power,
             right_power,
         };
+
+        self.last_left_encoder = left_encoder;
+        self.last_right_encoder = right_encoder;
 
         (left_power, right_power, debug)
     }

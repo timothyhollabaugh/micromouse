@@ -6,6 +6,22 @@ const MAX_DELTA: f32 = 0.00002;
 
 /// Assert that the two floats are close enough to be equal
 pub fn assert_close(left: f32, right: f32) {
+    if left.is_infinite()
+        && left.is_sign_positive()
+        && right.is_infinite()
+        && right.is_sign_positive()
+    {
+        return;
+    }
+
+    if left.is_infinite()
+        && left.is_sign_negative()
+        && right.is_infinite()
+        && right.is_sign_negative()
+    {
+        return;
+    }
+
     let delta = (left - right).abs();
     assert!(
         delta <= MAX_DELTA,

@@ -93,6 +93,11 @@ impl Segment {
     pub fn derivative(&self, t: f32) -> Vector {
         self.bezier.derivative().at(t)
     }
+
+    /// Curvature at `t`
+    pub fn curvature(&self, t: f32) -> f32 {
+        self.bezier.curvature(t)
+    }
 }
 
 pub type PathBufLen = U16;
@@ -197,7 +202,9 @@ impl Path {
 
                     let tangent = v_tangent.direction();
 
-                    break Some((distance, tangent));
+                    let curvature = segment.curvature(t);
+
+                    break Some((curvature, distance, tangent));
                 }
             } else {
                 break None;
@@ -205,50 +212,26 @@ impl Path {
         };
 
         // If there was another segment, try to follow it
-        let (curvature, done) = if let Some((distance, tangent)) = segment_info
-        {
-            // First, calculate the target angle to follow the path
-
-            // This s-curve will asymptote at -pi/2 and pi/2, and cross the origin.
-            // Points the mouse directly at the path far away, but along the path
-            // close up. The offset_p determines how aggressive it is
-            let target_direction_offset = PI
-                / (1.0 + F32Ext::exp(config.offset_p * distance))
-                - FRAC_PI_2;
-
-            let target_direction =
-                tangent + Direction::from(target_direction_offset);
-
-            debug.distance_from = Some(distance);
-            debug.tangent_direction = Some(tangent);
-            debug.target_direction = Some(target_direction);
-            debug.target_direction_offset = Some(target_direction_offset);
-
-            // Do PID on the current and target directions
-
-            // Center the current direction so
-            // target_direction - PI < centered_direction < target_direction + PI
-            //
-            // Keeps the direction error meaningful around 2PI and 0, when the target direction is
-            // on one side of zero, and the current direction is on the other side
-            let centered_direction =
-                orientation.direction.centered_at(target_direction);
-
-            // Do the PID
-            self.pid.set_target(target_direction.into());
-            let angular_power = self
-                .pid
-                .update(centered_direction as f64, delta_time as f64)
-                as f32;
-
-            debug.centered_direction = Some(centered_direction);
-            debug.error =
-                Some(f32::from(target_direction) - centered_direction);
-
-            (angular_power, false)
-        } else {
-            (0.0, true)
-        };
+        let (curvature, done) =
+            if let Some((curvature, distance, _tangent)) = segment_info {
+                if curvature == 0.0 {
+                    (0.0, false)
+                } else {
+                    // Adjust the curvature for the mouse not being on the path
+                    let r = 1.0 / curvature;
+                    if distance > 0.0 {
+                        let r2 = r + distance;
+                        let curvature2 = 1.0 / r2;
+                        (curvature2, false)
+                    } else {
+                        let r2 = r - distance;
+                        let curvature2 = 1.0 / r2;
+                        (curvature2, false)
+                    }
+                }
+            } else {
+                (0.0, true)
+            };
 
         debug.path = Some(self.segment_buffer.clone());
 

@@ -56,7 +56,12 @@ impl Mouse {
         Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
-            motion: Motion::new(&config.motion, time),
+            motion: Motion::new(
+                &config.motion,
+                time,
+                left_encoder,
+                right_encoder,
+            ),
             done: true,
         }
     }
@@ -171,7 +176,7 @@ impl Mouse {
             right_distance,
         );
 
-        let (angular_power, done, path_debug) =
+        let (target_curvature, done, path_debug) =
             self.path.update(&config.path, time, orientation);
 
         self.done = done;
@@ -180,9 +185,12 @@ impl Mouse {
 
         let (left_power, right_power, motion_debug) = self.motion.update(
             &config.motion,
+            &config.mechanical,
             time,
+            left_encoder,
+            right_encoder,
             linear_power,
-            angular_power,
+            target_curvature,
         );
 
         let debug = MouseDebug {

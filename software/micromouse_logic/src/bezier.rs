@@ -27,6 +27,17 @@ pub trait Curve {
     /// The derivative
     fn derivative(&self) -> Self::Derivative;
 
+    /// The curvature
+    fn curvature(&self, t: f32) -> f32 {
+        let d1 = self.derivative().at(t);
+        let d2 = self.derivative().derivative().at(t);
+
+        let d1_magnitude = d1.magnitude();
+
+        (d1.x * d2.y - d2.x * d1.y)
+            / (d1_magnitude * d1_magnitude * d1_magnitude)
+    }
+
     /// The closest point on the curve
     ///
     /// If `m` is past either end of the curve, the curve gets extended with a line tangent to the
@@ -164,6 +175,10 @@ impl Curve for Arc {
         }
     }
 
+    fn curvature(&self, _t: f32) -> f32 {
+        return 1.0 / self.radius;
+    }
+
     fn closest_point(&self, m: Vector) -> (f32, Vector) {
         let m_dir = (m - self.center).direction();
 
@@ -225,6 +240,11 @@ mod arc_tests {
     }
 
     #[test]
+    fn curvature() {
+        assert_close(A.curvature(0.5), 0.5);
+    }
+
+    #[test]
     fn closest_point() {
         let (t, p) = A.closest_point(Vector { x: 1.75, y: 0.25 });
         assert_close(t, 0.5);
@@ -249,6 +269,10 @@ impl Curve for Vector {
         Vector { x: 0.0, y: 0.0 }
     }
 
+    fn curvature(&self, _t: f32) -> f32 {
+        return 0.0;
+    }
+
     fn closest_point(&self, _m: Vector) -> (f32, Vector) {
         (0.0, *self)
     }
@@ -271,6 +295,10 @@ impl Curve for Line {
 
     fn derivative(&self) -> Self::Derivative {
         self.end - self.start
+    }
+
+    fn curvature(&self, _t: f32) -> f32 {
+        return 0.0;
     }
 
     fn closest_point(&self, m: Vector) -> (f32, Vector) {
@@ -389,6 +417,21 @@ mod bezier2_tests {
         let (t, p) = B.closest_point(Vector { x: 0.75, y: 0.25 });
         assert_close(t, 0.5);
         assert_close2(p, Vector { x: 0.625, y: 0.375 });
+    }
+
+    #[test]
+    fn start_curvature() {
+        assert_close(B.curvature(0.0), 0.50596446);
+    }
+
+    #[test]
+    fn mid_curvature() {
+        assert_close(B.curvature(0.5), core::f32::consts::FRAC_1_SQRT_2);
+    }
+
+    #[test]
+    fn end_curvature() {
+        assert_close(B.curvature(1.0), 0.50596446);
     }
 }
 
@@ -526,6 +569,7 @@ mod bezier3_tests {
         assert_close2(p, Vector { x: 1.0, y: 2.0 });
     }
 
+    // Observed in simulator when first testing
     #[test]
     fn closest_point_after_from_sim() {
         let b = Bezier3 {
@@ -558,5 +602,20 @@ mod bezier3_tests {
                 y: 1170.0,
             },
         )
+    }
+
+    #[test]
+    fn start_curvature() {
+        assert_close(B.curvature(0.0), 1.333333);
+    }
+
+    #[test]
+    fn mid_curvature() {
+        assert_close(B.curvature(0.5), 0.8380524);
+    }
+
+    #[test]
+    fn end_curvature() {
+        assert_close(B.curvature(1.0), 1.3333333);
     }
 }

@@ -17,15 +17,24 @@ pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
-    p: 10.0,
+    p: 20.0,
     i: 0.0,
     d: 0.0,
     offset_p: 0.002,
 };
 
+pub const MOUSE_SIM_MOTION: MotionConfig = MotionConfig {
+    p: 1.0,
+    i: 0.0,
+    d: 0.0,
+    f: 36.5888888,
+};
+
 pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
-    max_delta_power: 1.0,
-    max_wheel_power: 0.6,
+    p: 1.0,
+    i: 0.0,
+    d: 0.0,
+    f: 0.0,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
@@ -89,8 +98,10 @@ pub const MOUSE_2019_PATH: PathConfig = PathConfig {
 };
 
 pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
-    max_delta_power: 1.0,
-    max_wheel_power: 0.6,
+    p: 1.0,
+    i: 0.0,
+    d: 0.0,
+    f: 0.0,
 };
 
 pub const MOUSE_2019: MouseConfig = MouseConfig {
@@ -105,8 +116,8 @@ pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {
     mechanical: MOUSE_2019_MECH,
     path: MOUSE_SIM_PATH,
     map: MOUSE_MAZE_MAP,
-    motion: MOUSE_2019_MOTION,
-    linear_power: 1.0,
+    motion: MOUSE_SIM_MOTION,
+    linear_power: 0.5,
 };
 
 /**
