@@ -31,13 +31,9 @@ pub mod vl6180x;
 
 use core::fmt::Write;
 use cortex_m_rt::entry;
-use cortex_m_rt::exception;
-use cortex_m_rt::ExceptionFrame;
 use stm32f4xx_hal as stm32f4;
 use stm32f4xx_hal::prelude::*;
 use stm32f4xx_hal::stm32 as stm32f405;
-
-use serde::Serialize;
 
 use heapless::Vec;
 
@@ -56,8 +52,6 @@ use micromouse_logic::math::Direction;
 use micromouse_logic::math::Orientation;
 use micromouse_logic::math::Vector;
 use micromouse_logic::mouse::Mouse;
-use micromouse_logic::mouse::MouseConfig;
-use micromouse_logic::mouse::MouseDebug;
 
 use crate::battery::Battery;
 use crate::time::Time;
@@ -80,20 +74,20 @@ pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
 
 pub fn do_characterize<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
     mut time: Time,
-    mut battery: Battery,
-    mut red_led: RL,
+    battery: Battery,
+    mut _red_led: RL,
     mut green_led: GL,
     mut blue_led: BL,
     mut orange_led: OL,
-    mut left_button: LB,
-    mut right_button: RB,
+    _left_button: LB,
+    right_button: RB,
     mut left_motor: LeftMotor,
-    mut right_motor: RightMotor,
+    mut _right_motor: RightMotor,
     left_encoder: LeftEncoder,
-    right_encoder: RightEncoder,
-    mut front_distance: VL6180x<I2C1>,
-    mut left_distance: VL6180x<I2C2>,
-    mut right_distance: VL6180x<I2C3>,
+    _right_encoder: RightEncoder,
+    mut _front_distance: VL6180x<I2C1>,
+    _left_distance: VL6180x<I2C2>,
+    _right_distance: VL6180x<I2C3>,
     mut uart: Uart,
 ) -> !
 where
@@ -107,11 +101,11 @@ where
     I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
     I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
 {
-    green_led.set_high();
+    green_led.set_high().ok();
 
     while let Ok(false) = right_button.is_low() {}
 
-    blue_led.set_high();
+    blue_led.set_high().ok();
 
     let mut n_steps = 16;
 
@@ -127,7 +121,7 @@ where
         left_motor.change_power(power);
 
         if now - last_report > 50 {
-            orange_led.toggle();
+            orange_led.toggle().ok();
             writeln!(
                 uart,
                 "{}\t{}\t{}\t{}",
@@ -164,8 +158,8 @@ pub fn do_mouse<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
     mut green_led: GL,
     mut blue_led: BL,
     mut orange_led: OL,
-    mut left_button: LB,
-    mut right_button: RB,
+    left_button: LB,
+    right_button: RB,
     mut left_motor: LeftMotor,
     mut right_motor: RightMotor,
     left_encoder: LeftEncoder,
@@ -212,7 +206,6 @@ where
     let mut debugging = false;
 
     let mut packet_count = 0;
-    let mut step_count = 0;
 
     loop {
         let now: u32 = time.now();
@@ -222,7 +215,7 @@ where
         left_distance.update();
 
         if let Ok(byte) = uart.read_byte() {
-            blue_led.set_high();
+            blue_led.set_high().ok();
             match byte {
                 0 => {}
                 1 => debugging = false,
@@ -241,7 +234,7 @@ where
                 _ => {}
             }
         } else {
-            blue_led.set_low();
+            blue_led.set_low().ok();
         }
 
         if now - last_time >= 10 {
@@ -270,11 +263,12 @@ where
 
                 if debugging && uart.tx_len() == Ok(0) {
                     let mut msgs = Vec::new();
-                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()));
-                    msgs.push(DebugMsg::Motion(debug.motion.clone()));
+                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
+                        .ok();
+                    msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
 
                     //if step_count % 2 == 0 {
-                    msgs.push(DebugMsg::Path(debug.path.clone()));
+                    msgs.push(DebugMsg::Path(debug.path.clone())).ok();
                     //}
 
                     let packet = DebugPacket {
@@ -285,7 +279,7 @@ where
                     };
 
                     if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
-                        uart.add_bytes(&bytes);
+                        uart.add_bytes(&bytes).ok();
                         orange_led.set_high().ok();
                     }
 
@@ -293,8 +287,6 @@ where
                 } else {
                     orange_led.set_low().ok();
                 }
-
-                step_count += 1;
             } else {
                 right_motor.change_power(0);
                 left_motor.change_power(0);
@@ -331,14 +323,14 @@ fn main() -> ! {
 
     while time.now() < 10000 {}
 
-    let mut battery = Battery::setup(&p.RCC, &p.GPIOB, p.ADC1);
+    let battery = Battery::setup(&p.RCC, &p.GPIOB, p.ADC1);
 
     let mut uart = Uart::setup(&p.RCC, p.USART1, &p.GPIOA);
 
-    let mut left_motor = LeftMotor::setup(&p.RCC, p.TIM3, &p.GPIOA);
+    let left_motor = LeftMotor::setup(&p.RCC, p.TIM3, &p.GPIOA);
     let left_encoder = LeftEncoder::setup(&p.RCC, &p.GPIOA, &p.GPIOB, p.TIM2);
 
-    let mut right_motor = RightMotor::setup(&p.RCC, p.TIM4, &p.GPIOB);
+    let right_motor = RightMotor::setup(&p.RCC, p.TIM4, &p.GPIOB);
     let right_encoder = RightEncoder::setup(&p.RCC, &p.GPIOA, p.TIM5);
 
     // Init the hal things
@@ -349,8 +341,8 @@ fn main() -> ! {
     let gpiob = p.GPIOB.split();
     let gpioc = p.GPIOC.split();
 
-    let mut red_led = gpiob.pb12.into_push_pull_output();
-    let mut green_led = gpiob.pb13.into_push_pull_output();
+    let red_led = gpiob.pb12.into_push_pull_output();
+    let green_led = gpiob.pb13.into_push_pull_output();
     let mut blue_led = gpiob.pb14.into_push_pull_output();
     let mut orange_led = gpiob.pb15.into_push_pull_output();
 

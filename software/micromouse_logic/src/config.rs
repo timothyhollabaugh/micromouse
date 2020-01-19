@@ -82,10 +82,10 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 1.0,
+    p: 5.0,
     i: 0.0,
-    d: 0.0,
-    offset_p: 0.000,
+    d: 20000.0,
+    offset_p: 0.002,
 };
 
 pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
