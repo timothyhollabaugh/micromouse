@@ -102,13 +102,16 @@ impl Simulation {
         let left_wheel_speed = left_power * config.max_speed;
         let right_wheel_speed = right_power * config.max_speed;
 
-        let delta_left_wheel = config.mouse.mechanical.mm_to_ticks(
-            left_wheel_speed * (config.millis_per_step as f32 / 1000.0),
-        ) as i32;
+        let delta_left_wheel = config
+            .mouse
+            .mechanical
+            .mm_to_ticks(left_wheel_speed * (config.millis_per_step as f32))
+            as i32;
 
-        let delta_right_wheel = config.mouse.mechanical.mm_to_ticks(
-            right_wheel_speed * (config.millis_per_step as f32 / 1000.0),
-        ) as i32;
+        let delta_right_wheel =
+            config.mouse.mechanical.mm_to_ticks(
+                right_wheel_speed * (config.millis_per_step as f32),
+            ) as i32;
 
         self.left_encoder += delta_left_wheel;
         self.right_encoder += delta_right_wheel;
@@ -120,30 +123,22 @@ impl Simulation {
             / config.sec_per_step();
 
         let left_ground_speed = if left_accel > config.max_wheel_accel {
-            self.last_left_wheel_speed
-                + config.max_wheel_accel * config.sec_per_step()
+            self.last_left_wheel_speed + config.max_wheel_accel
         } else {
             left_wheel_speed
         };
 
         let right_ground_speed = if right_accel > config.max_wheel_accel {
-            self.last_right_wheel_speed
-                + config.max_wheel_accel * config.sec_per_step()
+            self.last_right_wheel_speed + config.max_wheel_accel
         } else {
             right_wheel_speed
         };
 
-        let delta_left_ground = config
-            .mouse
-            .mechanical
-            .mm_to_ticks(left_ground_speed * config.sec_per_step())
-            as i32;
+        let delta_left_ground =
+            config.mouse.mechanical.mm_to_ticks(left_ground_speed) as i32;
 
-        let delta_right_ground = config
-            .mouse
-            .mechanical
-            .mm_to_ticks(right_ground_speed * config.sec_per_step())
-            as i32;
+        let delta_right_ground =
+            config.mouse.mechanical.mm_to_ticks(right_ground_speed) as i32;
 
         self.orientation.update_from_encoders(
             &config.mouse.mechanical,

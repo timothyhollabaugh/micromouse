@@ -24,17 +24,25 @@ pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
 };
 
 pub const MOUSE_SIM_MOTION: MotionConfig = MotionConfig {
-    p: 1.0,
-    i: 0.0,
-    d: 0.0,
-    f: 36.5888888,
+    left_p: 0.0,
+    left_i: 0.0,
+    left_d: 0.0,
+    left_f: 1.0,
+    right_p: 0.0,
+    right_i: 0.0,
+    right_d: 0.0,
+    right_f: 1.0,
 };
 
 pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
-    p: 1.0,
-    i: 0.0,
-    d: 0.0,
-    f: 0.0,
+    left_p: 1.0,
+    left_i: 0.0,
+    left_d: 0.0,
+    left_f: 1.0,
+    right_p: 1.0,
+    right_i: 0.0,
+    right_d: 0.0,
+    right_f: 1.0,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
@@ -98,10 +106,14 @@ pub const MOUSE_2019_PATH: PathConfig = PathConfig {
 };
 
 pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
-    p: 1.0,
-    i: 0.0,
-    d: 0.0,
-    f: 0.0,
+    left_p: 0.0,
+    left_i: 0.0,
+    left_d: 0.0,
+    left_f: 1.0,
+    right_p: 0.0,
+    right_i: 0.0,
+    right_d: 0.0,
+    right_f: 1.0,
 };
 
 pub const MOUSE_2019: MouseConfig = MouseConfig {

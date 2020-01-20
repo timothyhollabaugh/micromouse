@@ -66,7 +66,7 @@ impl JsSimulation {
                 },
                 direction: Direction::from(0.0),
             },
-            max_speed: 1000.0,
+            max_speed: 1.0,
         })
         .unwrap()
     }
