@@ -100,6 +100,58 @@ impl Segment {
     }
 }
 
+// Adjust the curvature for the mouse not being on the path
+fn offset_curvature(curvature: f32, distance: f32) -> f32 {
+    let r = 1.0 / curvature;
+
+    let r2 = match (curvature > 0.0, distance > 0.0) {
+        (true, true) => r - distance,
+        (true, false) => r - distance,
+        (false, true) => r + distance,
+        (false, false) => r + distance,
+    };
+
+    let curvature2 = 1.0 / r2;
+    curvature2
+}
+
+#[cfg(test)]
+mod offset_curvature_tests {
+    use super::offset_curvature;
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    #[test]
+    fn zero_distance_positive_curvature() {
+        assert_close(offset_curvature(1.0, 0.0), 1.0)
+    }
+
+    #[test]
+    fn positive_distance_positive_curvature() {
+        assert_close(offset_curvature(1.0, 0.5), 2.0)
+    }
+
+    #[test]
+    fn negative_distance_positive_curvature() {
+        assert_close(offset_curvature(1.0, -0.5), 0.6666667)
+    }
+
+    #[test]
+    fn zero_distance_negative_curvature() {
+        assert_close(offset_curvature(-1.0, 0.0), -1.0)
+    }
+
+    #[test]
+    fn positive_distance_negative_curvature() {
+        assert_close(offset_curvature(-1.0, 0.5), -2.0)
+    }
+
+    #[test]
+    fn negative_distance_negative_curvature() {
+        assert_close(offset_curvature(-1.0, -0.5), -0.66666667)
+    }
+}
+
 pub type PathBufLen = U16;
 pub type PathBuf = Vec<Segment, PathBufLen>;
 
@@ -214,21 +266,14 @@ impl Path {
         // If there was another segment, try to follow it
         let (curvature, done) =
             if let Some((curvature, distance, _tangent)) = segment_info {
-                if curvature == 0.0 {
-                    (0.0, false)
+                let path_curvature = if curvature == 0.0 {
+                    0.0
                 } else {
-                    // Adjust the curvature for the mouse not being on the path
-                    let r = 1.0 / curvature;
-                    if distance > 0.0 {
-                        let r2 = r + distance;
-                        let curvature2 = 1.0 / r2;
-                        (curvature2, false)
-                    } else {
-                        let r2 = r - distance;
-                        let curvature2 = 1.0 / r2;
-                        (curvature2, false)
-                    }
-                }
+                    offset_curvature(curvature, distance)
+                };
+
+                debug.distance_from = Some(distance);
+                (path_curvature, false)
             } else {
                 (0.0, true)
             };
