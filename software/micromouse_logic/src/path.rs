@@ -104,11 +104,10 @@ impl Segment {
 fn offset_curvature(curvature: f32, distance: f32) -> f32 {
     let r = 1.0 / curvature;
 
-    let r2 = match (curvature > 0.0, distance > 0.0) {
-        (true, true) => r - distance,
-        (true, false) => r - distance,
-        (false, true) => r + distance,
-        (false, false) => r + distance,
+    let r2 = if curvature > 0.0 {
+        r - distance
+    } else {
+        r + distance
     };
 
     let curvature2 = 1.0 / r2;
@@ -149,6 +148,11 @@ mod offset_curvature_tests {
     #[test]
     fn negative_distance_negative_curvature() {
         assert_close(offset_curvature(-1.0, -0.5), -0.66666667)
+    }
+
+    #[test]
+    fn zero_curvature() {
+        assert_close(offset_curvature(0.0, 0.5), 0.0)
     }
 }
 
@@ -266,12 +270,7 @@ impl Path {
         // If there was another segment, try to follow it
         let (curvature, done) =
             if let Some((curvature, distance, _tangent)) = segment_info {
-                let path_curvature = if curvature == 0.0 {
-                    0.0
-                } else {
-                    offset_curvature(curvature, distance)
-                };
-
+                let path_curvature = offset_curvature(curvature, distance);
                 debug.distance_from = Some(distance);
                 (path_curvature, false)
             } else {
