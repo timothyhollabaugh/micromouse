@@ -5,7 +5,6 @@ use pid_control::Controller;
 use pid_control::PIDController;
 
 use crate::config::MechanicalConfig;
-use core::f32::consts::{FRAC_PI_2, PI};
 use serde::Deserialize;
 use serde::Serialize;
 

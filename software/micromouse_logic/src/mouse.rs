@@ -176,12 +176,10 @@ impl Mouse {
             right_distance,
         );
 
-        let (target_curvature, done, path_debug) =
+        let (target_curvature, target_velocity, done, path_debug) =
             self.path.update(&config.path, time, orientation);
 
         self.done = done;
-
-        let linear_power = if done { 0.0 } else { config.linear_power };
 
         let (left_power, right_power, motion_debug) = self.motion.update(
             &config.motion,
@@ -189,7 +187,7 @@ impl Mouse {
             time,
             left_encoder,
             right_encoder,
-            linear_power,
+            target_velocity,
             target_curvature,
         );
 

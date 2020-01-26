@@ -16,10 +16,6 @@ use heapless::consts::U16;
 use heapless::Vec;
 use typenum::Unsigned;
 
-use pid_control::Controller;
-use pid_control::DerivativeMode;
-use pid_control::PIDController;
-
 use crate::math::Direction;
 use crate::math::Orientation;
 use crate::math::Vector;
@@ -164,39 +160,30 @@ pub struct PathDebug {
     pub path: Option<PathBuf>,
     pub closest_point: Option<(f32, Vector)>,
     pub distance_from: Option<f32>,
-    pub centered_direction: Option<f32>,
     pub tangent_direction: Option<Direction>,
-    pub target_direction: Option<Direction>,
-    pub target_direction_offset: Option<f32>,
-    pub error: Option<f32>,
+    pub adjust_direction: Option<Direction>,
+    pub centered_direction: Option<f32>,
+    pub offset_direction: Option<f32>,
+    pub projected_distance: Option<f32>,
+    pub adjust_curvature: Option<f32>,
+    pub target_curvature: Option<f32>,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PathConfig {
-    pub p: f32,
-    pub i: f32,
-    pub d: f32,
     pub offset_p: f32,
+    pub velocity: f32,
 }
 
 #[derive(Clone, Debug)]
 pub struct Path {
-    pub pid: PIDController,
     pub segment_buffer: PathBuf,
     pub time: u32,
 }
 
 impl Path {
-    pub fn new(config: &PathConfig, time: u32) -> Path {
-        let mut pid = PIDController::new(
-            config.p as f64,
-            config.i as f64,
-            config.d as f64,
-        );
-        pid.d_mode = DerivativeMode::OnError;
-        //pid.set_limits(-1.0, 1.0);
+    pub fn new(_config: &PathConfig, time: u32) -> Path {
         Path {
-            pid,
             segment_buffer: Vec::new(),
             time,
         }
@@ -220,21 +207,8 @@ impl Path {
         config: &PathConfig,
         time: u32,
         orientation: Orientation,
-    ) -> (f32, bool, PathDebug) {
-        let mut debug = PathDebug {
-            path: None,
-            closest_point: None,
-            distance_from: None,
-            centered_direction: None,
-            tangent_direction: None,
-            target_direction: None,
-            target_direction_offset: None,
-            error: None,
-        };
-
-        self.pid.p_gain = config.p as f64;
-        self.pid.i_gain = config.i as f64;
-        self.pid.d_gain = config.d as f64;
+    ) -> (f32, f32, bool, PathDebug) {
+        let mut debug = PathDebug::default();
 
         let delta_time = time - self.time;
 
@@ -268,17 +242,66 @@ impl Path {
         };
 
         // If there was another segment, try to follow it
-        let (curvature, done) =
-            if let Some((curvature, distance, _tangent)) = segment_info {
-                let path_curvature = offset_curvature(curvature, distance);
+        let (curvature, velocity, done) =
+            if let Some((path_curvature, distance, tangent)) = segment_info {
+                // The curvature of the path where the mouse is
+                let offset_curvature =
+                    offset_curvature(path_curvature, distance);
+
+                // Need to calculate an adjustment curvature to get the mouse back on the path
+                // This gets added to the offset curvature above to get the final path curvature.
+                // As such, it should always turn the mouse towards the path, but avoid turning
+                // past the path. This is done by calculating a target direction that points towards the
+                // path far away, but along the path close up. A curvature is then calculated that
+                // should get the mouse to that direction in the next loop (assuming no physics
+                // limitations. This should probably be limited base on the mechanics).
+
+                // This s-curve will asymptote at -pi/2 and pi/2, and cross the origin.
+                // Points the mouse directly at the path far away, but along the path
+                // close up. The offset_p determines how aggressive it is
+                let adjust_direction_offset = PI
+                    / (1.0 + F32Ext::exp(config.offset_p * distance))
+                    - FRAC_PI_2;
+
+                let adjust_direction =
+                    tangent + Direction::from(adjust_direction_offset);
+
+                let projected_distance = delta_time as f32 * config.velocity;
+
+                let centered_direction =
+                    orientation.direction.centered_at(adjust_direction);
+
+                let offset_direction =
+                    f32::from(adjust_direction) - centered_direction;
+
+                // Curvature can be measured in radians per mm.
+                // Reasoning:
+                // The arclength of a circular arc is the radius times the angle in radians. Thus
+                // the radius is the arclength divided by the angle. If the arclength is in mm, then
+                // the radius is in mm per radian. Curvature is the inverse of the radius, so it is
+                // radians per mm.
+                let adjust_curvature = offset_direction / projected_distance;
+
+                let target_curvature = offset_curvature + adjust_curvature;
+
                 debug.distance_from = Some(distance);
-                (path_curvature, false)
+                debug.tangent_direction = Some(tangent);
+                debug.adjust_direction = Some(adjust_direction);
+                debug.adjust_curvature = Some(adjust_curvature);
+                debug.centered_direction = Some(centered_direction);
+                debug.offset_direction = Some(offset_direction);
+                debug.projected_distance = Some(projected_distance);
+                debug.target_curvature = Some(target_curvature);
+
+                (target_curvature, config.velocity, false)
             } else {
-                (0.0, true)
+                (0.0, 0.0, true)
             };
 
         debug.path = Some(self.segment_buffer.clone());
 
-        (curvature, done, debug)
+        self.time = time;
+
+        (curvature, velocity, done, debug)
     }
 }
