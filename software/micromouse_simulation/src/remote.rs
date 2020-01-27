@@ -17,6 +17,7 @@ pub struct RemoteConfig {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct RemoteDebug {
     mouse: MouseDebug,
+    delta_time_msg: u32,
     config: RemoteConfig,
 }
 
@@ -51,6 +52,8 @@ impl Remote {
                     self.buf = Vec::from(remaining.clone());
 
                     self.debug.mouse.time = packet.time;
+                    self.debug.mouse.delta_time = packet.delta_time_sys;
+                    self.debug.delta_time_msg = packet.delta_time_msg;
                     self.debug.mouse.battery = packet.battery;
 
                     for msg in packet.msgs {

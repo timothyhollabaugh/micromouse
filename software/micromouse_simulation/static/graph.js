@@ -152,7 +152,7 @@ function Graph(parent, path, state) {
             let index = debugs[i].index;
             let time = debugs[i].time;
             let value = f(state, index) - min;
-            points[i] = [(time - start) * WIDTH / range, HEIGHT - value * HEIGHT / (max - min)+1];
+            points[i] = [(time - start) * WIDTH / range, HEIGHT - value * HEIGHT / (max - min)];
         }
 
         //line.clear();
@@ -161,7 +161,7 @@ function Graph(parent, path, state) {
         let center = time - start;
         centerline.plot(center * WIDTH/range, 0, center * WIDTH/range, HEIGHT);
 
-        let zero = -min * HEIGHT / (max - min) + 1;
+        let zero = -min * HEIGHT / (max - min);
 
         if (min > 0 && max > 0) {
             zero = 0;

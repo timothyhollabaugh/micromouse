@@ -7,9 +7,8 @@ use crate::config::MechanicalConfig;
 use crate::map::Map;
 use crate::map::MapConfig;
 use crate::map::MapDebug;
-use crate::math::{Orientation, DIRECTION_PI};
-use crate::math::{Vector, DIRECTION_3_PI_2};
-use crate::math::{DIRECTION_0, DIRECTION_PI_2};
+use crate::math::Orientation;
+use crate::math::Vector;
 use crate::motion::Motion;
 use crate::motion::MotionConfig;
 use crate::motion::MotionDebug;
@@ -25,6 +24,7 @@ pub struct MouseDebug {
     pub motion: MotionDebug,
     pub battery: u16,
     pub time: u32,
+    pub delta_time: u32,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -33,10 +33,10 @@ pub struct MouseConfig {
     pub path: PathConfig,
     pub map: MapConfig,
     pub motion: MotionConfig,
-    pub linear_power: f32,
 }
 
 pub struct Mouse {
+    last_time: u32,
     map: Map,
     path: Path,
     motion: Motion,
@@ -54,6 +54,7 @@ impl Mouse {
         let path = Path::new(&config.path, time);
 
         Mouse {
+            last_time: time,
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
             motion: Motion::new(
@@ -76,7 +77,8 @@ impl Mouse {
         left_distance: u8,
         front_distance: u8,
         right_distance: u8,
-    ) -> (f32, f32, MouseDebug) {
+    ) -> (i32, i32, MouseDebug) {
+        let delta_time = time - self.last_time;
         if self.done {
             let start = Vector {
                 x: 6.5 * 180.0,
@@ -87,6 +89,17 @@ impl Mouse {
             let height = 3.0 * 180.0;
             let radius = 180.0;
 
+            self.path
+                .add_segments(&[Segment::line(
+                    start,
+                    Vector {
+                        x: start.x + width,
+                        y: start.y,
+                    },
+                )])
+                .ok();
+
+            /*
             self.path
                 .add_segments(&[
                     Segment::corner(
@@ -164,6 +177,7 @@ impl Mouse {
                     ),
                 ])
                 .ok();
+                */
         }
 
         let (orientation, map_debug) = self.map.update(
@@ -198,7 +212,10 @@ impl Mouse {
             motion: motion_debug,
             battery,
             time,
+            delta_time,
         };
+
+        self.last_time = time;
 
         (left_power, right_power, debug)
     }

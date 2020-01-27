@@ -189,10 +189,7 @@ impl Path {
         }
     }
 
-    pub fn add_segments(
-        &mut self,
-        segments: &[Segment],
-    ) -> Result<usize, usize> {
+    pub fn add_segments(&mut self, segments: &[Segment]) -> Result<usize, usize> {
         for (i, segment) in segments.iter().enumerate() {
             if self.segment_buffer.push(*segment).is_err() {
                 return Err(i);
@@ -245,52 +242,55 @@ impl Path {
         let (curvature, velocity, done) =
             if let Some((path_curvature, distance, tangent)) = segment_info {
                 // The curvature of the path where the mouse is
-                let offset_curvature =
-                    offset_curvature(path_curvature, distance);
+                let offset_curvature = offset_curvature(path_curvature, distance);
 
-                // Need to calculate an adjustment curvature to get the mouse back on the path
-                // This gets added to the offset curvature above to get the final path curvature.
-                // As such, it should always turn the mouse towards the path, but avoid turning
-                // past the path. This is done by calculating a target direction that points towards the
-                // path far away, but along the path close up. A curvature is then calculated that
-                // should get the mouse to that direction in the next loop (assuming no physics
-                // limitations. This should probably be limited base on the mechanics).
+                let adjust_curvature = if config.offset_p != 0.0 {
+                    // Need to calculate an adjustment curvature to get the mouse back on the path
+                    // This gets added to the offset curvature above to get the final path curvature.
+                    // As such, it should always turn the mouse towards the path, but avoid turning
+                    // past the path. This is done by calculating a target direction that points towards the
+                    // path far away, but along the path close up. A curvature is then calculated that
+                    // should get the mouse to that direction in the next loop (assuming no physics
+                    // limitations. This should probably be limited base on the mechanics).
 
-                // This s-curve will asymptote at -pi/2 and pi/2, and cross the origin.
-                // Points the mouse directly at the path far away, but along the path
-                // close up. The offset_p determines how aggressive it is
-                let adjust_direction_offset = PI
-                    / (1.0 + F32Ext::exp(config.offset_p * distance))
-                    - FRAC_PI_2;
+                    // This s-curve will asymptote at -pi/2 and pi/2, and cross the origin.
+                    // Points the mouse directly at the path far away, but along the path
+                    // close up. The offset_p determines how aggressive it is
+                    let adjust_direction_offset =
+                        PI / (1.0 + F32Ext::exp(config.offset_p * distance)) - FRAC_PI_2;
 
-                let adjust_direction =
-                    tangent + Direction::from(adjust_direction_offset);
+                    let adjust_direction =
+                        tangent + Direction::from(adjust_direction_offset);
 
-                let projected_distance = delta_time as f32 * config.velocity;
+                    let projected_distance = delta_time as f32 * config.velocity;
 
-                let centered_direction =
-                    orientation.direction.centered_at(adjust_direction);
+                    let centered_direction =
+                        orientation.direction.centered_at(adjust_direction);
 
-                let offset_direction =
-                    f32::from(adjust_direction) - centered_direction;
+                    let offset_direction =
+                        f32::from(adjust_direction) - centered_direction;
 
-                // Curvature can be measured in radians per mm.
-                // Reasoning:
-                // The arclength of a circular arc is the radius times the angle in radians. Thus
-                // the radius is the arclength divided by the angle. If the arclength is in mm, then
-                // the radius is in mm per radian. Curvature is the inverse of the radius, so it is
-                // radians per mm.
-                let adjust_curvature = offset_direction / projected_distance;
+                    debug.adjust_direction = Some(adjust_direction);
+                    debug.centered_direction = Some(centered_direction);
+                    debug.offset_direction = Some(offset_direction);
+                    debug.projected_distance = Some(projected_distance);
+
+                    // Curvature can be measured in radians per mm.
+                    // Reasoning:
+                    // The arclength of a circular arc is the radius times the angle in radians. Thus
+                    // the radius is the arclength divided by the angle. If the arclength is in mm, then
+                    // the radius is in mm per radian. Curvature is the inverse of the radius, so it is
+                    // radians per mm.
+                    offset_direction / projected_distance
+                } else {
+                    0.0
+                };
 
                 let target_curvature = offset_curvature + adjust_curvature;
 
                 debug.distance_from = Some(distance);
                 debug.tangent_direction = Some(tangent);
-                debug.adjust_direction = Some(adjust_direction);
                 debug.adjust_curvature = Some(adjust_curvature);
-                debug.centered_direction = Some(centered_direction);
-                debug.offset_direction = Some(offset_direction);
-                debug.projected_distance = Some(projected_distance);
                 debug.target_curvature = Some(target_curvature);
 
                 (target_curvature, config.velocity, false)

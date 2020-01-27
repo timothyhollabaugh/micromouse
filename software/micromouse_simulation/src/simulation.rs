@@ -82,25 +82,25 @@ impl Simulation {
 
         // Make sure the wheel powers are in range -1.0 to 1.0
 
-        let left_power = if raw_left_power > 1.0 {
-            1.0
-        } else if raw_left_power < -1.0 {
-            -1.0
+        let left_power = if raw_left_power > 10000 {
+            10000
+        } else if raw_left_power < -10000 {
+            -10000
         } else {
             raw_left_power
         };
 
-        let right_power = if raw_right_power > 1.0 {
-            1.0
-        } else if raw_right_power < -1.0 {
-            -1.0
+        let right_power = if raw_right_power > 10000 {
+            10000
+        } else if raw_right_power < -10000 {
+            -10000
         } else {
             raw_right_power
         };
 
         // Update the state for the next run
-        let left_wheel_speed = left_power * config.max_speed;
-        let right_wheel_speed = right_power * config.max_speed;
+        let left_wheel_speed = left_power as f32 / 10000.0 * config.max_speed;
+        let right_wheel_speed = right_power as f32 / 10000.0 * config.max_speed;
 
         let delta_left_wheel = config
             .mouse

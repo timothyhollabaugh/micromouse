@@ -43,99 +43,6 @@ pub fn signed_nearest_zero(f1: f32, f2: f32) -> f32 {
     }
 }
 
-/// Clips the linear power `power` such that both wheels are within their max powers
-///
-/// This also works for delta powers because the derivative is the same as the original
-fn clip_linear_to_wheel_max(
-    wheel_max: f32,
-    power: f32,
-    angular_ratio: f32,
-) -> f32 {
-    // when the angular ratio is 1.0, the left wheel will be stopped, so it does not care what
-    // the linear power is
-    let max_for_left = if angular_ratio == 1.0 {
-        core::f32::INFINITY
-    } else {
-        wheel_max / (1.0 - angular_ratio)
-    };
-
-    // same for the right wheel at -1.0
-    let max_for_right = if angular_ratio == -1.0 {
-        core::f32::INFINITY
-    } else {
-        wheel_max / (1.0 + angular_ratio)
-    };
-
-    let max = nearest_zero(max_for_left, max_for_right);
-    let clipped = signed_nearest_zero(power, max);
-    clipped
-}
-
-/// Clips the change in angular ratio to keep the change in wheel powers within their max
-fn clip_delta_angular_ratio_to_delta_angular_wheel_max(
-    delta_wheel_max: f32,
-    power: f32,
-    delta_angular_ratio: f32,
-) -> f32 {
-    if power == 0.0 {
-        0.0
-    } else {
-        let max = delta_wheel_max / power;
-        let clipped = signed_nearest_zero(delta_angular_ratio, max);
-        clipped
-    }
-}
-
-/// Calculate the instantaneous curvature
-fn curvature(
-    config: &MechanicalConfig,
-    delta_left: i32,
-    delta_right: i32,
-) -> f32 {
-    if (delta_right == 0 && delta_left == 0) || delta_right == delta_left {
-        return 0.0;
-    }
-
-    let delta_left_mm = config.ticks_to_mm(delta_left as f32);
-    let delta_right_mm = config.ticks_to_mm(delta_right as f32);
-
-    let r = (config.wheelbase as f32 / 2.0) * (delta_left_mm + delta_right_mm)
-        / (delta_right_mm - delta_left_mm);
-
-    1.0 / r
-}
-
-#[cfg(test)]
-mod curvature_test {
-    #[allow(unused_imports)]
-    use crate::test::*;
-
-    use super::curvature;
-    use crate::config::MechanicalConfig;
-
-    const CONFIG: MechanicalConfig = crate::config::MOUSE_2019_MECH;
-
-    #[test]
-    fn test_curvature_1m_radius() {
-        assert_close(curvature(&CONFIG, 56625, 57090), 0.000110518115)
-    }
-
-    #[test]
-    fn test_curvature_stopped() {
-        assert_close(curvature(&CONFIG, 0, 0), 0.0)
-    }
-
-    #[test]
-    fn test_curvature_strait() {
-        assert_close(curvature(&CONFIG, 10, 10), 0.0)
-    }
-
-    #[test]
-    fn test_curvature_spin() {
-        assert_close(curvature(&CONFIG, 10, -10), core::f32::NEG_INFINITY)
-    }
-}
-
 fn curvature_to_left_right(
     config: &MechanicalConfig,
     velocity: f32,
@@ -174,25 +81,29 @@ mod curvature_to_left_right_test {
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct PidfConfig {
+    pub p: f32,
+    pub i: f32,
+    pub d: f32,
+    pub f: f32,
+}
+
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionConfig {
-    pub left_p: f32,
-    pub left_i: f32,
-    pub left_d: f32,
-    pub left_f: f32,
-    pub right_p: f32,
-    pub right_i: f32,
-    pub right_d: f32,
-    pub right_f: f32,
+    pub left_pidf: PidfConfig,
+    pub right_pidf: PidfConfig,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionDebug {
     pub target_curvature: f32,
     pub target_velocity: f32,
-    pub left_velocity: f32,
-    pub right_velocity: f32,
-    pub left_power: f32,
-    pub right_power: f32,
+    pub target_left_velocity: f64,
+    pub target_right_velocity: f64,
+    pub left_velocity: f64,
+    pub right_velocity: f64,
+    pub left_power: i32,
+    pub right_power: i32,
 }
 
 /// Takes a linear power and a curvature. The curvature is the inverse of the radius of a circle
@@ -223,17 +134,21 @@ impl Motion {
         left_encoder: i32,
         right_encoder: i32,
     ) -> Motion {
-        let left_pid = PIDController::new(
-            config.left_p as f64,
-            config.left_i as f64,
-            config.left_d as f64,
+        let mut left_pid = PIDController::new(
+            config.left_pidf.p as f64,
+            config.left_pidf.i as f64,
+            config.left_pidf.d as f64,
         );
 
-        let right_pid = PIDController::new(
-            config.right_p as f64,
-            config.right_i as f64,
-            config.right_d as f64,
+        left_pid.set_limits(-10000.0, 10000.0);
+
+        let mut right_pid = PIDController::new(
+            config.right_pidf.p as f64,
+            config.right_pidf.i as f64,
+            config.right_pidf.d as f64,
         );
+
+        right_pid.set_limits(-10000.0, 10000.0);
 
         Motion {
             left_pid,
@@ -254,50 +169,49 @@ impl Motion {
         right_encoder: i32,
         target_velocity: f32,
         target_curvature: f32,
-    ) -> (f32, f32, MotionDebug) {
-        self.left_pid.p_gain = config.left_p as f64;
-        self.left_pid.i_gain = config.left_i as f64;
-        self.left_pid.d_gain = config.left_d as f64;
+    ) -> (i32, i32, MotionDebug) {
+        self.left_pid.p_gain = config.left_pidf.p as f64;
+        self.left_pid.i_gain = config.left_pidf.i as f64;
+        self.left_pid.d_gain = config.left_pidf.d as f64;
 
-        self.right_pid.p_gain = config.right_p as f64;
-        self.right_pid.i_gain = config.right_i as f64;
-        self.right_pid.d_gain = config.right_d as f64;
+        self.right_pid.p_gain = config.right_pidf.p as f64;
+        self.right_pid.i_gain = config.right_pidf.i as f64;
+        self.right_pid.d_gain = config.right_pidf.d as f64;
+
+        let delta_time = time - self.last_time;
 
         let (target_left_velocity, target_right_velocity) =
             curvature_to_left_right(mech, target_velocity, target_curvature);
 
-        let delta_time = time - self.last_time;
+        let target_left_velocity = mech.mm_to_ticks(target_left_velocity) as f64;
+        let target_right_velocity = mech.mm_to_ticks(target_right_velocity) as f64;
+
         let delta_left = left_encoder - self.last_left_encoder;
         let delta_right = right_encoder - self.last_right_encoder;
 
-        let left_velocity =
-            mech.ticks_to_mm(delta_left as f32) / delta_time as f32;
-        let right_velocity =
-            mech.ticks_to_mm(delta_right as f32) / delta_time as f32;
+        let left_velocity = delta_left as f64 / delta_time as f64;
+        let right_velocity = delta_right as f64 / delta_time as f64;
 
         let (left_power, right_power) = if delta_time > 0 {
-            self.left_pid.set_target(target_left_velocity as f64);
-            self.right_pid.set_target(target_right_velocity as f64);
+            self.left_pid.set_target(target_left_velocity);
+            self.right_pid.set_target(target_right_velocity);
 
-            let left_power = target_left_velocity * config.left_f
-                + self
-                    .left_pid
-                    .update(left_velocity as f64, delta_time as f64)
-                    as f32;
-            let right_power = target_right_velocity * config.right_f
-                + self
-                    .right_pid
-                    .update(right_velocity as f64, delta_time as f64)
-                    as f32;
+            let left_power = (target_left_velocity * config.left_pidf.f as f64) as i32
+                + self.left_pid.update(left_velocity, delta_time as f64) as i32;
+
+            let right_power = (target_right_velocity * config.right_pidf.f as f64) as i32
+                + self.right_pid.update(right_velocity, delta_time as f64) as i32;
 
             (left_power, right_power)
         } else {
-            (0.0, 0.0)
+            (0, 0)
         };
 
         let debug = MotionDebug {
             target_curvature,
             target_velocity,
+            target_left_velocity,
+            target_right_velocity,
             left_velocity,
             right_velocity,
             left_power,

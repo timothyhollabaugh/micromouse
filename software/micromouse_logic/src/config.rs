@@ -6,6 +6,7 @@ use serde::Serialize;
 use crate::map::MapConfig;
 use crate::maze::MazeConfig;
 use crate::motion::MotionConfig;
+use crate::motion::PidfConfig;
 use crate::mouse::MouseConfig;
 use crate::path::PathConfig;
 
@@ -21,26 +22,28 @@ pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
     velocity: 0.5,
 };
 
+pub const MOUSE_SIM_PIDF: PidfConfig = PidfConfig {
+    p: 0.0,
+    i: 0.0,
+    d: 0.0,
+    f: 1.0,
+};
+
 pub const MOUSE_SIM_MOTION: MotionConfig = MotionConfig {
-    left_p: 0.0,
-    left_i: 0.0,
-    left_d: 0.0,
-    left_f: 1.0,
-    right_p: 0.0,
-    right_i: 0.0,
-    right_d: 0.0,
-    right_f: 1.0,
+    left_pidf: MOUSE_SIM_PIDF,
+    right_pidf: MOUSE_SIM_PIDF,
+};
+
+pub const MOUSE_2020_PIDF: PidfConfig = PidfConfig {
+    p: 1.0,
+    i: 0.0,
+    d: 0.0,
+    f: 0.0,
 };
 
 pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
-    left_p: 1.0,
-    left_i: 0.0,
-    left_d: 0.0,
-    left_f: 1.0,
-    right_p: 1.0,
-    right_i: 0.0,
-    right_d: 0.0,
-    right_f: 1.0,
+    left_pidf: MOUSE_2020_PIDF,
+    right_pidf: MOUSE_2020_PIDF,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
@@ -73,7 +76,6 @@ pub const MOUSE_2020: MouseConfig = MouseConfig {
     path: MOUSE_2020_PATH,
     map: MOUSE_MAZE_MAP,
     motion: MOUSE_2020_MOTION,
-    linear_power: 1.0,
 };
 
 pub const MOUSE_SIM_2020: MouseConfig = MouseConfig {
@@ -81,7 +83,6 @@ pub const MOUSE_SIM_2020: MouseConfig = MouseConfig {
     path: MOUSE_SIM_PATH,
     map: MOUSE_MAZE_MAP,
     motion: MOUSE_2020_MOTION,
-    linear_power: 1.0,
 };
 
 pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
@@ -95,19 +96,20 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    offset_p: 0.002,
-    velocity: 1.0,
+    offset_p: 0.000,
+    velocity: 0.7,
+};
+
+pub const MOUSE_2019_PIDF: PidfConfig = PidfConfig {
+    p: 4000.0,
+    i: 0.5,
+    d: 25000.0,
+    f: 0.0,
 };
 
 pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
-    left_p: 0.0,
-    left_i: 0.0,
-    left_d: 0.0,
-    left_f: 1.0,
-    right_p: 0.0,
-    right_i: 0.0,
-    right_d: 0.0,
-    right_f: 1.0,
+    left_pidf: MOUSE_2019_PIDF,
+    right_pidf: MOUSE_2019_PIDF,
 };
 
 pub const MOUSE_2019: MouseConfig = MouseConfig {
@@ -115,7 +117,6 @@ pub const MOUSE_2019: MouseConfig = MouseConfig {
     path: MOUSE_2019_PATH,
     map: MOUSE_MAZE_MAP,
     motion: MOUSE_2019_MOTION,
-    linear_power: 0.5,
 };
 
 pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {
@@ -123,7 +124,6 @@ pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {
     path: MOUSE_SIM_PATH,
     map: MOUSE_MAZE_MAP,
     motion: MOUSE_SIM_MOTION,
-    linear_power: 0.5,
 };
 
 /**

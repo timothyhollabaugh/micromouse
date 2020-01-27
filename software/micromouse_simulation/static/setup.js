@@ -11,7 +11,7 @@ function SetupUi(parent, state) {
         p().text("Default config"),
     ]);
 
-    let remote_url = input().classes('input').style('font-family', 'monospace').value("ws://192.168.4.1:8080");
+    let remote_url = input().classes('input').style('font-family', 'monospace').value("ws://localhost:3030");
 
     let remote = div().children([
         p().text("Default config"),

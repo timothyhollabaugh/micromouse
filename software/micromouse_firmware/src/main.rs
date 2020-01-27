@@ -51,7 +51,7 @@ use micromouse_logic::config::*;
 use micromouse_logic::math::Direction;
 use micromouse_logic::math::Orientation;
 use micromouse_logic::math::Vector;
-use micromouse_logic::mouse::Mouse;
+use micromouse_logic::mouse::{Mouse, MouseDebug};
 
 use crate::battery::Battery;
 use crate::time::Time;
@@ -205,14 +205,17 @@ where
     let mut running = false;
     let mut debugging = false;
 
+    let mut last_packet_time = last_time;
     let mut packet_count = 0;
 
     loop {
         let now: u32 = time.now();
 
+        /*
         front_distance.update();
         right_distance.update();
         left_distance.update();
+        */
 
         if let Ok(byte) = uart.read_byte() {
             blue_led.set_high().ok();
@@ -258,23 +261,24 @@ where
                     right_distance_range,
                 );
 
-                right_motor.change_power((right_power * 10000.0) as i32);
-                left_motor.change_power((left_power * 10000.0) as i32);
+                right_motor.change_power((right_power) as i32);
+                left_motor.change_power((left_power) as i32);
 
                 if debugging && uart.tx_len() == Ok(0) {
                     let mut msgs = Vec::new();
-                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
-                        .ok();
+                    //msgs.push(DebugMsg::Orientation(debug.orientation.clone())).ok();
                     msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
 
                     //if step_count % 2 == 0 {
-                    msgs.push(DebugMsg::Path(debug.path.clone())).ok();
+                    //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
                     //}
 
                     let packet = DebugPacket {
                         msgs,
                         battery: debug.battery,
                         time: debug.time,
+                        delta_time_sys: debug.delta_time,
+                        delta_time_msg: now - last_packet_time,
                         count: packet_count,
                     };
 
@@ -284,6 +288,7 @@ where
                     }
 
                     packet_count += 1;
+                    last_packet_time = now;
                 } else {
                     orange_led.set_low().ok();
                 }
@@ -365,8 +370,7 @@ fn main() -> ! {
         let mut gpio1 = gpioc.pc1.into_open_drain_output();
         gpio1.set_high().ok();
 
-        let i2c =
-            stm32f4::i2c::I2c::i2c1(p.I2C1, (scl, sda), 100.khz(), clocks);
+        let i2c = stm32f4::i2c::I2c::i2c1(p.I2C1, (scl, sda), 100.khz(), clocks);
 
         time.delay(10000);
 
@@ -389,8 +393,7 @@ fn main() -> ! {
         let mut gpio1 = gpioc.pc3.into_open_drain_output();
         gpio1.set_high().ok();
 
-        let i2c =
-            stm32f4::i2c::I2c::i2c2(p.I2C2, (scl, sda), 100.khz(), clocks);
+        let i2c = stm32f4::i2c::I2c::i2c2(p.I2C2, (scl, sda), 100.khz(), clocks);
 
         time.delay(1000);
 
@@ -413,8 +416,7 @@ fn main() -> ! {
         let mut gpio1 = gpioc.pc5.into_open_drain_output();
         gpio1.set_high().ok();
 
-        let i2c =
-            stm32f4::i2c::I2c::i2c3(p.I2C3, (scl, sda), 100.khz(), clocks);
+        let i2c = stm32f4::i2c::I2c::i2c3(p.I2C3, (scl, sda), 100.khz(), clocks);
 
         time.delay(1000);
 
