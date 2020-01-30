@@ -18,8 +18,7 @@ struct Buffer<T> {
     len: usize,
 }
 
-static UART: Mutex<RefCell<Option<stm32f405::USART1>>> =
-    Mutex::new(RefCell::new(None));
+static UART: Mutex<RefCell<Option<stm32f405::USART1>>> = Mutex::new(RefCell::new(None));
 
 static RX_BUF: Mutex<RefCell<Buffer<[u8; RX_BUFFER_LEN]>>> =
     Mutex::new(RefCell::new(Buffer {
@@ -75,10 +74,10 @@ impl Uart {
         //uart.brr.write(|w| unsafe { w.bits(0x683) });
 
         // 115200 baud
-        //uart.brr.write(|w| unsafe { w.bits(0x008b) });
+        uart.brr.write(|w| unsafe { w.bits(0x008b) });
 
         // 230400 baud
-        uart.brr.write(|w| unsafe { w.bits(0x0045) });
+        //uart.brr.write(|w| unsafe { w.bits(0x0045) });
 
         // 2M baud doesn't seem to work
         //uart.cr1.write(|w| w.over8().set_bit());

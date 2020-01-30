@@ -31,11 +31,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new(
-        orientation: Orientation,
-        left_encoder: i32,
-        right_encoder: i32,
-    ) -> Map {
+    pub fn new(orientation: Orientation, left_encoder: i32, right_encoder: i32) -> Map {
         let mut horizontal_edges =
             [[Edge::Unknown; crate::maze::HEIGHT - 1]; crate::maze::WIDTH];
         let mut vertical_edges =
@@ -104,15 +100,13 @@ impl Map {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
-        self.orientation.update_from_encoders(
-            &mech_config,
-            delta_left,
-            delta_right,
-        );
+        self.orientation
+            .update_from_encoders(&mech_config, delta_left, delta_right);
 
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
+        /*
         let front_edge = maze_config
             .edge_projection_iter(self.orientation)
             .find(|edge_index| {
@@ -143,12 +137,13 @@ impl Map {
                 *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed)
                     == Edge::Closed
             });
+            */
 
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_edge,
-            left_edge,
-            right_edge,
+            front_edge: None,
+            left_edge: None,
+            right_edge: None,
         };
 
         (self.orientation, debug)

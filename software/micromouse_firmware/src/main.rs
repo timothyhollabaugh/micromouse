@@ -266,11 +266,12 @@ where
 
                 if debugging && uart.tx_len() == Ok(0) {
                     let mut msgs = Vec::new();
-                    //msgs.push(DebugMsg::Orientation(debug.orientation.clone())).ok();
                     msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
+                    msgs.push(DebugMsg::Path(debug.path.clone())).ok();
 
                     //if step_count % 2 == 0 {
-                    //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
+                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
+                        .ok();
                     //}
 
                     let packet = DebugPacket {

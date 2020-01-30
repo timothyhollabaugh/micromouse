@@ -18,6 +18,9 @@ pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
+    p: 1.0,
+    i: 0.0,
+    d: 0.0,
     offset_p: 0.002,
     velocity: 0.5,
 };
@@ -67,6 +70,9 @@ pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2020_PATH: PathConfig = PathConfig {
+    p: 1.0,
+    i: 0.0,
+    d: 0.0,
     offset_p: 0.005,
     velocity: 1.0,
 };
@@ -96,8 +102,11 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    offset_p: 0.000,
-    velocity: 0.7,
+    p: 0.1,
+    i: 0.0,
+    d: 0.0,
+    offset_p: 0.01,
+    velocity: 0.5,
 };
 
 pub const MOUSE_2019_PIDF: PidfConfig = PidfConfig {

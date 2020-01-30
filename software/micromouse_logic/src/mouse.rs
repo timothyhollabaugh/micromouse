@@ -9,6 +9,10 @@ use crate::map::MapConfig;
 use crate::map::MapDebug;
 use crate::math::Orientation;
 use crate::math::Vector;
+use crate::math::DIRECTION_0;
+use crate::math::DIRECTION_3_PI_2;
+use crate::math::DIRECTION_PI;
+use crate::math::DIRECTION_PI_2;
 use crate::motion::Motion;
 use crate::motion::MotionConfig;
 use crate::motion::MotionDebug;
@@ -57,12 +61,7 @@ impl Mouse {
             last_time: time,
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
-            motion: Motion::new(
-                &config.motion,
-                time,
-                left_encoder,
-                right_encoder,
-            ),
+            motion: Motion::new(&config.motion, time, left_encoder, right_encoder),
             done: true,
         }
     }
@@ -89,6 +88,7 @@ impl Mouse {
             let height = 3.0 * 180.0;
             let radius = 180.0;
 
+            /*
             self.path
                 .add_segments(&[Segment::line(
                     start,
@@ -98,16 +98,65 @@ impl Mouse {
                     },
                 )])
                 .ok();
+                */
+
+            self.path
+                .add_segments(&[
+                    Segment::corner(start, DIRECTION_3_PI_2, DIRECTION_0, radius),
+                    Segment::corner(
+                        Vector {
+                            x: start.x,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                        DIRECTION_PI,
+                        DIRECTION_3_PI_2,
+                        radius,
+                    ),
+                    Segment::line(
+                        Vector {
+                            x: start.x + width - radius,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                        Vector {
+                            x: start.x + radius,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                    ),
+                    Segment::corner(
+                        Vector {
+                            x: start.x + width,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                        DIRECTION_PI_2,
+                        DIRECTION_PI,
+                        radius,
+                    ),
+                    Segment::corner(
+                        Vector {
+                            x: start.x + width,
+                            y: start.y,
+                        },
+                        DIRECTION_0,
+                        DIRECTION_PI_2,
+                        radius,
+                    ),
+                    Segment::line(
+                        Vector {
+                            x: start.x + radius,
+                            y: start.y,
+                        },
+                        Vector {
+                            x: start.x + width - radius,
+                            y: start.y,
+                        },
+                    ),
+                ])
+                .ok();
 
             /*
             self.path
                 .add_segments(&[
-                    Segment::corner(
-                        start,
-                        DIRECTION_3_PI_2,
-                        DIRECTION_0,
-                        radius,
-                    ),
+                    Segment::corner(start, DIRECTION_3_PI_2, DIRECTION_0, radius),
                     Segment::line(
                         Vector {
                             x: start.x,
