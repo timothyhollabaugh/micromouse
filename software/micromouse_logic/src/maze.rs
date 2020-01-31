@@ -14,14 +14,14 @@ pub struct MazeConfig {
 }
 
 impl MazeConfig {
-    pub fn edge_on_point(&self, point: Vector) -> Option<EdgeIndex> {
+    pub fn wall_on_point(&self, point: Vector) -> Option<WallIndex> {
         let local_x = point.x % self.cell_width;
         let local_y = point.y % self.cell_width;
         let maze_x = (point.x / self.cell_width) as usize;
         let maze_y = (point.y / self.cell_width) as usize;
 
         if local_y <= self.wall_width / 2.0 {
-            return Some(EdgeIndex {
+            return Some(WallIndex {
                 x: maze_x,
                 y: maze_y,
                 horizontal: true,
@@ -29,7 +29,7 @@ impl MazeConfig {
         }
 
         if local_y >= self.cell_width - self.wall_width / 2.0 {
-            return Some(EdgeIndex {
+            return Some(WallIndex {
                 x: maze_x,
                 y: maze_y + 1,
                 horizontal: true,
@@ -37,7 +37,7 @@ impl MazeConfig {
         }
 
         if local_x <= self.wall_width / 2.0 {
-            return Some(EdgeIndex {
+            return Some(WallIndex {
                 x: maze_x,
                 y: maze_y,
                 horizontal: false,
@@ -45,7 +45,7 @@ impl MazeConfig {
         }
 
         if local_x >= self.cell_width - self.wall_width / 2.0 {
-            return Some(EdgeIndex {
+            return Some(WallIndex {
                 x: maze_x + 1,
                 y: maze_y,
                 horizontal: false,
@@ -55,14 +55,10 @@ impl MazeConfig {
         None
     }
 
-    pub fn edge_projection_iter(
-        &self,
-        from: Orientation,
-    ) -> EdgeProjectionIterator {
-        EdgeProjectionIterator {
+    pub fn wall_projection_iter(&self, from: Orientation) -> WallProjectionIterator {
+        WallProjectionIterator {
             config: self,
-            direction_vector: (self.wall_width / 3.0)
-                * from.direction.into_unit_vector(),
+            direction_vector: (self.wall_width / 3.0) * from.direction.into_unit_vector(),
             current_position: from.position,
         }
     }
@@ -76,84 +72,82 @@ impl MazeConfig {
  *
  *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
  */
-pub struct EdgeProjectionIterator<'a> {
+pub struct WallProjectionIterator<'a> {
     config: &'a MazeConfig,
     direction_vector: Vector,
     current_position: Vector,
 }
 
-impl<'a> Iterator for EdgeProjectionIterator<'a> {
-    type Item = EdgeIndex;
+impl<'a> Iterator for WallProjectionIterator<'a> {
+    type Item = WallIndex;
 
-    fn next(&mut self) -> Option<EdgeIndex> {
-        // Get out of any edges we are currently in
-        // Avoids returning the same edge for subsequent calls to `next`
-        //while self.config.edge_on_point(self.current_position).is_some() {
+    fn next(&mut self) -> Option<WallIndex> {
+        // Get out of any walls we are currently in
+        // Avoids returning the same wall for subsequent calls to `next`
+        //while self.config.wall_on_point(self.current_position).is_some() {
         //self.current_position += self.direction_vector;
         //}
 
-        // Keep going in the direction of `direction_vector` until an edge is found.
+        // Keep going in the direction of `direction_vector` until an wall is found.
         loop {
             self.current_position += self.direction_vector;
 
-            if let Some(edge_index) =
-                self.config.edge_on_point(self.current_position)
-            {
-                break Some(edge_index);
+            if let Some(wall_index) = self.config.wall_on_point(self.current_position) {
+                break Some(wall_index);
             }
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Edge {
+pub enum Wall {
     Open,
     Closed,
     Unknown,
 }
 
-impl Default for Edge {
-    fn default() -> Edge {
-        Edge::Unknown
+impl Default for Wall {
+    fn default() -> Wall {
+        Wall::Unknown
     }
 }
 
-/// An index into a maze. This will uniquely identify any edge.
-/// The indexes are 0-based, but do include the perimeter edges.
+/// An index into a maze. This will uniquely identify any wall.
+/// The indexes are 0-based, but do include the perimeter wall.
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct EdgeIndex {
-    /// The x index of the edge
+pub struct WallIndex {
+    /// The x index of the wall
     pub x: usize,
 
-    /// The y index of the edge
+    /// The y index of the wall
     pub y: usize,
 
-    /// Whether the edge is horizontal (true), or vertical (false)
+    /// Whether the wall is horizontal (true), or vertical (false)
     pub horizontal: bool,
 }
 
 /// Keeps track of all the walls in a maze
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Maze {
-    horizontal_edges: [[Edge; HEIGHT - 1]; WIDTH],
-    vertical_edges: [[Edge; HEIGHT]; WIDTH - 1],
+    horizontal_walls: [[Wall; HEIGHT - 1]; WIDTH],
+    vertical_walls: [[Wall; HEIGHT]; WIDTH - 1],
 }
 
 impl Maze {
-    pub fn new(edge: Edge) -> Maze {
+    pub fn new(wall: Wall) -> Maze {
         Maze {
-            horizontal_edges: [[edge; HEIGHT - 1]; WIDTH],
-            vertical_edges: [[edge; HEIGHT]; WIDTH - 1],
+            horizontal_walls: [[wall; HEIGHT - 1]; WIDTH],
+            vertical_walls: [[wall; HEIGHT]; WIDTH - 1],
         }
     }
 
-    pub fn from_edges(
-        horizontal_edges: [[Edge; HEIGHT - 1]; WIDTH],
-        vertical_edges: [[Edge; HEIGHT]; WIDTH - 1],
+    pub fn from_walls(
+        horizontal_walls: [[Wall; HEIGHT - 1]; WIDTH],
+        vertical_walls: [[Wall; HEIGHT]; WIDTH - 1],
     ) -> Maze {
         Maze {
-            horizontal_edges,
-            vertical_edges,
+            horizontal_walls,
+            vertical_walls,
         }
     }
 
@@ -162,73 +156,73 @@ impl Maze {
      *  http://www.micromouseonline.com/2018/01/31/micromouse-maze-file-collection/
      */
     pub fn from_file(bytes: [u8; WIDTH * HEIGHT]) -> Maze {
-        let mut horizontal_edges = [[Edge::Unknown; HEIGHT - 1]; WIDTH];
-        let mut vertical_edges = [[Edge::Unknown; HEIGHT]; WIDTH - 1];
+        let mut horizontal_walls = [[Wall::Unknown; HEIGHT - 1]; WIDTH];
+        let mut vertical_walls = [[Wall::Unknown; HEIGHT]; WIDTH - 1];
 
         for (i, byte) in bytes.iter().enumerate() {
             let y = i % WIDTH;
             let x = i / WIDTH;
 
             let north = if byte & 0x01 == 0x01 {
-                Edge::Closed
+                Wall::Closed
             } else {
-                Edge::Open
+                Wall::Open
             };
             let east = if byte & 0x02 == 0x02 {
-                Edge::Closed
+                Wall::Closed
             } else {
-                Edge::Open
+                Wall::Open
             };
 
             if y < HEIGHT - 1 {
-                horizontal_edges[x][y] = north;
+                horizontal_walls[x][y] = north;
             }
 
             if x < WIDTH - 1 {
-                vertical_edges[x][y] = east;
+                vertical_walls[x][y] = east;
             }
         }
 
         Maze {
-            horizontal_edges,
-            vertical_edges,
+            horizontal_walls,
+            vertical_walls,
         }
     }
 
-    pub fn get_cell(&self, x: usize, y: usize) -> (Edge, Edge, Edge, Edge) {
-        let north_edge = if y >= HEIGHT - 1 {
-            Edge::Closed
+    pub fn get_cell(&self, x: usize, y: usize) -> (Wall, Wall, Wall, Wall) {
+        let north_wall = if y >= HEIGHT - 1 {
+            Wall::Closed
         } else {
-            self.horizontal_edges[x][y]
+            self.horizontal_walls[x][y]
         };
 
-        let south_edge = if y <= 0 {
-            Edge::Closed
+        let south_wall = if y <= 0 {
+            Wall::Closed
         } else {
-            self.horizontal_edges[x][y - 1]
+            self.horizontal_walls[x][y - 1]
         };
 
-        let east_edge = if x >= WIDTH - 1 {
-            Edge::Closed
+        let east_wall = if x >= WIDTH - 1 {
+            Wall::Closed
         } else {
-            self.vertical_edges[x][y]
+            self.vertical_walls[x][y]
         };
 
-        let west_edge = if x <= 0 {
-            Edge::Closed
+        let west_wall = if x <= 0 {
+            Wall::Closed
         } else {
-            self.vertical_edges[x - 1][y]
+            self.vertical_walls[x - 1][y]
         };
 
-        (north_edge, south_edge, east_edge, west_edge)
+        (north_wall, south_wall, east_wall, west_wall)
     }
 
-    pub fn get_edge(&self, index: EdgeIndex) -> Option<&Edge> {
+    pub fn get_wall(&self, index: WallIndex) -> Option<&Wall> {
         if index.horizontal {
             if index.y == 0 {
                 None
             } else {
-                self.horizontal_edges
+                self.horizontal_walls
                     .get(index.x)
                     .and_then(|walls| walls.get(index.y - 1))
             }
@@ -236,7 +230,7 @@ impl Maze {
             if index.x == 0 {
                 None
             } else {
-                self.vertical_edges
+                self.vertical_walls
                     .get(index.x - 1)
                     .and_then(|walls| walls.get(index.y))
             }

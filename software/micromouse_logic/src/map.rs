@@ -5,10 +5,10 @@ use crate::math::Orientation;
 use crate::math::DIRECTION_PI_2;
 
 use crate::config::MechanicalConfig;
-use crate::maze::Edge;
-use crate::maze::EdgeIndex;
 use crate::maze::Maze;
 use crate::maze::MazeConfig;
+use crate::maze::Wall;
+use crate::maze::WallIndex;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
@@ -18,9 +18,9 @@ pub struct MapConfig {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     pub maze: Maze,
-    pub front_edge: Option<EdgeIndex>,
-    pub left_edge: Option<EdgeIndex>,
-    pub right_edge: Option<EdgeIndex>,
+    pub front_edge: Option<WallIndex>,
+    pub left_edge: Option<WallIndex>,
+    pub right_edge: Option<WallIndex>,
 }
 
 pub struct Map {
@@ -32,52 +32,52 @@ pub struct Map {
 
 impl Map {
     pub fn new(orientation: Orientation, left_encoder: i32, right_encoder: i32) -> Map {
-        let mut horizontal_edges =
-            [[Edge::Unknown; crate::maze::HEIGHT - 1]; crate::maze::WIDTH];
-        let mut vertical_edges =
-            [[Edge::Unknown; crate::maze::HEIGHT]; crate::maze::WIDTH - 1];
+        let mut horizontal_walls =
+            [[Wall::Unknown; crate::maze::HEIGHT - 1]; crate::maze::WIDTH];
+        let mut vertical_walls =
+            [[Wall::Unknown; crate::maze::HEIGHT]; crate::maze::WIDTH - 1];
 
-        horizontal_edges[6][8] = Edge::Closed;
-        horizontal_edges[7][8] = Edge::Closed;
-        horizontal_edges[8][8] = Edge::Closed;
-        horizontal_edges[9][8] = Edge::Closed;
+        horizontal_walls[6][8] = Wall::Closed;
+        horizontal_walls[7][8] = Wall::Closed;
+        horizontal_walls[8][8] = Wall::Closed;
+        horizontal_walls[9][8] = Wall::Closed;
 
-        horizontal_edges[6][7] = Edge::Open;
-        horizontal_edges[7][7] = Edge::Closed;
-        horizontal_edges[8][7] = Edge::Closed;
-        horizontal_edges[9][7] = Edge::Open;
+        horizontal_walls[6][7] = Wall::Open;
+        horizontal_walls[7][7] = Wall::Closed;
+        horizontal_walls[8][7] = Wall::Closed;
+        horizontal_walls[9][7] = Wall::Open;
 
-        horizontal_edges[6][6] = Edge::Open;
-        horizontal_edges[7][6] = Edge::Closed;
-        horizontal_edges[8][6] = Edge::Closed;
-        horizontal_edges[9][6] = Edge::Open;
+        horizontal_walls[6][6] = Wall::Open;
+        horizontal_walls[7][6] = Wall::Closed;
+        horizontal_walls[8][6] = Wall::Closed;
+        horizontal_walls[9][6] = Wall::Open;
 
-        horizontal_edges[6][5] = Edge::Closed;
-        horizontal_edges[7][5] = Edge::Closed;
-        horizontal_edges[8][5] = Edge::Closed;
-        horizontal_edges[9][5] = Edge::Closed;
+        horizontal_walls[6][5] = Wall::Closed;
+        horizontal_walls[7][5] = Wall::Closed;
+        horizontal_walls[8][5] = Wall::Closed;
+        horizontal_walls[9][5] = Wall::Closed;
 
-        vertical_edges[5][8] = Edge::Closed;
-        vertical_edges[5][7] = Edge::Closed;
-        vertical_edges[5][6] = Edge::Closed;
+        vertical_walls[5][8] = Wall::Closed;
+        vertical_walls[5][7] = Wall::Closed;
+        vertical_walls[5][6] = Wall::Closed;
 
-        vertical_edges[6][8] = Edge::Open;
-        vertical_edges[6][7] = Edge::Closed;
-        vertical_edges[6][6] = Edge::Open;
+        vertical_walls[6][8] = Wall::Open;
+        vertical_walls[6][7] = Wall::Closed;
+        vertical_walls[6][6] = Wall::Open;
 
-        vertical_edges[7][8] = Edge::Open;
-        vertical_edges[7][7] = Edge::Open;
-        vertical_edges[7][6] = Edge::Open;
+        vertical_walls[7][8] = Wall::Open;
+        vertical_walls[7][7] = Wall::Open;
+        vertical_walls[7][6] = Wall::Open;
 
-        vertical_edges[8][8] = Edge::Open;
-        vertical_edges[8][7] = Edge::Closed;
-        vertical_edges[8][6] = Edge::Open;
+        vertical_walls[8][8] = Wall::Open;
+        vertical_walls[8][7] = Wall::Closed;
+        vertical_walls[8][6] = Wall::Open;
 
-        vertical_edges[9][8] = Edge::Closed;
-        vertical_edges[9][7] = Edge::Closed;
-        vertical_edges[9][6] = Edge::Closed;
+        vertical_walls[9][8] = Wall::Closed;
+        vertical_walls[9][7] = Wall::Closed;
+        vertical_walls[9][6] = Wall::Closed;
 
-        let maze = Maze::from_edges(horizontal_edges, vertical_edges);
+        let maze = Maze::from_walls(horizontal_walls, vertical_walls);
 
         Map {
             orientation,
