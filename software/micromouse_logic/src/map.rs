@@ -18,9 +18,9 @@ pub struct MapConfig {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     pub maze: Maze,
-    pub front_edge: Option<WallIndex>,
-    pub left_edge: Option<WallIndex>,
-    pub right_edge: Option<WallIndex>,
+    pub front_wall: Option<WallIndex>,
+    pub left_wall: Option<WallIndex>,
+    pub right_wall: Option<WallIndex>,
 }
 
 pub struct Map {
@@ -141,9 +141,9 @@ impl Map {
 
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_edge: None,
-            left_edge: None,
-            right_edge: None,
+            front_wall: None,
+            left_wall: None,
+            right_wall: None,
         };
 
         (self.orientation, debug)

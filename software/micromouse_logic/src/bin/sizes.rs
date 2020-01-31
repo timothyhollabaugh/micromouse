@@ -22,8 +22,8 @@ fn main() {
     print_size!(MapDebug);
     print_size!(Orientation);
     print_size!(Vector);
-    print_size!(Edge);
-    print_size!(EdgeIndex);
+    print_size!(Wall);
+    print_size!(WallIndex);
     print_size!(Maze);
     print_size!(MotionDebug);
     print_size!(MouseDebug);
