@@ -18,7 +18,7 @@ pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
-    p: 1.0,
+    p: 0.1,
     i: 0.0,
     d: 0.0,
     offset_p: 0.002,
@@ -29,7 +29,7 @@ pub const MOUSE_SIM_PIDF: PidfConfig = PidfConfig {
     p: 0.0,
     i: 0.0,
     d: 0.0,
-    f: 1.0,
+    f: 1000.0,
 };
 
 pub const MOUSE_SIM_MOTION: MotionConfig = MotionConfig {
