@@ -73,6 +73,14 @@ function Node(path, f) {
                     children.style.borderLeft = 'solid black 1px';
                     self.root.append(children);
                 }
+                for (let key in nodes) {
+                    if (nodes.hasOwnProperty(key)) {
+                        if (!data.hasOwnProperty(key)) {
+                            nodes[key].root.remove();
+                            delete nodes[key];
+                        }
+                    }
+                }
                 for (let key in data) {
                     if (data.hasOwnProperty(key)) {
                         if (nodes[key]) {
