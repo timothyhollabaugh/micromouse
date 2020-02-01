@@ -18,6 +18,8 @@ function MazeUi(parent) {
     let draw = SVG(content.el);
     let world = undefined;
 
+    let last_front_wall = null;
+
     function redraw(config) {
 
         const maze_config = config.mouse.map.maze;
@@ -102,36 +104,61 @@ function MazeUi(parent) {
         self.path_closest = world.circle(20.0).fill({color: '#0000ff'});
     }
 
+    function wall_stroke(wall_or_post, stroke) {
+        if (wall_or_post && 'Wall' in wall_or_post) {
+            let wall_index = wall_or_post.Wall;
+            if (wall_index.horizontal) {
+                if (self.horizontal_walls[wall_index.x][wall_index.y]) {
+                    self.horizontal_walls[wall_index.x][wall_index.y].stroke(stroke);
+                }
+            } else {
+                if (self.vertical_walls[wall_index.x][wall_index.y]) {
+                    self.vertical_walls[wall_index.x][wall_index.y].stroke(stroke);
+                }
+            }
+        } else if (wall_or_post && 'Post' in wall_or_post) {
+            let post_index = wall_or_post.Post;
+            if (self.posts[post_index[0]][post_index[1]]) {
+                self.posts[post_index[0]][post_index[1]].stroke(stroke);
+            }
+        }
+    }
+
     function update(debug) {
+
         for (let i = 1; i < MAZE_WIDTH; i++) {
             for (let j = 1; j < MAZE_HEIGHT; j++) {
                 if (i < MAZE_WIDTH) {
-                    let wall = debug.mouse.map.maze.horizontal_edges[i][j - 1];
+                    let wall = debug.mouse.map.maze.horizontal_walls[i][j - 1];
                     if (wall === "Closed") {
-                        self.horizontal_walls[i][j].fill(wall_closed_color)
+                        self.horizontal_walls[i][j].fill(wall_closed_color);
                     } else if (wall === "Open") {
-                        self.horizontal_walls[i][j].fill(wall_open_color)
+                        self.horizontal_walls[i][j].fill(wall_open_color);
                     } else if (wall === "Unknown") {
-                        self.horizontal_walls[i][j].fill(wall_unknown_color)
+                        self.horizontal_walls[i][j].fill(wall_unknown_color);
                     } else {
-                        self.horizontal_walls[i][j].fill(wall_err_color)
+                        self.horizontal_walls[i][j].fill(wall_err_color);
                     }
                 }
 
                 if (j < MAZE_HEIGHT) {
-                    let wall = debug.mouse.map.maze.vertical_edges[i - 1][j];
+                    let wall = debug.mouse.map.maze.vertical_walls[i - 1][j];
                     if (wall === "Closed") {
-                        self.vertical_walls[i][j].fill(wall_closed_color)
+                        self.vertical_walls[i][j].fill(wall_closed_color);
                     } else if (wall === "Open") {
-                        self.vertical_walls[i][j].fill(wall_open_color)
+                        self.vertical_walls[i][j].fill(wall_open_color);
                     } else if (wall === "Unknown") {
-                        self.vertical_walls[i][j].fill(wall_unknown_color)
+                        self.vertical_walls[i][j].fill(wall_unknown_color);
                     } else {
-                        self.vertical_walls[i][j].fill(wall_err_color)
+                        self.vertical_walls[i][j].fill(wall_err_color);
                     }
                 }
             }
         }
+
+        wall_stroke(last_front_wall, {width: 0});
+        wall_stroke(debug.mouse.map.front_wall, {color: "#ffff00", width: 4});
+        last_front_wall = debug.mouse.map.front_wall;
 
         let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
