@@ -23,14 +23,21 @@ impl MazeConfig {
 
         let direction_v = from.direction.into_unit_vector();
 
-        let vertical_walls = (0..=WIDTH).map(move |wall_index_x| {
+        let vertical_wall_range = if direction_v.x > 0.0 {
+            (mouse_cell_x + 1..=WIDTH)
+        } else {
+            (mouse_cell_x..=0)
+        };
+
+        let vertical_walls = vertical_wall_range.map(move |wall_index_x| {
             let wall_x = if wall_index_x <= mouse_cell_x {
                 wall_index_x as f32 * self.cell_width + self.wall_width / 2.0
             } else {
-                wall_index_x as f32 * self.cell_width + self.wall_width / 2.0
+                wall_index_x as f32 * self.cell_width - self.wall_width / 2.0
             };
 
             let t = (wall_x - from.position.x) / direction_v.x;
+
             let wall_y = t * direction_v.y + from.position.y;
             let wall_index_y = (wall_y / self.cell_width) as usize;
 
@@ -55,11 +62,17 @@ impl MazeConfig {
             }
         });
 
-        let horizontal_walls = (0..=HEIGHT).map(move |wall_index_y| {
+        let horizontal_wall_range = if direction_v.y > 0.0 {
+            (mouse_cell_y + 1..=HEIGHT)
+        } else {
+            (mouse_cell_y..=0)
+        };
+
+        let horizontal_walls = horizontal_wall_range.map(move |wall_index_y| {
             let wall_y = if wall_index_y <= mouse_cell_y {
                 wall_index_y as f32 * self.cell_width + self.wall_width / 2.0
             } else {
-                wall_index_y as f32 * self.cell_width + self.wall_width / 2.0
+                wall_index_y as f32 * self.cell_width - self.wall_width / 2.0
             };
 
             let t = (wall_y - from.position.y) / direction_v.y;
@@ -174,7 +187,7 @@ mod wall_projection_tests {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum WallProjectionResult {
     Wall(WallIndex),
     Post(usize, usize),

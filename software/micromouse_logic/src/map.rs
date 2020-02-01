@@ -1,13 +1,13 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::math::Orientation;
+use crate::math::{Orientation, DIRECTION_PI_2};
 
 use crate::config::MechanicalConfig;
-use crate::maze::Maze;
 use crate::maze::MazeConfig;
 use crate::maze::Wall;
 use crate::maze::WallIndex;
+use crate::maze::{Maze, WallProjectionResult};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
@@ -17,9 +17,26 @@ pub struct MapConfig {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     pub maze: Maze,
-    pub front_wall: Option<WallIndex>,
-    pub left_wall: Option<WallIndex>,
-    pub right_wall: Option<WallIndex>,
+    pub front_wall: Option<WallProjectionResult>,
+    pub left_wall: Option<WallProjectionResult>,
+    pub right_wall: Option<WallProjectionResult>,
+}
+
+fn find_closed_walls(
+    config: &MazeConfig,
+    maze: &Maze,
+    from: Orientation,
+) -> Option<WallProjectionResult> {
+    config
+        .wall_projection(from)
+        .filter_map(|(t, wall_index)| if t > 0.0 { Some(wall_index) } else { None })
+        .find(|wall_index| {
+            if let WallProjectionResult::Wall(wall_index) = wall_index {
+                maze.get_wall(*wall_index).unwrap_or(&Wall::Closed) == &Wall::Closed
+            } else {
+                true
+            }
+        })
 }
 
 pub struct Map {
@@ -105,44 +122,27 @@ impl Map {
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
-        /*
-        let front_edge = maze_config
-            .edge_projection_iter(self.orientation)
-            .find(|edge_index| {
-                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed)
-                    == Edge::Closed
-            });
+        let front_wall = find_closed_walls(maze_config, &self.maze, self.orientation);
 
         let left_distance_orientation = Orientation {
             position: self.orientation.position,
             direction: self.orientation.direction + DIRECTION_PI_2,
         };
 
-        let left_edge = maze_config
-            .edge_projection_iter(left_distance_orientation)
-            .find(|edge_index| {
-                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed)
-                    == Edge::Closed
-            });
+        let left_wall = find_closed_walls(maze_config, &self.maze, self.orientation);
 
         let right_distance_orientation = Orientation {
             position: self.orientation.position,
             direction: self.orientation.direction - DIRECTION_PI_2,
         };
 
-        let right_edge = maze_config
-            .edge_projection_iter(right_distance_orientation)
-            .find(|edge_index| {
-                *self.maze.get_edge(*edge_index).unwrap_or(&Edge::Closed)
-                    == Edge::Closed
-            });
-            */
+        let right_wall = find_closed_walls(maze_config, &self.maze, self.orientation);
 
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_wall: None,
-            left_wall: None,
-            right_wall: None,
+            front_wall,
+            left_wall,
+            right_wall,
         };
 
         (self.orientation, debug)
