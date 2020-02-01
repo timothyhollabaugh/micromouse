@@ -19,6 +19,8 @@ function MazeUi(parent) {
     let world = undefined;
 
     let last_front_wall = null;
+    let last_right_wall = null;
+    let last_left_wall = null;
 
     function redraw(config) {
 
@@ -157,8 +159,16 @@ function MazeUi(parent) {
         }
 
         wall_stroke(last_front_wall, {width: 0});
-        wall_stroke(debug.mouse.map.front_wall, {color: "#ffff00", width: 4});
+        wall_stroke(debug.mouse.map.front_wall, {color: "#ffff00", width: 6});
         last_front_wall = debug.mouse.map.front_wall;
+
+        wall_stroke(last_right_wall, {width: 0});
+        wall_stroke(debug.mouse.map.right_wall, {color: "#00ffff", width: 6});
+        last_right_wall = debug.mouse.map.right_wall;
+
+        wall_stroke(last_left_wall, {width: 0});
+        wall_stroke(debug.mouse.map.left_wall, {color: "#ff00ff", width: 6});
+        last_left_wall = debug.mouse.map.left_wall;
 
         let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);

@@ -129,14 +129,16 @@ impl Map {
             direction: self.orientation.direction + DIRECTION_PI_2,
         };
 
-        let left_wall = find_closed_walls(maze_config, &self.maze, self.orientation);
+        let left_wall =
+            find_closed_walls(maze_config, &self.maze, left_distance_orientation);
 
         let right_distance_orientation = Orientation {
             position: self.orientation.position,
             direction: self.orientation.direction - DIRECTION_PI_2,
         };
 
-        let right_wall = find_closed_walls(maze_config, &self.maze, self.orientation);
+        let right_wall =
+            find_closed_walls(maze_config, &self.maze, right_distance_orientation);
 
         let debug = MapDebug {
             maze: self.maze.clone(),
