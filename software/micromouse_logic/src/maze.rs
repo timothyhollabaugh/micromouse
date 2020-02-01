@@ -1,6 +1,10 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use libm::F32Ext;
+
+use itertools::Itertools;
+
 use crate::math::Orientation;
 
 pub const WIDTH: usize = 16;
@@ -24,9 +28,9 @@ impl MazeConfig {
         let direction_v = from.direction.into_unit_vector();
 
         let vertical_wall_range = if direction_v.x > 0.0 {
-            (mouse_cell_x + 1..=WIDTH)
+            itertools::Either::Left(mouse_cell_x + 1..=WIDTH)
         } else {
-            (mouse_cell_x..=0)
+            itertools::Either::Right((0..=mouse_cell_x).rev())
         };
 
         let vertical_walls = vertical_wall_range.map(move |wall_index_x| {
@@ -63,9 +67,9 @@ impl MazeConfig {
         });
 
         let horizontal_wall_range = if direction_v.y > 0.0 {
-            (mouse_cell_y + 1..=HEIGHT)
+            itertools::Either::Left(mouse_cell_y + 1..=HEIGHT)
         } else {
-            (mouse_cell_y..=0)
+            itertools::Either::Right((0..=mouse_cell_y).rev())
         };
 
         let horizontal_walls = horizontal_wall_range.map(move |wall_index_y| {
@@ -100,7 +104,7 @@ impl MazeConfig {
             }
         });
 
-        vertical_walls.chain(horizontal_walls)
+        vertical_walls.merge_by(horizontal_walls, |v, h| v.0.abs() < h.0.abs())
     }
 }
 
@@ -114,12 +118,12 @@ mod wall_projection_tests {
     use crate::config::MOUSE_MAZE_MAP;
     use crate::math::{Direction, Orientation, Vector};
     use crate::maze::WallIndex;
-    use core::f32::consts::FRAC_PI_8;
+    use core::f32::consts::{FRAC_PI_8, PI};
     use heapless::Vec;
     use typenum::U16;
 
     #[test]
-    fn wall_projection_vertical_walls() {
+    fn wall_projection_positive() {
         let mouse = Orientation {
             position: Vector {
                 x: 180.0 * 6.5,
@@ -128,62 +132,64 @@ mod wall_projection_tests {
             direction: Direction::from(FRAC_PI_8),
         };
 
-        let mut walls = MOUSE_MAZE_MAP
-            .maze
-            .wall_projection(mouse)
-            .filter(|(_, r)| {
-                if let WallProjectionResult::Wall(i) = r {
-                    !i.horizontal
-                } else {
-                    false
-                }
-            })
-            .filter(|(t, _)| *t > 0.0)
-            .collect::<Vec<_, U16>>();
+        let mut walls = MOUSE_MAZE_MAP.maze.wall_projection(mouse);
 
-        assert_close(walls[0].0, 103.90966);
+        let (t, result) = walls.next().unwrap();
         assert_eq!(
-            walls[0].1,
+            result,
             WallProjectionResult::Wall(WallIndex {
                 x: 7,
                 y: 7,
                 horizontal: false,
             }),
-        )
-    }
+        );
+        assert_close(t, 90.92095);
 
-    #[test]
-    fn wall_projection_horizontal_walls() {
-        let mouse = Orientation {
-            position: Vector {
-                x: 180.0 * 6.5,
-                y: 180.0 * 7.5,
-            },
-            direction: Direction::from(FRAC_PI_8),
-        };
-
-        let mut walls = MOUSE_MAZE_MAP
-            .maze
-            .wall_projection(mouse)
-            .filter(|(_, r)| {
-                if let WallProjectionResult::Wall(i) = r {
-                    i.horizontal
-                } else {
-                    false
-                }
-            })
-            .filter(|(t, _)| *t > 0.0)
-            .collect::<Vec<_, U16>>();
-
-        assert_close(walls[0].0, 250.86);
+        let (t, result) = walls.next().unwrap();
         assert_eq!(
-            walls[0].1,
+            result,
             WallProjectionResult::Wall(WallIndex {
                 x: 7,
                 y: 8,
                 horizontal: true,
             }),
-        )
+        );
+        assert_close(t, 219.5025);
+    }
+
+    #[test]
+    fn wall_projection_negative() {
+        let mouse = Orientation {
+            position: Vector {
+                x: 180.0 * 6.5,
+                y: 180.0 * 7.5,
+            },
+            direction: Direction::from(FRAC_PI_8 + PI),
+        };
+
+        let mut walls = MOUSE_MAZE_MAP.maze.wall_projection(mouse);
+
+        let (t, result) = walls.next().unwrap();
+        assert_eq!(
+            result,
+            WallProjectionResult::Wall(WallIndex {
+                x: 6,
+                y: 7,
+                horizontal: false,
+            }),
+        );
+        assert_close(t, 90.92095);
+
+        let (t, result) = walls.next().unwrap();
+        assert_eq!(
+            result,
+            WallProjectionResult::Wall(WallIndex {
+                x: 5,
+                y: 7,
+                horizontal: true,
+            }),
+        );
+        assert_close(t, 219.50258);
     }
 }
 

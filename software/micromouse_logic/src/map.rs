@@ -29,7 +29,7 @@ fn find_closed_walls(
 ) -> Option<WallProjectionResult> {
     config
         .wall_projection(from)
-        .filter_map(|(t, wall_index)| if t > 0.0 { Some(wall_index) } else { None })
+        .map(|(_, wall_index)| wall_index)
         .find(|wall_index| {
             if let WallProjectionResult::Wall(wall_index) = wall_index {
                 maze.get_wall(*wall_index).unwrap_or(&Wall::Closed) == &Wall::Closed
