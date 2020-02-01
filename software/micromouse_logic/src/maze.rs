@@ -2,7 +2,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::math::Orientation;
-use crate::math::Vector;
 
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
@@ -14,89 +13,171 @@ pub struct MazeConfig {
 }
 
 impl MazeConfig {
-    pub fn wall_on_point(&self, point: Vector) -> Option<WallIndex> {
-        let local_x = point.x % self.cell_width;
-        let local_y = point.y % self.cell_width;
-        let maze_x = (point.x / self.cell_width) as usize;
-        let maze_y = (point.y / self.cell_width) as usize;
+    /// Projects the `from` orientation onto the nearest wall or post, and gives the index of it
+    pub fn wall_projection(
+        &self,
+        from: Orientation,
+    ) -> impl Iterator<Item = (f32, WallProjectionResult)> + '_ {
+        let mouse_cell_x = (from.position.x / self.cell_width) as usize;
+        let mouse_cell_y = (from.position.y / self.cell_width) as usize;
 
-        if local_y <= self.wall_width / 2.0 {
-            return Some(WallIndex {
-                x: maze_x,
-                y: maze_y,
-                horizontal: true,
-            });
-        }
+        let direction_v = from.direction.into_unit_vector();
 
-        if local_y >= self.cell_width - self.wall_width / 2.0 {
-            return Some(WallIndex {
-                x: maze_x,
-                y: maze_y + 1,
-                horizontal: true,
-            });
-        }
+        let vertical_walls = (0..=WIDTH).map(move |wall_index_x| {
+            let wall_x = if wall_index_x <= mouse_cell_x {
+                wall_index_x as f32 * self.cell_width + self.wall_width / 2.0
+            } else {
+                wall_index_x as f32 * self.cell_width + self.wall_width / 2.0
+            };
 
-        if local_x <= self.wall_width / 2.0 {
-            return Some(WallIndex {
-                x: maze_x,
-                y: maze_y,
-                horizontal: false,
-            });
-        }
+            let t = (wall_x - from.position.x) / direction_v.x;
+            let wall_y = t * direction_v.y + from.position.y;
+            let wall_index_y = (wall_y / self.cell_width) as usize;
 
-        if local_x >= self.cell_width - self.wall_width / 2.0 {
-            return Some(WallIndex {
-                x: maze_x + 1,
-                y: maze_y,
-                horizontal: false,
-            });
-        }
-
-        None
-    }
-
-    pub fn wall_projection_iter(&self, from: Orientation) -> WallProjectionIterator {
-        WallProjectionIterator {
-            config: self,
-            direction_vector: (self.wall_width / 3.0) * from.direction.into_unit_vector(),
-            current_position: from.position,
-        }
-    }
-}
-
-/**
- *  Projects the `from` orientation onto the nearest wall, and gives the index of it
- *
- *  Loops starting at `from`, incrementing by a distance of `self.wall_width / 2.0` in the direction
- *  of `from` until a closed wall is found, then returns the index to that wall.
- *
- *  By incrementing by a distance of half the wall width, we are guaranteed to not skip over a wall.
- */
-pub struct WallProjectionIterator<'a> {
-    config: &'a MazeConfig,
-    direction_vector: Vector,
-    current_position: Vector,
-}
-
-impl<'a> Iterator for WallProjectionIterator<'a> {
-    type Item = WallIndex;
-
-    fn next(&mut self) -> Option<WallIndex> {
-        // Get out of any walls we are currently in
-        // Avoids returning the same wall for subsequent calls to `next`
-        //while self.config.wall_on_point(self.current_position).is_some() {
-        //self.current_position += self.direction_vector;
-        //}
-
-        // Keep going in the direction of `direction_vector` until an wall is found.
-        loop {
-            self.current_position += self.direction_vector;
-
-            if let Some(wall_index) = self.config.wall_on_point(self.current_position) {
-                break Some(wall_index);
+            // Figure out if we are looking at a wall or a post
+            let local_y = wall_y % self.cell_width;
+            if local_y < self.wall_width / 2.0 {
+                (t, WallProjectionResult::Post(wall_index_x, wall_index_y))
+            } else if self.cell_width - local_y < self.wall_width / 2.0 {
+                (
+                    t,
+                    WallProjectionResult::Post(wall_index_x, wall_index_y + 1),
+                )
+            } else {
+                (
+                    t,
+                    WallProjectionResult::Wall(WallIndex {
+                        x: wall_index_x,
+                        y: wall_index_y,
+                        horizontal: false,
+                    }),
+                )
             }
-        }
+        });
+
+        let horizontal_walls = (0..=HEIGHT).map(move |wall_index_y| {
+            let wall_y = if wall_index_y <= mouse_cell_y {
+                wall_index_y as f32 * self.cell_width + self.wall_width / 2.0
+            } else {
+                wall_index_y as f32 * self.cell_width + self.wall_width / 2.0
+            };
+
+            let t = (wall_y - from.position.y) / direction_v.y;
+            let wall_x = t * direction_v.x + from.position.x;
+            let wall_index_x = (wall_x / self.cell_width) as usize;
+
+            // Figure out if we are looking at a wall or a post
+            let local_x = wall_x % self.cell_width;
+            if local_x < self.wall_width / 2.0 {
+                (t, WallProjectionResult::Post(wall_index_x, wall_index_y))
+            } else if self.cell_width - local_x < self.wall_width / 2.0 {
+                (
+                    t,
+                    WallProjectionResult::Post(wall_index_x + 1, wall_index_y),
+                )
+            } else {
+                (
+                    t,
+                    WallProjectionResult::Wall(WallIndex {
+                        x: wall_index_x,
+                        y: wall_index_y,
+                        horizontal: true,
+                    }),
+                )
+            }
+        });
+
+        vertical_walls.chain(horizontal_walls)
     }
+}
+
+#[cfg(test)]
+mod wall_projection_tests {
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    use super::MazeConfig;
+    use super::WallProjectionResult;
+    use crate::config::MOUSE_MAZE_MAP;
+    use crate::math::{Direction, Orientation, Vector};
+    use crate::maze::WallIndex;
+    use core::f32::consts::FRAC_PI_8;
+    use heapless::Vec;
+    use typenum::U16;
+
+    #[test]
+    fn wall_projection_vertical_walls() {
+        let mouse = Orientation {
+            position: Vector {
+                x: 180.0 * 6.5,
+                y: 180.0 * 7.5,
+            },
+            direction: Direction::from(FRAC_PI_8),
+        };
+
+        let mut walls = MOUSE_MAZE_MAP
+            .maze
+            .wall_projection(mouse)
+            .filter(|(_, r)| {
+                if let WallProjectionResult::Wall(i) = r {
+                    !i.horizontal
+                } else {
+                    false
+                }
+            })
+            .filter(|(t, _)| *t > 0.0)
+            .collect::<Vec<_, U16>>();
+
+        assert_close(walls[0].0, 103.90966);
+        assert_eq!(
+            walls[0].1,
+            WallProjectionResult::Wall(WallIndex {
+                x: 7,
+                y: 7,
+                horizontal: false,
+            }),
+        )
+    }
+
+    #[test]
+    fn wall_projection_horizontal_walls() {
+        let mouse = Orientation {
+            position: Vector {
+                x: 180.0 * 6.5,
+                y: 180.0 * 7.5,
+            },
+            direction: Direction::from(FRAC_PI_8),
+        };
+
+        let mut walls = MOUSE_MAZE_MAP
+            .maze
+            .wall_projection(mouse)
+            .filter(|(_, r)| {
+                if let WallProjectionResult::Wall(i) = r {
+                    i.horizontal
+                } else {
+                    false
+                }
+            })
+            .filter(|(t, _)| *t > 0.0)
+            .collect::<Vec<_, U16>>();
+
+        assert_close(walls[0].0, 250.86);
+        assert_eq!(
+            walls[0].1,
+            WallProjectionResult::Wall(WallIndex {
+                x: 7,
+                y: 8,
+                horizontal: true,
+            }),
+        )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum WallProjectionResult {
+    Wall(WallIndex),
+    Post(usize, usize),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]

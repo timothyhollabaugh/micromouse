@@ -5,12 +5,9 @@
  */
 
 use core::f32::consts::FRAC_PI_2;
-use core::f32::consts::PI;
 
 use serde::Deserialize;
 use serde::Serialize;
-
-use libm::F32Ext;
 
 use heapless::consts::U16;
 use heapless::Vec;

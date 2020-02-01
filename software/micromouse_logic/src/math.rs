@@ -37,10 +37,8 @@ impl Vector {
     pub fn project_onto(&self, v: Vector) -> Vector {
         //(self.dot(v) / v.dot(v)) * v
         Vector {
-            x: (self.x * v.x * v.x + self.y * v.y * v.x)
-                / (v.x * v.x + v.y * v.y),
-            y: (self.x * v.x * v.y + self.y * v.y * v.y)
-                / (v.x * v.x + v.y * v.y),
+            x: (self.x * v.x * v.x + self.y * v.y * v.x) / (v.x * v.x + v.y * v.y),
+            y: (self.x * v.x * v.y + self.y * v.y * v.y) / (v.x * v.x + v.y * v.y),
         }
     }
 }
@@ -62,10 +60,7 @@ mod vector_tests {
 
     #[test]
     fn vector_direction_test() {
-        assert_close(
-            f32::from(Vector { x: 1.0, y: 1.0 }.direction()),
-            FRAC_PI_4,
-        );
+        assert_close(f32::from(Vector { x: 1.0, y: 1.0 }.direction()), FRAC_PI_4);
     }
 
     #[test]
@@ -161,7 +156,7 @@ impl core::ops::AddAssign for Vector {
 }
 
 /// A direction wrapped to 0 - 2pi
-#[derive(Copy, Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Direction(f32);
 
 impl Direction {
@@ -253,8 +248,7 @@ impl core::ops::Div<f32> for Direction {
 pub const DIRECTION_0: Direction = Direction(0.0);
 pub const DIRECTION_PI_2: Direction = Direction(core::f32::consts::FRAC_PI_2);
 pub const DIRECTION_PI: Direction = Direction(core::f32::consts::PI);
-pub const DIRECTION_3_PI_2: Direction =
-    Direction(3.0 * core::f32::consts::FRAC_PI_2);
+pub const DIRECTION_3_PI_2: Direction = Direction(3.0 * core::f32::consts::FRAC_PI_2);
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Orientation {
@@ -269,10 +263,8 @@ impl Orientation {
         delta_left: i32,
         delta_right: i32,
     ) {
-        let delta_linear =
-            config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
-        let delta_angular =
-            config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
+        let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
+        let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
 
         let mid_dir = f32::from(self.direction) + delta_angular / 2.0;
 

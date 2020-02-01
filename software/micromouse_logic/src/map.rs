@@ -2,7 +2,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::math::Orientation;
-use crate::math::DIRECTION_PI_2;
 
 use crate::config::MechanicalConfig;
 use crate::maze::Maze;
