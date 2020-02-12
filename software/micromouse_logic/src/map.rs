@@ -21,7 +21,8 @@ pub struct MapDebug {
     pub right_wall: Option<WallProjectionResult>,
 }
 
-fn find_closed_walls(
+/// Find the closest closed wall
+fn find_closed_wall(
     config: &MazeConfig,
     maze: &Maze,
     from: Orientation,
@@ -121,19 +122,19 @@ impl Map {
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
-        let front_wall = find_closed_walls(
+        let front_wall = find_closed_wall(
             maze_config,
             &self.maze,
             self.orientation.offset(mech.front_sensor_orientation),
         );
 
-        let left_wall = find_closed_walls(
+        let left_wall = find_closed_wall(
             maze_config,
             &self.maze,
             self.orientation.offset(mech.left_sensor_orientation),
         );
 
-        let right_wall = find_closed_walls(
+        let right_wall = find_closed_wall(
             maze_config,
             &self.maze,
             self.orientation.offset(mech.right_sensor_orientation),
