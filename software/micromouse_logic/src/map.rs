@@ -4,9 +4,9 @@ use serde::Serialize;
 use crate::math::Orientation;
 
 use crate::config::MechanicalConfig;
-use crate::maze::MazeConfig;
 use crate::maze::Wall;
-use crate::maze::{Maze, WallProjectionResult};
+use crate::maze::{Maze, MazeProjectionResult};
+use crate::maze::{MazeConfig, MazeIndex};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
@@ -16,9 +16,9 @@ pub struct MapConfig {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     pub maze: Maze,
-    pub front_wall: Option<WallProjectionResult>,
-    pub left_wall: Option<WallProjectionResult>,
-    pub right_wall: Option<WallProjectionResult>,
+    pub front_wall: Option<MazeProjectionResult>,
+    pub left_wall: Option<MazeProjectionResult>,
+    pub right_wall: Option<MazeProjectionResult>,
 }
 
 /// Find the closest closed wall
@@ -26,17 +26,14 @@ fn find_closed_wall(
     config: &MazeConfig,
     maze: &Maze,
     from: Orientation,
-) -> Option<WallProjectionResult> {
-    config
-        .wall_projection(from)
-        .map(|(_, wall_index)| wall_index)
-        .find(|wall_index| {
-            if let WallProjectionResult::Wall(wall_index) = wall_index {
-                maze.get_wall(*wall_index).unwrap_or(&Wall::Closed) == &Wall::Closed
-            } else {
-                true
-            }
-        })
+) -> Option<MazeProjectionResult> {
+    config.wall_projection(from).find(|maze_projection_result| {
+        if let MazeIndex::Wall(wall_index) = maze_projection_result.maze_index {
+            maze.get_wall(wall_index).unwrap_or(&Wall::Closed) == &Wall::Closed
+        } else {
+            true
+        }
+    })
 }
 
 pub struct Map {
@@ -149,4 +146,16 @@ impl Map {
 
         (self.orientation, debug)
     }
+}
+
+fn update_orientation_from_sensors(
+    approx_orientation: Orientation,
+    front_wall: Option<MazeProjectionResult>,
+    front_distance: u8,
+    left_wall: Option<MazeProjectionResult>,
+    left_distance: u8,
+    right_wall: Option<MazeProjectionResult>,
+    right_distance: u8,
+) -> Orientation {
+    unimplemented!()
 }

@@ -5,7 +5,7 @@ use libm::F32Ext;
 
 use itertools::Itertools;
 
-use crate::math::Orientation;
+use crate::math::{Orientation, Vector};
 
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
@@ -21,7 +21,7 @@ impl MazeConfig {
     pub fn wall_projection(
         &self,
         from: Orientation,
-    ) -> impl Iterator<Item = (f32, WallProjectionResult)> + '_ {
+    ) -> impl Iterator<Item = MazeProjectionResult> + '_ {
         let mouse_cell_x = (from.position.x / self.cell_width) as usize;
         let mouse_cell_y = (from.position.y / self.cell_width) as usize;
 
@@ -47,22 +47,26 @@ impl MazeConfig {
 
             // Figure out if we are looking at a wall or a post
             let local_y = wall_y % self.cell_width;
-            if local_y < self.wall_width / 2.0 {
-                (t, WallProjectionResult::Post(wall_index_x, wall_index_y))
+            let maze_index = if local_y < self.wall_width / 2.0 {
+                MazeIndex::Post(wall_index_x, wall_index_y)
             } else if self.cell_width - local_y < self.wall_width / 2.0 {
-                (
-                    t,
-                    WallProjectionResult::Post(wall_index_x, wall_index_y + 1),
-                )
+                MazeIndex::Post(wall_index_x, wall_index_y + 1)
             } else {
-                (
-                    t,
-                    WallProjectionResult::Wall(WallIndex {
-                        x: wall_index_x,
-                        y: wall_index_y,
-                        horizontal: false,
-                    }),
-                )
+                MazeIndex::Wall(WallIndex {
+                    x: wall_index_x,
+                    y: wall_index_y,
+                    horizontal: false,
+                })
+            };
+
+            MazeProjectionResult {
+                maze_index,
+                hit_point: Vector {
+                    x: wall_x,
+                    y: wall_y,
+                },
+                distance: t,
+                horizontal: false,
             }
         });
 
@@ -85,26 +89,31 @@ impl MazeConfig {
 
             // Figure out if we are looking at a wall or a post
             let local_x = wall_x % self.cell_width;
-            if local_x < self.wall_width / 2.0 {
-                (t, WallProjectionResult::Post(wall_index_x, wall_index_y))
+            let maze_index = if local_x < self.wall_width / 2.0 {
+                MazeIndex::Post(wall_index_x, wall_index_y)
             } else if self.cell_width - local_x < self.wall_width / 2.0 {
-                (
-                    t,
-                    WallProjectionResult::Post(wall_index_x + 1, wall_index_y),
-                )
+                MazeIndex::Post(wall_index_x + 1, wall_index_y)
             } else {
-                (
-                    t,
-                    WallProjectionResult::Wall(WallIndex {
-                        x: wall_index_x,
-                        y: wall_index_y,
-                        horizontal: true,
-                    }),
-                )
+                MazeIndex::Wall(WallIndex {
+                    x: wall_index_x,
+                    y: wall_index_y,
+                    horizontal: true,
+                })
+            };
+
+            MazeProjectionResult {
+                maze_index,
+                hit_point: Vector {
+                    x: wall_x,
+                    y: wall_y,
+                },
+                distance: t,
+                horizontal: true,
             }
         });
 
-        vertical_walls.merge_by(horizontal_walls, |v, h| v.0.abs() < h.0.abs())
+        vertical_walls
+            .merge_by(horizontal_walls, |v, h| v.distance.abs() < h.distance.abs())
     }
 }
 
@@ -113,14 +122,11 @@ mod wall_projection_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use super::MazeConfig;
-    use super::WallProjectionResult;
+    use super::MazeProjectionResult;
     use crate::config::MOUSE_MAZE_MAP;
     use crate::math::{Direction, Orientation, Vector};
-    use crate::maze::WallIndex;
+    use crate::maze::{MazeIndex, WallIndex};
     use core::f32::consts::{FRAC_PI_8, PI};
-    use heapless::Vec;
-    use typenum::U16;
 
     #[test]
     fn wall_projection_positive() {
@@ -134,27 +140,43 @@ mod wall_projection_tests {
 
         let mut walls = MOUSE_MAZE_MAP.maze.wall_projection(mouse);
 
-        let (t, result) = walls.next().unwrap();
+        let result = walls.next().unwrap();
         assert_eq!(
-            result,
-            WallProjectionResult::Wall(WallIndex {
+            result.maze_index,
+            MazeIndex::Wall(WallIndex {
                 x: 7,
                 y: 7,
                 horizontal: false,
             }),
         );
-        assert_close(t, 90.92095);
+        assert_eq!(result.horizontal, false);
+        assert_close2(
+            result.hit_point,
+            Vector {
+                x: 1254.0,
+                y: 1384.794,
+            },
+        );
+        assert_close(result.distance, 90.92095);
 
-        let (t, result) = walls.next().unwrap();
+        let result = walls.next().unwrap();
         assert_eq!(
-            result,
-            WallProjectionResult::Wall(WallIndex {
+            result.maze_index,
+            MazeIndex::Wall(WallIndex {
                 x: 7,
                 y: 8,
                 horizontal: true,
             }),
         );
-        assert_close(t, 219.5025);
+        assert_eq!(result.horizontal, true);
+        assert_close2(
+            result.hit_point,
+            Vector {
+                x: 1372.7938,
+                y: 1434.0,
+            },
+        );
+        assert_close(result.distance, 219.5025);
     }
 
     #[test]
@@ -169,33 +191,69 @@ mod wall_projection_tests {
 
         let mut walls = MOUSE_MAZE_MAP.maze.wall_projection(mouse);
 
-        let (t, result) = walls.next().unwrap();
+        let result = walls.next().unwrap();
         assert_eq!(
-            result,
-            WallProjectionResult::Wall(WallIndex {
+            result.maze_index,
+            MazeIndex::Wall(WallIndex {
                 x: 6,
                 y: 7,
                 horizontal: false,
             }),
         );
-        assert_close(t, 90.92095);
+        assert_eq!(result.horizontal, false);
+        assert_close2(
+            result.hit_point,
+            Vector {
+                x: 1086.0,
+                y: 1315.206,
+            },
+        );
+        assert_close(result.distance, 90.92095);
 
-        let (t, result) = walls.next().unwrap();
+        let result = walls.next().unwrap();
         assert_eq!(
-            result,
-            WallProjectionResult::Wall(WallIndex {
+            result.maze_index,
+            MazeIndex::Wall(WallIndex {
                 x: 5,
                 y: 7,
                 horizontal: true,
             }),
         );
-        assert_close(t, 219.50258);
+        assert_eq!(result.horizontal, true);
+        assert_close2(
+            result.hit_point,
+            Vector {
+                x: 967.20605,
+                y: 1266.0,
+            },
+        );
+        assert_close(result.distance, 219.50258);
     }
 }
 
+/// The result of projecting an orientation into the maze.
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum WallProjectionResult {
+pub struct MazeProjectionResult {
+    /// Thw wall or post that was projected onto
+    pub maze_index: MazeIndex,
+
+    /// The point where the projection hit the surface of the wall or post
+    pub hit_point: Vector,
+
+    /// The distance from the start orientation to the hit point
+    pub distance: f32,
+
+    /// Whether it hit a horizontal or vertical surface
+    pub horizontal: bool,
+}
+
+/// Indexes into wither a wall or a post in a maze
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum MazeIndex {
+    /// This index is for a wall. It can be used to get the actual wall from the maze.
     Wall(WallIndex),
+
+    /// This index is for a post, with (x, y) maze coordinates.
     Post(usize, usize),
 }
 
