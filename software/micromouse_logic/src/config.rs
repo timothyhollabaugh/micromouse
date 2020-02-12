@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::map::MapConfig;
+use crate::math::{Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2};
 use crate::maze::MazeConfig;
 use crate::motion::MotionConfig;
 use crate::motion::PidfConfig;
@@ -57,6 +58,18 @@ pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
     width: 64.0,
     length: 57.5,
     front_offset: 40.0,
+    front_sensor_orientation: Orientation {
+        position: Vector { x: 40.0, y: 0.0 },
+        direction: DIRECTION_0,
+    },
+    left_sensor_orientation: Orientation {
+        position: Vector { x: 26.0, y: 32.0 },
+        direction: DIRECTION_PI_2,
+    },
+    right_sensor_orientation: Orientation {
+        position: Vector { x: 26.0, y: -32.0 },
+        direction: DIRECTION_3_PI_2,
+    },
 };
 
 pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
@@ -67,6 +80,18 @@ pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
     width: 64.0,
     length: 57.5,
     front_offset: 40.0,
+    front_sensor_orientation: Orientation {
+        position: Vector { x: 40.0, y: 0.0 },
+        direction: DIRECTION_0,
+    },
+    left_sensor_orientation: Orientation {
+        position: Vector { x: 26.0, y: 32.0 },
+        direction: DIRECTION_PI_2,
+    },
+    right_sensor_orientation: Orientation {
+        position: Vector { x: 26.0, y: -32.0 },
+        direction: DIRECTION_3_PI_2,
+    },
 };
 
 pub const MOUSE_2020_PATH: PathConfig = PathConfig {
@@ -99,6 +124,18 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     width: 64.0,
     length: 90.0,
     front_offset: 48.0,
+    front_sensor_orientation: Orientation {
+        position: Vector { x: 48.0, y: 0.0 },
+        direction: DIRECTION_0,
+    },
+    left_sensor_orientation: Orientation {
+        position: Vector { x: 30.0, y: 32.0 },
+        direction: DIRECTION_PI_2,
+    },
+    right_sensor_orientation: Orientation {
+        position: Vector { x: 30.0, y: -32.0 },
+        direction: DIRECTION_3_PI_2,
+    },
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
@@ -140,13 +177,35 @@ pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {
  */
 #[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MechanicalConfig {
+    /// The diameter of the wheels
     pub wheel_diameter: f32,
+
+    /// The gearbox ratio between the encoder and the wheels
     pub gearbox_ratio: f32,
+
+    /// The ticks per revolution of the encoder
     pub ticks_per_rev: f32,
+
+    /// The distance between the centers of the wheels
     pub wheelbase: f32,
+
+    /// The width of the body
     pub width: f32,
+
+    /// The length of the body
     pub length: f32,
+
+    /// The offset from the front of the body to the center of rotation
     pub front_offset: f32,
+
+    /// The orientation of the front distance sensor, relative to the center of rotation
+    pub front_sensor_orientation: Orientation,
+
+    /// The orientation of the left distance sensor, relative to the center of rotation
+    pub left_sensor_orientation: Orientation,
+
+    /// The orientation of the right distance sensor, relative to the center of rotation
+    pub right_sensor_orientation: Orientation,
 }
 
 impl MechanicalConfig {

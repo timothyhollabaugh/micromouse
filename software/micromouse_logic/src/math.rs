@@ -41,6 +41,16 @@ impl Vector {
             y: (self.x * v.x * v.y + self.y * v.y * v.y) / (v.x * v.x + v.y * v.y),
         }
     }
+
+    /// Rotate about the origin `theta` radians
+    pub fn rotated(&self, theta: Direction) -> Vector {
+        Vector {
+            x: self.x * F32Ext::cos(f32::from(theta))
+                - self.y * F32Ext::sin(f32::from(theta)),
+            y: self.x * F32Ext::sin(f32::from(theta))
+                - self.y * F32Ext::cos(f32::from(theta)),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -52,6 +62,7 @@ mod vector_tests {
     use core::f32::consts::SQRT_2;
 
     use super::Vector;
+    use crate::math::DIRECTION_PI_2;
 
     #[test]
     fn vector_magnitude_test() {
@@ -100,6 +111,14 @@ mod vector_tests {
         assert_close2(
             Vector { x: 2.0, y: 0.0 }.project_onto(Vector { x: 2.0, y: 2.0 }),
             Vector { x: 1.0, y: 1.0 },
+        )
+    }
+
+    #[test]
+    fn vector_rotated() {
+        assert_close2(
+            Vector { x: 1.0, y: 0.0 }.rotated(DIRECTION_PI_2),
+            Vector { x: 0.0, y: 1.0 },
         )
     }
 }
@@ -271,5 +290,41 @@ impl Orientation {
         self.position.x += delta_linear * F32Ext::cos(mid_dir);
         self.position.y += delta_linear * F32Ext::sin(mid_dir);
         self.direction = self.direction + Direction::from(delta_angular);
+    }
+
+    pub fn offset(self, offset: Orientation) -> Orientation {
+        Orientation {
+            position: self.position + offset.position.rotated(self.direction),
+            direction: self.direction + offset.direction,
+        }
+    }
+}
+
+#[cfg(test)]
+mod orientation_tests {
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    use crate::math::{Orientation, Vector, DIRECTION_PI_2};
+
+    #[test]
+    fn offset() {
+        let orientation = Orientation {
+            position: Vector { x: 1.0, y: 0.0 },
+            direction: DIRECTION_PI_2,
+        };
+
+        let offset_orientation = Orientation {
+            position: Vector { x: 0.5, y: 0.5 },
+            direction: DIRECTION_PI_2 / 2.0,
+        };
+
+        let result_orientation = orientation.offset(offset_orientation);
+
+        assert_close2(result_orientation.position, Vector { x: 0.5, y: 0.5 });
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(DIRECTION_PI_2 + DIRECTION_PI_2 / 2.0),
+        )
     }
 }

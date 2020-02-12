@@ -1,12 +1,11 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::math::{Orientation, DIRECTION_PI_2};
+use crate::math::Orientation;
 
 use crate::config::MechanicalConfig;
 use crate::maze::MazeConfig;
 use crate::maze::Wall;
-use crate::maze::WallIndex;
 use crate::maze::{Maze, WallProjectionResult};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -105,7 +104,7 @@ impl Map {
 
     pub fn update(
         &mut self,
-        mech_config: &MechanicalConfig,
+        mech: &MechanicalConfig,
         maze_config: &MazeConfig,
         left_encoder: i32,
         right_encoder: i32,
@@ -117,28 +116,28 @@ impl Map {
         let delta_right = right_encoder - self.right_encoder;
 
         self.orientation
-            .update_from_encoders(&mech_config, delta_left, delta_right);
+            .update_from_encoders(&mech, delta_left, delta_right);
 
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
-        let front_wall = find_closed_walls(maze_config, &self.maze, self.orientation);
+        let front_wall = find_closed_walls(
+            maze_config,
+            &self.maze,
+            self.orientation.offset(mech.front_sensor_orientation),
+        );
 
-        let left_distance_orientation = Orientation {
-            position: self.orientation.position,
-            direction: self.orientation.direction + DIRECTION_PI_2,
-        };
+        let left_wall = find_closed_walls(
+            maze_config,
+            &self.maze,
+            self.orientation.offset(mech.left_sensor_orientation),
+        );
 
-        let left_wall =
-            find_closed_walls(maze_config, &self.maze, left_distance_orientation);
-
-        let right_distance_orientation = Orientation {
-            position: self.orientation.position,
-            direction: self.orientation.direction - DIRECTION_PI_2,
-        };
-
-        let right_wall =
-            find_closed_walls(maze_config, &self.maze, right_distance_orientation);
+        let right_wall = find_closed_walls(
+            maze_config,
+            &self.maze,
+            self.orientation.offset(mech.right_sensor_orientation),
+        );
 
         let debug = MapDebug {
             maze: self.maze.clone(),
