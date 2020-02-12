@@ -55,7 +55,7 @@ impl MazeConfig {
                 MazeIndex::Wall(WallIndex {
                     x: wall_index_x,
                     y: wall_index_y,
-                    horizontal: false,
+                    direction: WallDirection::Vertical,
                 })
             };
 
@@ -66,7 +66,7 @@ impl MazeConfig {
                     y: wall_y,
                 },
                 distance: t,
-                horizontal: false,
+                direction: WallDirection::Vertical,
             }
         });
 
@@ -97,7 +97,7 @@ impl MazeConfig {
                 MazeIndex::Wall(WallIndex {
                     x: wall_index_x,
                     y: wall_index_y,
-                    horizontal: true,
+                    direction: WallDirection::Horizontal,
                 })
             };
 
@@ -108,7 +108,7 @@ impl MazeConfig {
                     y: wall_y,
                 },
                 distance: t,
-                horizontal: true,
+                direction: WallDirection::Horizontal,
             }
         });
 
@@ -122,10 +122,9 @@ mod wall_projection_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use super::MazeProjectionResult;
     use crate::config::MOUSE_MAZE_MAP;
     use crate::math::{Direction, Orientation, Vector};
-    use crate::maze::{MazeIndex, WallIndex};
+    use crate::maze::{MazeIndex, WallDirection, WallIndex};
     use core::f32::consts::{FRAC_PI_8, PI};
 
     #[test]
@@ -146,10 +145,10 @@ mod wall_projection_tests {
             MazeIndex::Wall(WallIndex {
                 x: 7,
                 y: 7,
-                horizontal: false,
+                direction: WallDirection::Vertical,
             }),
         );
-        assert_eq!(result.horizontal, false);
+        assert_eq!(result.direction, WallDirection::Vertical);
         assert_close2(
             result.hit_point,
             Vector {
@@ -165,10 +164,10 @@ mod wall_projection_tests {
             MazeIndex::Wall(WallIndex {
                 x: 7,
                 y: 8,
-                horizontal: true,
+                direction: WallDirection::Horizontal,
             }),
         );
-        assert_eq!(result.horizontal, true);
+        assert_eq!(result.direction, WallDirection::Horizontal);
         assert_close2(
             result.hit_point,
             Vector {
@@ -197,10 +196,10 @@ mod wall_projection_tests {
             MazeIndex::Wall(WallIndex {
                 x: 6,
                 y: 7,
-                horizontal: false,
+                direction: WallDirection::Vertical,
             }),
         );
-        assert_eq!(result.horizontal, false);
+        assert_eq!(result.direction, WallDirection::Vertical);
         assert_close2(
             result.hit_point,
             Vector {
@@ -216,10 +215,10 @@ mod wall_projection_tests {
             MazeIndex::Wall(WallIndex {
                 x: 5,
                 y: 7,
-                horizontal: true,
+                direction: WallDirection::Horizontal,
             }),
         );
-        assert_eq!(result.horizontal, true);
+        assert_eq!(result.direction, WallDirection::Horizontal);
         assert_close2(
             result.hit_point,
             Vector {
@@ -228,6 +227,18 @@ mod wall_projection_tests {
             },
         );
         assert_close(result.distance, 219.50258);
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum WallDirection {
+    Horizontal,
+    Vertical,
+}
+
+impl Default for WallDirection {
+    fn default() -> WallDirection {
+        WallDirection::Vertical
     }
 }
 
@@ -244,7 +255,7 @@ pub struct MazeProjectionResult {
     pub distance: f32,
 
     /// Whether it hit a horizontal or vertical surface
-    pub horizontal: bool,
+    pub direction: WallDirection,
 }
 
 /// Indexes into wither a wall or a post in a maze
@@ -281,7 +292,7 @@ pub struct WallIndex {
     pub y: usize,
 
     /// Whether the wall is horizontal (true), or vertical (false)
-    pub horizontal: bool,
+    pub direction: WallDirection,
 }
 
 /// Keeps track of all the walls in a maze
@@ -376,21 +387,24 @@ impl Maze {
     }
 
     pub fn get_wall(&self, index: WallIndex) -> Option<&Wall> {
-        if index.horizontal {
-            if index.y == 0 {
-                None
-            } else {
-                self.horizontal_walls
-                    .get(index.x)
-                    .and_then(|walls| walls.get(index.y - 1))
+        match index.direction {
+            WallDirection::Horizontal => {
+                if index.y == 0 {
+                    None
+                } else {
+                    self.horizontal_walls
+                        .get(index.x)
+                        .and_then(|walls| walls.get(index.y - 1))
+                }
             }
-        } else {
-            if index.x == 0 {
-                None
-            } else {
-                self.vertical_walls
-                    .get(index.x - 1)
-                    .and_then(|walls| walls.get(index.y))
+            WallDirection::Vertical => {
+                if index.x == 0 {
+                    None
+                } else {
+                    self.vertical_walls
+                        .get(index.x - 1)
+                        .and_then(|walls| walls.get(index.y))
+                }
             }
         }
     }
