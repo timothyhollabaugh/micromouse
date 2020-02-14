@@ -6,9 +6,9 @@ use serde::Serialize;
 use crate::math::{Direction, Orientation, Vector};
 
 use crate::config::MechanicalConfig;
-use crate::maze::{Maze, MazeProjectionResult};
-use crate::maze::{MazeConfig, MazeIndex};
-use crate::maze::{Wall, WallDirection};
+use crate::maze::{
+    Maze, MazeConfig, MazeIndex, MazeProjectionResult, Wall, WallDirection,
+};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
@@ -18,9 +18,9 @@ pub struct MapConfig {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     pub maze: Maze,
-    pub front_wall: Option<MazeProjectionResult>,
-    pub left_wall: Option<MazeProjectionResult>,
-    pub right_wall: Option<MazeProjectionResult>,
+    pub front_result: Option<MazeProjectionResult>,
+    pub left_result: Option<MazeProjectionResult>,
+    pub right_result: Option<MazeProjectionResult>,
 }
 
 /// Find the closest closed wall
@@ -115,35 +115,79 @@ impl Map {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
-        self.orientation
-            .update_from_encoders(&mech, delta_left, delta_right);
+        let encoder_orientation =
+            self.orientation
+                .update_from_encoders(&mech, delta_left, delta_right);
 
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
 
-        let front_wall = find_closed_wall(
+        let front_result = find_closed_wall(
             maze_config,
             &self.maze,
-            self.orientation.offset(mech.front_sensor_orientation),
+            encoder_orientation.offset(mech.front_sensor_orientation),
+        )
+        .map(|front_result| MazeProjectionResult {
+            distance: front_result.distance + mech.front_sensor_orientation.position.x
+                - mech.left_sensor_orientation.position.x,
+            ..front_result
+        });
+
+        let left_result = find_closed_wall(
+            maze_config,
+            &self.maze,
+            encoder_orientation.offset(mech.left_sensor_orientation),
+        )
+        .map(|left_result| MazeProjectionResult {
+            distance: left_result.distance + mech.left_sensor_orientation.position.y,
+            ..left_result
+        });
+
+        let right_result = find_closed_wall(
+            maze_config,
+            &self.maze,
+            encoder_orientation.offset(mech.right_sensor_orientation),
+        )
+        .map(|right_result| MazeProjectionResult {
+            distance: right_result.distance + mech.right_sensor_orientation.position.y,
+            ..right_result
+        });
+
+        let front_distance = if front_distance <= mech.front_sensor_limit {
+            Some(front_distance as f32)
+        } else {
+            None
+        };
+
+        let left_distance = if left_distance <= mech.left_sensor_limit {
+            Some(left_distance as f32)
+        } else {
+            None
+        };
+
+        let right_distance = if right_distance <= mech.right_sensor_limit {
+            Some(right_distance as f32)
+        } else {
+            None
+        };
+
+        let adjusted_orientation = update_orientation_from_distances(
+            encoder_orientation,
+            front_result,
+            front_distance,
+            left_result,
+            left_distance,
+            right_result,
+            right_distance,
         );
 
-        let left_wall = find_closed_wall(
-            maze_config,
-            &self.maze,
-            self.orientation.offset(mech.left_sensor_orientation),
-        );
-
-        let right_wall = find_closed_wall(
-            maze_config,
-            &self.maze,
-            self.orientation.offset(mech.right_sensor_orientation),
-        );
+        self.orientation = adjusted_orientation;
 
         let debug = MapDebug {
             maze: self.maze.clone(),
-            front_wall,
-            left_wall,
-            right_wall,
+            front_result,
+            left_result,
+            right_result,
         };
 
         (self.orientation, debug)

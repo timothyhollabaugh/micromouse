@@ -277,19 +277,23 @@ pub struct Orientation {
 
 impl Orientation {
     pub fn update_from_encoders(
-        &mut self,
+        self,
         config: &MechanicalConfig,
         delta_left: i32,
         delta_right: i32,
-    ) {
+    ) -> Orientation {
         let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
         let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
 
         let mid_dir = f32::from(self.direction) + delta_angular / 2.0;
 
-        self.position.x += delta_linear * F32Ext::cos(mid_dir);
-        self.position.y += delta_linear * F32Ext::sin(mid_dir);
-        self.direction = self.direction + Direction::from(delta_angular);
+        Orientation {
+            position: Vector {
+                x: self.position.x + delta_linear * F32Ext::cos(mid_dir),
+                y: self.position.y + delta_linear * F32Ext::sin(mid_dir),
+            },
+            direction: self.direction + Direction::from(delta_angular),
+        }
     }
 
     pub fn offset(self, offset: Orientation) -> Orientation {

@@ -1,5 +1,5 @@
 
-function MazeUi(parent) {
+function MazeUi(parent, state) {
     let self = this;
 
     const wall_open_color = '#ffffff';
@@ -9,18 +9,48 @@ function MazeUi(parent) {
     const mouse_int_color = '#00ff00';
     const mouse_ext_color = '#ff0000';
 
-    let content = div();
+    let zoom = 1;
+
+    let maze = div();
+    let content = div().children([
+        div().classes('field has-addons').children([
+            div().classes('control').children([
+                button().classes('button is-static').text("Zoom: "),
+            ]),
+            div().classes('control').children([
+                input()
+                    .type('number')
+                    .classes('input')
+                    .style('text-align', 'right')
+                    .style('font-family', 'monospace')
+                    .style('width', '6em')
+                    .value(zoom*100)
+                    .oninput(function() {
+                        zoom = Number(this.el.value)/100;
+                        if (zoom < 1) {
+                            zoom = 1;
+                            this.value(100);
+                        }
+                        console.log(zoom);
+                        state.update();
+                    }),
+            ])
+        ]),
+        maze,
+    ]);
 
     let root = card().title("Maze").content([content]);
 
     parent.append(root.el);
 
-    let draw = SVG(content.el);
+    let draw = SVG(maze.el);
     let world = undefined;
 
     let last_front_wall = null;
     let last_right_wall = null;
     let last_left_wall = null;
+
+    let px_per_mm = 1;
 
     function redraw(config) {
 
@@ -30,7 +60,7 @@ function MazeUi(parent) {
 
         draw.size("100%");
 
-        const px_per_mm = draw.node.clientWidth / maze_width_mm;
+        px_per_mm = draw.node.clientWidth / maze_width_mm;
 
         draw.size("100%", maze_height_mm * px_per_mm);
 
@@ -41,7 +71,7 @@ function MazeUi(parent) {
 
         world = draw.group();
 
-        world.scale(px_per_mm, -px_per_mm);
+        world.scale(px_per_mm * zoom, -px_per_mm * zoom);
         world.move(maze_config.wall_width/2.0, -maze_height_mm+maze_config.wall_width/2.0);
 
         let maze = world.group();
@@ -104,12 +134,16 @@ function MazeUi(parent) {
 
         self.path = world.path('').fill('none').stroke({color: '#0000ff', width: 2});
         self.path_closest = world.circle(20.0).fill({color: '#0000ff'});
+
+        self.front_hit_point = world.circle(20.0).fill({color: '#ffff00'})
+        self.left_hit_point = world.circle(20.0).fill({color: '#ff00ff'})
+        self.right_hit_point = world.circle(20.0).fill({color: '#00ffff'})
     }
 
     function wall_stroke(wall_or_post, stroke) {
         if (wall_or_post && 'Wall' in wall_or_post) {
             let wall_index = wall_or_post.Wall;
-            if (wall_index.horizontal) {
+            if (wall_index.direction === "Horizontal") {
                 if (self.horizontal_walls[wall_index.x][wall_index.y]) {
                     self.horizontal_walls[wall_index.x][wall_index.y].stroke(stroke);
                 }
@@ -127,6 +161,8 @@ function MazeUi(parent) {
     }
 
     function update(debug) {
+        console.log("updating " + zoom);
+        world.scale(px_per_mm * zoom, px_per_mm * zoom);
 
         for (let i = 1; i < MAZE_WIDTH; i++) {
             for (let j = 1; j < MAZE_HEIGHT; j++) {
@@ -159,16 +195,19 @@ function MazeUi(parent) {
         }
 
         wall_stroke(last_front_wall, {width: 0});
-        wall_stroke(debug.mouse.map.front_wall, {color: "#ffff00", width: 6});
-        last_front_wall = debug.mouse.map.front_wall;
-
-        wall_stroke(last_right_wall, {width: 0});
-        wall_stroke(debug.mouse.map.right_wall, {color: "#00ffff", width: 6});
-        last_right_wall = debug.mouse.map.right_wall;
+        wall_stroke(debug.mouse.map.front_result.maze_index, {color: "#ffff00", width: 6});
+        last_front_wall = debug.mouse.map.front_result.maze_index;
+        self.front_hit_point.translate(debug.mouse.map.front_result.hit_point.x - 10, debug.mouse.map.front_result.hit_point.y - 10);
 
         wall_stroke(last_left_wall, {width: 0});
-        wall_stroke(debug.mouse.map.left_wall, {color: "#ff00ff", width: 6});
-        last_left_wall = debug.mouse.map.left_wall;
+        wall_stroke(debug.mouse.map.left_result.maze_index, {color: "#ff00ff", width: 6});
+        last_left_wall = debug.mouse.map.left_result.maze_index;
+        self.left_hit_point.translate(debug.mouse.map.left_result.hit_point.x - 10, debug.mouse.map.left_result.hit_point.y - 10);
+
+        wall_stroke(last_right_wall, {width: 0});
+        wall_stroke(debug.mouse.map.right_result.maze_index, {color: "#00ffff", width: 6});
+        last_right_wall = debug.mouse.map.right_result.maze_index;
+        self.right_hit_point.translate(debug.mouse.map.right_result.hit_point.x - 10, debug.mouse.map.right_result.hit_point.y - 10);
 
         let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
@@ -200,6 +239,7 @@ function MazeUi(parent) {
 
     let oldconfig = null;
     let olddebug = null;
+    let oldzoom = null;
 
     self.update = function (state) {
         if (state.debug()) {
@@ -209,9 +249,10 @@ function MazeUi(parent) {
                 redraw(config);
                 oldconfig = config;
             }
-            if (!_.isEqual(debug, olddebug)) {
+            if (!_.isEqual(debug, olddebug) || oldzoom !== zoom) {
                 update(debug);
                 olddebug = debug;
+                oldzoom = zoom;
             }
         }
     }

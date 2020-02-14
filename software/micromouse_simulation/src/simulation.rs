@@ -47,13 +47,7 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(config: &SimulationConfig) -> Simulation {
         Simulation {
-            mouse: Mouse::new(
-                &config.mouse,
-                config.initial_orientation,
-                0,
-                0,
-                0,
-            ),
+            mouse: Mouse::new(&config.mouse, config.initial_orientation, 0, 0, 0),
             orientation: config.initial_orientation,
             left_encoder: 0,
             right_encoder: 0,
@@ -108,19 +102,20 @@ impl Simulation {
             .mm_to_ticks(left_wheel_speed * (config.millis_per_step as f32))
             as i32;
 
-        let delta_right_wheel =
-            config.mouse.mechanical.mm_to_ticks(
-                right_wheel_speed * (config.millis_per_step as f32),
-            ) as i32;
+        let delta_right_wheel = config
+            .mouse
+            .mechanical
+            .mm_to_ticks(right_wheel_speed * (config.millis_per_step as f32))
+            as i32;
 
         self.left_encoder += delta_left_wheel;
         self.right_encoder += delta_right_wheel;
         self.time += config.millis_per_step;
 
         let left_accel = (left_wheel_speed - self.last_left_wheel_speed)
-            / config.sec_per_step();
+            / config.millis_per_step as f32;
         let right_accel = (right_wheel_speed - self.last_right_wheel_speed)
-            / config.sec_per_step();
+            / config.millis_per_step as f32;
 
         let left_ground_speed = if left_accel > config.max_wheel_accel {
             self.last_left_wheel_speed + config.max_wheel_accel

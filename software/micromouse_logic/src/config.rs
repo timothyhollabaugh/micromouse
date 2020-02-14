@@ -70,6 +70,9 @@ pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
         position: Vector { x: 26.0, y: -32.0 },
         direction: DIRECTION_3_PI_2,
     },
+    front_sensor_limit: 200,
+    left_sensor_limit: 200,
+    right_sensor_limit: 200,
 };
 
 pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
@@ -92,6 +95,9 @@ pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
         position: Vector { x: 26.0, y: -32.0 },
         direction: DIRECTION_3_PI_2,
     },
+    front_sensor_limit: 200,
+    left_sensor_limit: 200,
+    right_sensor_limit: 200,
 };
 
 pub const MOUSE_2020_PATH: PathConfig = PathConfig {
@@ -136,6 +142,9 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
         position: Vector { x: 30.0, y: -32.0 },
         direction: DIRECTION_3_PI_2,
     },
+    front_sensor_limit: 200,
+    left_sensor_limit: 200,
+    right_sensor_limit: 200,
 };
 
 pub const MOUSE_2019_PATH: PathConfig = PathConfig {
@@ -206,6 +215,10 @@ pub struct MechanicalConfig {
 
     /// The orientation of the right distance sensor, relative to the center of rotation
     pub right_sensor_orientation: Orientation,
+
+    pub front_sensor_limit: u8,
+    pub left_sensor_limit: u8,
+    pub right_sensor_limit: u8,
 }
 
 impl MechanicalConfig {
