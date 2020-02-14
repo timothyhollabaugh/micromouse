@@ -14,6 +14,8 @@ use simulation::Simulation;
 use simulation::SimulationConfig;
 
 use micromouse_logic::math::{Direction, Orientation, Vector};
+use micromouse_logic::maze;
+use micromouse_logic::maze::{Maze, Wall};
 use remote::Remote;
 use remote::RemoteConfig;
 
@@ -55,9 +57,53 @@ impl JsSimulation {
     }
 
     pub fn default_config() -> JsValue {
+        let mut horizontal_walls = [[Wall::Unknown; maze::HEIGHT - 1]; maze::WIDTH];
+        let mut vertical_walls = [[Wall::Unknown; maze::HEIGHT]; maze::WIDTH - 1];
+
+        horizontal_walls[6][8] = Wall::Closed;
+        horizontal_walls[7][8] = Wall::Closed;
+        horizontal_walls[8][8] = Wall::Closed;
+        horizontal_walls[9][8] = Wall::Closed;
+
+        horizontal_walls[6][7] = Wall::Open;
+        horizontal_walls[7][7] = Wall::Closed;
+        horizontal_walls[8][7] = Wall::Closed;
+        horizontal_walls[9][7] = Wall::Open;
+
+        horizontal_walls[6][6] = Wall::Open;
+        horizontal_walls[7][6] = Wall::Closed;
+        horizontal_walls[8][6] = Wall::Closed;
+        horizontal_walls[9][6] = Wall::Open;
+
+        horizontal_walls[6][5] = Wall::Closed;
+        horizontal_walls[7][5] = Wall::Closed;
+        horizontal_walls[8][5] = Wall::Closed;
+        horizontal_walls[9][5] = Wall::Closed;
+
+        vertical_walls[5][8] = Wall::Closed;
+        vertical_walls[5][7] = Wall::Closed;
+        vertical_walls[5][6] = Wall::Closed;
+
+        vertical_walls[6][8] = Wall::Open;
+        vertical_walls[6][7] = Wall::Closed;
+        vertical_walls[6][6] = Wall::Open;
+
+        vertical_walls[7][8] = Wall::Open;
+        vertical_walls[7][7] = Wall::Open;
+        vertical_walls[7][6] = Wall::Open;
+
+        vertical_walls[8][8] = Wall::Open;
+        vertical_walls[8][7] = Wall::Closed;
+        vertical_walls[8][6] = Wall::Open;
+
+        vertical_walls[9][8] = Wall::Closed;
+        vertical_walls[9][7] = Wall::Closed;
+        vertical_walls[9][6] = Wall::Closed;
+
+        let maze = Maze::from_walls(horizontal_walls, vertical_walls);
+
         JsValue::from_serde(&SimulationConfig {
             mouse: MOUSE_SIM_2019,
-            max_wheel_accel: 0.003,
             millis_per_step: 10,
             initial_orientation: Orientation {
                 position: Vector {
@@ -66,7 +112,9 @@ impl JsSimulation {
                 },
                 direction: Direction::from(0.0),
             },
+            max_wheel_accel: 1.003,
             max_speed: 1.0,
+            maze,
         })
         .unwrap()
     }

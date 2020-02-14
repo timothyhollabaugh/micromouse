@@ -3,7 +3,7 @@ use libm::F32Ext;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::math::{Direction, Orientation, Vector};
+use crate::math::{Direction, Orientation, Vector, DIRECTION_0};
 
 use crate::config::MechanicalConfig;
 use crate::maze::{
@@ -21,10 +21,15 @@ pub struct MapDebug {
     pub front_result: Option<MazeProjectionResult>,
     pub left_result: Option<MazeProjectionResult>,
     pub right_result: Option<MazeProjectionResult>,
+    pub approx_sensor_orientation: Orientation,
+    pub left_distance: Option<f32>,
+    pub front_distance: Option<f32>,
+    pub right_distance: Option<f32>,
+    pub adjusted_orientation: Orientation,
 }
 
 /// Find the closest closed wall
-fn find_closed_wall(
+pub fn find_closed_wall(
     config: &MazeConfig,
     maze: &Maze,
     from: Orientation,
@@ -36,6 +41,35 @@ fn find_closed_wall(
             true
         }
     })
+}
+
+/// Makes sure the distance reading is in range and not too far from the expected result
+fn cleanup_distance_reading(
+    offset: f32,
+    limit: f32,
+    tolerance: f32,
+    distance: u8,
+    result: Option<MazeProjectionResult>,
+) -> Option<f32> {
+    let distance = distance as f32;
+
+    let distance = if distance <= limit {
+        Some(distance + offset)
+    } else {
+        None
+    };
+
+    let distance = if let (Some(distance), Some(result)) = (distance, result) {
+        if (distance - result.distance).abs() < tolerance {
+            Some(distance)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    distance
 }
 
 pub struct Map {
@@ -125,54 +159,67 @@ impl Map {
         let front_result = find_closed_wall(
             maze_config,
             &self.maze,
-            encoder_orientation.offset(mech.front_sensor_orientation),
+            encoder_orientation.offset(mech.front_sensor_orientation()),
         )
         .map(|front_result| MazeProjectionResult {
-            distance: front_result.distance + mech.front_sensor_orientation.position.x
-                - mech.left_sensor_orientation.position.x,
+            distance: front_result.distance + mech.front_sensor_offset,
             ..front_result
         });
 
         let left_result = find_closed_wall(
             maze_config,
             &self.maze,
-            encoder_orientation.offset(mech.left_sensor_orientation),
+            encoder_orientation.offset(mech.left_sensor_orientation()),
         )
         .map(|left_result| MazeProjectionResult {
-            distance: left_result.distance + mech.left_sensor_orientation.position.y,
+            distance: left_result.distance + mech.left_sensor_offset,
             ..left_result
         });
 
         let right_result = find_closed_wall(
             maze_config,
             &self.maze,
-            encoder_orientation.offset(mech.right_sensor_orientation),
+            encoder_orientation.offset(mech.right_sensor_orientation()),
         )
         .map(|right_result| MazeProjectionResult {
-            distance: right_result.distance + mech.right_sensor_orientation.position.y,
+            distance: right_result.distance + mech.right_sensor_offset,
             ..right_result
         });
 
-        let front_distance = if front_distance <= mech.front_sensor_limit {
-            Some(front_distance as f32)
-        } else {
-            None
-        };
+        let front_distance = cleanup_distance_reading(
+            mech.front_sensor_offset,
+            mech.front_sensor_limit as f32,
+            maze_config.cell_width / 2.0,
+            front_distance,
+            front_result,
+        );
 
-        let left_distance = if left_distance <= mech.left_sensor_limit {
-            Some(left_distance as f32)
-        } else {
-            None
-        };
+        let left_distance = cleanup_distance_reading(
+            mech.left_sensor_offset,
+            mech.left_sensor_limit as f32,
+            maze_config.cell_width / 2.0,
+            left_distance,
+            left_result,
+        );
 
-        let right_distance = if right_distance <= mech.right_sensor_limit {
-            Some(right_distance as f32)
-        } else {
-            None
-        };
+        let right_distance = cleanup_distance_reading(
+            mech.right_sensor_offset,
+            mech.right_sensor_limit as f32,
+            maze_config.cell_width / 2.0,
+            right_distance,
+            right_result,
+        );
+
+        let approx_sensor_orientation = encoder_orientation.offset(Orientation {
+            position: Vector {
+                x: mech.sensor_center_offset,
+                y: 0.0,
+            },
+            direction: DIRECTION_0,
+        });
 
         let adjusted_orientation = update_orientation_from_distances(
-            encoder_orientation,
+            approx_sensor_orientation,
             front_result,
             front_distance,
             left_result,
@@ -181,13 +228,24 @@ impl Map {
             right_distance,
         );
 
-        self.orientation = adjusted_orientation;
+        self.orientation = adjusted_orientation.offset(Orientation {
+            position: Vector {
+                x: -mech.sensor_center_offset,
+                y: 0.0,
+            },
+            direction: DIRECTION_0,
+        });
 
         let debug = MapDebug {
             maze: self.maze.clone(),
             front_result,
             left_result,
             right_result,
+            approx_sensor_orientation,
+            adjusted_orientation,
+            left_distance,
+            front_distance,
+            right_distance,
         };
 
         (self.orientation, debug)
@@ -217,8 +275,14 @@ fn update_orientation_from_distances(
             && front_result.direction == WallDirection::Vertical
             && right_result.direction == WallDirection::Horizontal =>
         {
-            let cos_theta = (left_result.hit_point.y - right_result.hit_point.y)
+            let mut cos_theta = (left_result.hit_point.y - right_result.hit_point.y)
                 / (left_distance + right_distance);
+
+            if cos_theta >= 1.0 {
+                cos_theta = 1.0
+            } else if cos_theta <= -1.0 {
+                cos_theta = -1.0
+            }
 
             Orientation {
                 position: Vector {
@@ -238,8 +302,14 @@ fn update_orientation_from_distances(
             && front_result.direction == WallDirection::Horizontal
             && right_result.direction == WallDirection::Vertical =>
         {
-            let sin_theta = -(left_result.hit_point.x - right_result.hit_point.x)
+            let mut sin_theta = -(left_result.hit_point.x - right_result.hit_point.x)
                 / (left_distance + right_distance);
+
+            if sin_theta >= 1.0 {
+                sin_theta = 1.0
+            } else if sin_theta <= -1.0 {
+                sin_theta = -1.0
+            }
 
             Orientation {
                 position: Vector {

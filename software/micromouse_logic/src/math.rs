@@ -48,7 +48,7 @@ impl Vector {
             x: self.x * F32Ext::cos(f32::from(theta))
                 - self.y * F32Ext::sin(f32::from(theta)),
             y: self.x * F32Ext::sin(f32::from(theta))
-                - self.y * F32Ext::cos(f32::from(theta)),
+                + self.y * F32Ext::cos(f32::from(theta)),
         }
     }
 }
@@ -62,7 +62,7 @@ mod vector_tests {
     use core::f32::consts::SQRT_2;
 
     use super::Vector;
-    use crate::math::DIRECTION_PI_2;
+    use crate::math::{DIRECTION_0, DIRECTION_PI_2};
 
     #[test]
     fn vector_magnitude_test() {
@@ -119,6 +119,14 @@ mod vector_tests {
         assert_close2(
             Vector { x: 1.0, y: 0.0 }.rotated(DIRECTION_PI_2),
             Vector { x: 0.0, y: 1.0 },
+        )
+    }
+
+    #[test]
+    fn vector_rotated2() {
+        assert_close2(
+            Vector { x: 30.0, y: 32.0 }.rotated(DIRECTION_0),
+            Vector { x: 30.0, y: 32.0 },
         )
     }
 }
@@ -309,7 +317,7 @@ mod orientation_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use crate::math::{Orientation, Vector, DIRECTION_PI_2};
+    use crate::math::{Orientation, Vector, DIRECTION_0, DIRECTION_PI_2};
 
     #[test]
     fn offset() {
@@ -329,6 +337,36 @@ mod orientation_tests {
         assert_close(
             f32::from(result_orientation.direction),
             f32::from(DIRECTION_PI_2 + DIRECTION_PI_2 / 2.0),
+        )
+    }
+
+    #[test]
+    fn offset2() {
+        let orientation = Orientation {
+            position: Vector {
+                x: 1260.0,
+                y: 1170.0,
+            },
+            direction: DIRECTION_0,
+        };
+
+        let offset_orientation = Orientation {
+            position: Vector { x: 30.0, y: 32.0 },
+            direction: DIRECTION_PI_2,
+        };
+
+        let result_orientation = orientation.offset(offset_orientation);
+
+        assert_close2(
+            result_orientation.position,
+            Vector {
+                x: 1260.0 + 30.0,
+                y: 1170.0 + 32.0,
+            },
+        );
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(DIRECTION_PI_2),
         )
     }
 }

@@ -3,7 +3,9 @@ use std::f32;
 use serde::Deserialize;
 use serde::Serialize;
 
+use micromouse_logic::map::find_closed_wall;
 use micromouse_logic::math::Orientation;
+use micromouse_logic::maze::{Maze, MazeIndex, MazeProjectionResult, Wall};
 use micromouse_logic::mouse::Mouse;
 use micromouse_logic::mouse::MouseConfig;
 use micromouse_logic::mouse::MouseDebug;
@@ -19,6 +21,12 @@ pub struct SimulationDebug {
     pub right_accel: f32,
     pub left_ground_speed: f32,
     pub right_ground_speed: f32,
+    pub left_result: Option<MazeProjectionResult>,
+    pub left_distance: u8,
+    pub front_result: Option<MazeProjectionResult>,
+    pub front_distance: u8,
+    pub right_result: Option<MazeProjectionResult>,
+    pub right_distance: u8,
     pub orientation: Orientation,
     pub config: SimulationConfig,
 }
@@ -26,12 +34,14 @@ pub struct SimulationDebug {
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SimulationConfig {
     pub mouse: MouseConfig,
-    pub max_speed: f32,
     pub initial_orientation: Orientation,
     pub millis_per_step: u32,
 
     /// The max speed a wheel can accelerate by before slipping
     pub max_wheel_accel: f32,
+    pub max_speed: f32,
+
+    pub maze: Maze,
 }
 
 impl SimulationConfig {
@@ -68,6 +78,36 @@ impl Simulation {
     }
 
     pub fn update(&mut self, config: &SimulationConfig) -> SimulationDebug {
+        let mech = config.mouse.mechanical;
+
+        // Figure out what the sensors should read
+        let front_result = find_closed_wall(
+            &config.mouse.map.maze,
+            &config.maze,
+            self.orientation.offset(mech.front_sensor_orientation()),
+        );
+        let front_distance = front_result
+            .filter(|result| result.distance < mech.front_sensor_limit as f32)
+            .map_or(mech.front_sensor_limit + 10, |result| result.distance as u8);
+
+        let left_result = find_closed_wall(
+            &config.mouse.map.maze,
+            &config.maze,
+            self.orientation.offset(mech.left_sensor_orientation()),
+        );
+        let left_distance = left_result
+            .filter(|result| result.distance < mech.left_sensor_limit as f32)
+            .map_or(mech.left_sensor_limit + 10, |result| result.distance as u8);
+
+        let right_result = find_closed_wall(
+            &config.mouse.map.maze,
+            &config.maze,
+            self.orientation.offset(mech.right_sensor_orientation()),
+        );
+        let right_distance = right_result
+            .filter(|result| result.distance < mech.right_sensor_limit as f32)
+            .map_or(mech.right_sensor_limit + 10, |result| result.distance as u8);
+
         // Update the mouse for the current time
         let (raw_left_power, raw_right_power, mouse_debug) = self.mouse.update(
             &config.mouse,
@@ -75,9 +115,9 @@ impl Simulation {
             0,
             self.left_encoder,
             self.right_encoder,
-            255,
-            255,
-            255,
+            left_distance,
+            front_distance,
+            right_distance,
         );
 
         // Make sure the wheel powers are in range -1.0 to 1.0
@@ -164,6 +204,12 @@ impl Simulation {
             right_accel,
             left_ground_speed,
             right_ground_speed,
+            left_result,
+            left_distance,
+            front_result,
+            front_distance,
+            right_result,
+            right_distance,
             orientation: self.orientation,
             config: config.clone(),
         };

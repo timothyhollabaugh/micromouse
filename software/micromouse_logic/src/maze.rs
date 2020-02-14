@@ -296,7 +296,7 @@ pub struct WallIndex {
 }
 
 /// Keeps track of all the walls in a maze
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Maze {
     horizontal_walls: [[Wall; HEIGHT - 1]; WIDTH],
     vertical_walls: [[Wall; HEIGHT]; WIDTH - 1],

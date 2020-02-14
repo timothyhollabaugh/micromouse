@@ -111,7 +111,11 @@ function Node(path, f) {
         } else if (data !== undefined) {
             if (olddata !== data) {
                 if (typeof data === 'number') {
-                    value.innerText = math.format(data, {precision: 4, upperExp: 4});
+                    if (isNaN(data)) {
+                        value.innerText = 'NaN';
+                    } else {
+                        value.innerText = math.format(data, {precision: 4, upperExp: 4});
+                    }
                 } else if (typeof data === 'string') {
                     value.innerText = data;
                 } else {

@@ -4,7 +4,9 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::map::MapConfig;
-use crate::math::{Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2};
+use crate::math::{
+    Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2,
+};
 use crate::maze::MazeConfig;
 use crate::motion::MotionConfig;
 use crate::motion::PidfConfig;
@@ -58,18 +60,12 @@ pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
     width: 64.0,
     length: 57.5,
     front_offset: 40.0,
-    front_sensor_orientation: Orientation {
-        position: Vector { x: 40.0, y: 0.0 },
-        direction: DIRECTION_0,
-    },
-    left_sensor_orientation: Orientation {
-        position: Vector { x: 26.0, y: 32.0 },
-        direction: DIRECTION_PI_2,
-    },
-    right_sensor_orientation: Orientation {
-        position: Vector { x: 26.0, y: -32.0 },
-        direction: DIRECTION_3_PI_2,
-    },
+
+    sensor_center_offset: 26.0,
+    front_sensor_offset: 14.0,
+    left_sensor_offset: 32.0,
+    right_sensor_offset: 32.0,
+
     front_sensor_limit: 200,
     left_sensor_limit: 200,
     right_sensor_limit: 200,
@@ -83,18 +79,12 @@ pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
     width: 64.0,
     length: 57.5,
     front_offset: 40.0,
-    front_sensor_orientation: Orientation {
-        position: Vector { x: 40.0, y: 0.0 },
-        direction: DIRECTION_0,
-    },
-    left_sensor_orientation: Orientation {
-        position: Vector { x: 26.0, y: 32.0 },
-        direction: DIRECTION_PI_2,
-    },
-    right_sensor_orientation: Orientation {
-        position: Vector { x: 26.0, y: -32.0 },
-        direction: DIRECTION_3_PI_2,
-    },
+
+    sensor_center_offset: 26.0,
+    front_sensor_offset: 14.0,
+    left_sensor_offset: 32.0,
+    right_sensor_offset: 32.0,
+
     front_sensor_limit: 200,
     left_sensor_limit: 200,
     right_sensor_limit: 200,
@@ -130,18 +120,12 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     width: 64.0,
     length: 90.0,
     front_offset: 48.0,
-    front_sensor_orientation: Orientation {
-        position: Vector { x: 48.0, y: 0.0 },
-        direction: DIRECTION_0,
-    },
-    left_sensor_orientation: Orientation {
-        position: Vector { x: 30.0, y: 32.0 },
-        direction: DIRECTION_PI_2,
-    },
-    right_sensor_orientation: Orientation {
-        position: Vector { x: 30.0, y: -32.0 },
-        direction: DIRECTION_3_PI_2,
-    },
+
+    sensor_center_offset: 30.0,
+    front_sensor_offset: 18.0,
+    left_sensor_offset: 32.0,
+    right_sensor_offset: 32.0,
+
     front_sensor_limit: 200,
     left_sensor_limit: 200,
     right_sensor_limit: 200,
@@ -207,14 +191,17 @@ pub struct MechanicalConfig {
     /// The offset from the front of the body to the center of rotation
     pub front_offset: f32,
 
-    /// The orientation of the front distance sensor, relative to the center of rotation
-    pub front_sensor_orientation: Orientation,
+    /// The distance from the center of rotation to the center of the sensors
+    pub sensor_center_offset: f32,
 
-    /// The orientation of the left distance sensor, relative to the center of rotation
-    pub left_sensor_orientation: Orientation,
+    /// The distance from the sensor center to the front distance sensor
+    pub front_sensor_offset: f32,
 
-    /// The orientation of the right distance sensor, relative to the center of rotation
-    pub right_sensor_orientation: Orientation,
+    /// The distance from the sensor center to the left distance sensor
+    pub left_sensor_offset: f32,
+
+    /// The distance from the sensor center to the right distance sensor
+    pub right_sensor_offset: f32,
 
     pub front_sensor_limit: u8,
     pub left_sensor_limit: u8,
@@ -257,5 +244,35 @@ impl MechanicalConfig {
 
     pub fn rads_to_mm(&self, rads: f32) -> f32 {
         rads * self.mm_per_rad()
+    }
+
+    pub fn front_sensor_orientation(&self) -> Orientation {
+        Orientation {
+            position: Vector {
+                x: self.sensor_center_offset + self.front_sensor_offset,
+                y: 0.0,
+            },
+            direction: DIRECTION_0,
+        }
+    }
+
+    pub fn left_sensor_orientation(&self) -> Orientation {
+        Orientation {
+            position: Vector {
+                x: self.sensor_center_offset,
+                y: self.left_sensor_offset,
+            },
+            direction: DIRECTION_PI_2,
+        }
+    }
+
+    pub fn right_sensor_orientation(&self) -> Orientation {
+        Orientation {
+            position: Vector {
+                x: self.sensor_center_offset,
+                y: -self.right_sensor_offset,
+            },
+            direction: DIRECTION_3_PI_2,
+        }
     }
 }

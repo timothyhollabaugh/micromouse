@@ -31,7 +31,6 @@ function MazeUi(parent, state) {
                             zoom = 1;
                             this.value(100);
                         }
-                        console.log(zoom);
                         state.update();
                     }),
             ])
@@ -161,7 +160,6 @@ function MazeUi(parent, state) {
     }
 
     function update(debug) {
-        console.log("updating " + zoom);
         world.scale(px_per_mm * zoom, px_per_mm * zoom);
 
         for (let i = 1; i < MAZE_WIDTH; i++) {
