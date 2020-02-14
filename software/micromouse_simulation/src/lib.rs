@@ -57,7 +57,7 @@ impl JsSimulation {
     pub fn default_config() -> JsValue {
         JsValue::from_serde(&SimulationConfig {
             mouse: MOUSE_SIM_2019,
-            max_wheel_accel: 60000.0,
+            max_wheel_accel: 0.003,
             millis_per_step: 10,
             initial_orientation: Orientation {
                 position: Vector {
@@ -81,8 +81,7 @@ pub struct JsRemote {
 impl JsRemote {
     #[wasm_bindgen(constructor)]
     pub fn new(config: JsValue) -> JsRemote {
-        let config: RemoteConfig =
-            config.into_serde().expect("Could not parse config");
+        let config: RemoteConfig = config.into_serde().expect("Could not parse config");
         JsRemote {
             remote: Remote::new(&config),
         }

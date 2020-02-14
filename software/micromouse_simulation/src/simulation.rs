@@ -13,6 +13,12 @@ pub struct SimulationDebug {
     pub mouse: MouseDebug,
     pub left_encoder: i32,
     pub right_encoder: i32,
+    pub left_wheel_speed: f32,
+    pub right_wheel_speed: f32,
+    pub left_accel: f32,
+    pub right_accel: f32,
+    pub left_ground_speed: f32,
+    pub right_ground_speed: f32,
     pub orientation: Orientation,
     pub config: SimulationConfig,
 }
@@ -37,8 +43,8 @@ impl SimulationConfig {
 pub struct Simulation {
     mouse: Mouse,
     orientation: Orientation,
-    last_left_wheel_speed: f32,
-    last_right_wheel_speed: f32,
+    last_left_ground_speed: f32,
+    last_right_ground_speed: f32,
     left_encoder: i32,
     right_encoder: i32,
     time: u32,
@@ -51,8 +57,8 @@ impl Simulation {
             orientation: config.initial_orientation,
             left_encoder: 0,
             right_encoder: 0,
-            last_left_wheel_speed: 0.0,
-            last_right_wheel_speed: 0.0,
+            last_left_ground_speed: 0.0,
+            last_right_ground_speed: 0.0,
             time: 0,
         }
     }
@@ -112,30 +118,36 @@ impl Simulation {
         self.right_encoder += delta_right_wheel;
         self.time += config.millis_per_step;
 
-        let left_accel = (left_wheel_speed - self.last_left_wheel_speed)
+        let left_accel = (left_wheel_speed - self.last_left_ground_speed)
             / config.millis_per_step as f32;
-        let right_accel = (right_wheel_speed - self.last_right_wheel_speed)
+        let right_accel = (right_wheel_speed - self.last_right_ground_speed)
             / config.millis_per_step as f32;
 
         let left_ground_speed = if left_accel > config.max_wheel_accel {
-            self.last_left_wheel_speed + config.max_wheel_accel
+            self.last_left_ground_speed + config.max_wheel_accel
         } else {
             left_wheel_speed
         };
 
         let right_ground_speed = if right_accel > config.max_wheel_accel {
-            self.last_right_wheel_speed + config.max_wheel_accel
+            self.last_right_ground_speed + config.max_wheel_accel
         } else {
             right_wheel_speed
         };
 
-        let delta_left_ground =
-            config.mouse.mechanical.mm_to_ticks(left_ground_speed) as i32;
+        let delta_left_ground = config
+            .mouse
+            .mechanical
+            .mm_to_ticks(left_ground_speed * (config.millis_per_step as f32))
+            as i32;
 
-        let delta_right_ground =
-            config.mouse.mechanical.mm_to_ticks(right_ground_speed) as i32;
+        let delta_right_ground = config
+            .mouse
+            .mechanical
+            .mm_to_ticks(right_ground_speed * (config.millis_per_step as f32))
+            as i32;
 
-        self.orientation.update_from_encoders(
+        self.orientation = self.orientation.update_from_encoders(
             &config.mouse.mechanical,
             delta_left_ground,
             delta_right_ground,
@@ -146,9 +158,18 @@ impl Simulation {
             mouse: mouse_debug,
             left_encoder: self.left_encoder,
             right_encoder: self.right_encoder,
+            left_wheel_speed,
+            right_wheel_speed,
+            left_accel,
+            right_accel,
+            left_ground_speed,
+            right_ground_speed,
             orientation: self.orientation,
             config: config.clone(),
         };
+
+        self.last_left_ground_speed = left_ground_speed;
+        self.last_right_ground_speed = right_ground_speed;
 
         debug
     }
