@@ -192,20 +192,26 @@ function MazeUi(parent, state) {
             }
         }
 
-        wall_stroke(last_front_wall, {width: 0});
-        wall_stroke(debug.mouse.map.front_result.maze_index, {color: "#ffff00", width: 6});
-        last_front_wall = debug.mouse.map.front_result.maze_index;
-        self.front_hit_point.translate(debug.mouse.map.front_result.hit_point.x - 10, debug.mouse.map.front_result.hit_point.y - 10);
+        if (debug.mouse.map.front_result) {
+            wall_stroke(last_front_wall, {width: 0});
+            wall_stroke(debug.mouse.map.front_result.maze_index, {color: "#ffff00", width: 6});
+            last_front_wall = debug.mouse.map.front_result.maze_index;
+            self.front_hit_point.translate(debug.mouse.map.front_result.hit_point.x - 10, debug.mouse.map.front_result.hit_point.y - 10);
+        }
 
-        wall_stroke(last_left_wall, {width: 0});
-        wall_stroke(debug.mouse.map.left_result.maze_index, {color: "#ff00ff", width: 6});
-        last_left_wall = debug.mouse.map.left_result.maze_index;
-        self.left_hit_point.translate(debug.mouse.map.left_result.hit_point.x - 10, debug.mouse.map.left_result.hit_point.y - 10);
+        if (debug.mouse.map.left_result) {
+            wall_stroke(last_left_wall, {width: 0});
+            wall_stroke(debug.mouse.map.left_result.maze_index, {color: "#ff00ff", width: 6});
+            last_left_wall = debug.mouse.map.left_result.maze_index;
+            self.left_hit_point.translate(debug.mouse.map.left_result.hit_point.x - 10, debug.mouse.map.left_result.hit_point.y - 10);
+        }
 
-        wall_stroke(last_right_wall, {width: 0});
-        wall_stroke(debug.mouse.map.right_result.maze_index, {color: "#00ffff", width: 6});
-        last_right_wall = debug.mouse.map.right_result.maze_index;
-        self.right_hit_point.translate(debug.mouse.map.right_result.hit_point.x - 10, debug.mouse.map.right_result.hit_point.y - 10);
+        if (debug.mouse.map.right_result) {
+            wall_stroke(last_right_wall, {width: 0});
+            wall_stroke(debug.mouse.map.right_result.maze_index, {color: "#00ffff", width: 6});
+            last_right_wall = debug.mouse.map.right_result.maze_index;
+            self.right_hit_point.translate(debug.mouse.map.right_result.hit_point.x - 10, debug.mouse.map.right_result.hit_point.y - 10);
+        }
 
         let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);

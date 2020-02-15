@@ -74,10 +74,10 @@ impl Uart {
         //uart.brr.write(|w| unsafe { w.bits(0x683) });
 
         // 115200 baud
-        uart.brr.write(|w| unsafe { w.bits(0x008b) });
+        //uart.brr.write(|w| unsafe { w.bits(0x008b) });
 
         // 230400 baud
-        //uart.brr.write(|w| unsafe { w.bits(0x0045) });
+        uart.brr.write(|w| unsafe { w.bits(0x0045) });
 
         // 2M baud doesn't seem to work
         //uart.cr1.write(|w| w.over8().set_bit());

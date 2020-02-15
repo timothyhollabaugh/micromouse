@@ -12,7 +12,6 @@ use crate::config::MechanicalConfig;
 use crate::maze::{
     Maze, MazeConfig, MazeIndex, MazeProjectionResult, Wall, WallDirection,
 };
-use core::f32::consts::PI;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {

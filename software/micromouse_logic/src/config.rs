@@ -4,9 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::map::MapConfig;
-use crate::math::{
-    Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2,
-};
+use crate::math::{Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2};
 use crate::maze::MazeConfig;
 use crate::motion::MotionConfig;
 use crate::motion::PidfConfig;

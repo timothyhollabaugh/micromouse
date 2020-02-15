@@ -8,7 +8,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::MechanicalConfig;
-use core::ops::Neg;
 
 /// A 2d vector
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
