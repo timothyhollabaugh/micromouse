@@ -3,7 +3,10 @@ use libm::F32Ext;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::math::{Direction, Orientation, Vector, DIRECTION_0};
+use crate::math::{
+    Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI,
+    DIRECTION_PI_2,
+};
 
 use crate::config::MechanicalConfig;
 use crate::maze::{
@@ -284,12 +287,50 @@ fn update_orientation_from_distances(
                 cos_theta = -1.0
             }
 
+            let mut direction = Direction::from(F32Ext::acos(cos_theta));
+
+            if approx_orientation.direction > DIRECTION_PI {
+                direction = -direction
+            };
+
             Orientation {
                 position: Vector {
                     x: front_result.hit_point.x - front_distance * cos_theta,
                     y: left_result.hit_point.y - left_distance * cos_theta,
                 },
-                direction: Direction::from(F32Ext::acos(cos_theta)),
+                direction,
+            }
+        }
+
+        // H_H
+        (
+            (Some(left_result), Some(left_distance)),
+            _,
+            (Some(right_result), Some(right_distance)),
+        ) if left_result.direction == WallDirection::Horizontal
+            && right_result.direction == WallDirection::Horizontal =>
+        {
+            let mut cos_theta = (left_result.hit_point.y - right_result.hit_point.y)
+                / (left_distance + right_distance);
+
+            if cos_theta >= 1.0 {
+                cos_theta = 1.0
+            } else if cos_theta <= -1.0 {
+                cos_theta = -1.0
+            }
+
+            let mut direction = Direction::from(F32Ext::acos(cos_theta));
+
+            if approx_orientation.direction > DIRECTION_PI {
+                direction = -direction
+            };
+
+            Orientation {
+                position: Vector {
+                    x: approx_orientation.position.x,
+                    y: left_result.hit_point.y - left_distance * cos_theta,
+                },
+                direction,
             }
         }
 
@@ -311,12 +352,54 @@ fn update_orientation_from_distances(
                 sin_theta = -1.0
             }
 
+            let mut direction = Direction::from(F32Ext::asin(sin_theta));
+
+            if approx_orientation.direction >= DIRECTION_PI_2
+                && approx_orientation.direction < DIRECTION_3_PI_2
+            {
+                direction = DIRECTION_PI - direction;
+            }
+
             Orientation {
                 position: Vector {
                     x: left_result.hit_point.x + left_distance * sin_theta,
                     y: front_result.hit_point.y - front_distance * sin_theta,
                 },
-                direction: Direction::from(F32Ext::asin(sin_theta)),
+                direction,
+            }
+        }
+
+        // V_V
+        (
+            (Some(left_result), Some(left_distance)),
+            _,
+            (Some(right_result), Some(right_distance)),
+        ) if left_result.direction == WallDirection::Vertical
+            && right_result.direction == WallDirection::Vertical =>
+        {
+            let mut sin_theta = -(left_result.hit_point.x - right_result.hit_point.x)
+                / (left_distance + right_distance);
+
+            if sin_theta >= 1.0 {
+                sin_theta = 1.0
+            } else if sin_theta <= -1.0 {
+                sin_theta = -1.0
+            }
+
+            let mut direction = Direction::from(F32Ext::asin(sin_theta));
+
+            if approx_orientation.direction >= DIRECTION_PI_2
+                && approx_orientation.direction < DIRECTION_3_PI_2
+            {
+                direction = DIRECTION_PI - direction;
+            }
+
+            Orientation {
+                position: Vector {
+                    x: left_result.hit_point.x + left_distance * sin_theta,
+                    y: approx_orientation.position.y,
+                },
+                direction,
             }
         }
 
@@ -330,7 +413,9 @@ mod test_update_orientation_from_distance {
     use crate::test;
 
     use crate::map::update_orientation_from_distances;
-    use crate::math::{Orientation, Vector, DIRECTION_PI_2};
+    use crate::math::{
+        Direction, Orientation, Vector, DIRECTION_0, DIRECTION_PI, DIRECTION_PI_2,
+    };
     use crate::maze::{MazeIndex, MazeProjectionResult, WallDirection, WallIndex};
     use crate::test::{assert_close, assert_close2};
 
@@ -415,6 +500,430 @@ mod test_update_orientation_from_distance {
     }
 
     #[test]
+    fn hvh2() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1610.0,
+                y: 1170.0,
+            },
+            direction: DIRECTION_PI / 16.0,
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1600.0105,
+                y: 1170.0,
+            },
+            direction: Direction::from(0.19660425),
+        };
+
+        let left_hit_point = Vector {
+            x: 1583.29,
+            y: 1254.0,
+        };
+        let left_distance = 85.65;
+
+        let front_hit_point = Vector {
+            x: 1794.0,
+            y: 1208.59,
+        };
+        let front_distance = 197.8;
+
+        let right_hit_point = Vector {
+            x: 1616.71,
+            y: 1086.0,
+        };
+        let right_distance = 85.65;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 7,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 10,
+                y: 6,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 6,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn hvh3() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1610.0,
+                y: 1170.0,
+            },
+            direction: DIRECTION_0 - (DIRECTION_PI / 16.0),
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1600.0105,
+                y: 1170.0,
+            },
+            direction: DIRECTION_0 - Direction::from(0.19660425),
+        };
+
+        let left_hit_point = Vector {
+            x: 1583.29,
+            y: 1254.0,
+        };
+        let left_distance = 85.65;
+
+        let front_hit_point = Vector {
+            x: 1794.0,
+            y: 1208.59,
+        };
+        let front_distance = 197.8;
+
+        let right_hit_point = Vector {
+            x: 1616.71,
+            y: 1086.0,
+        };
+        let right_distance = 85.65;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 7,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 10,
+                y: 6,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 6,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn h_h() {
+        let approx_orientation = Orientation {
+            position: Vector { x: 90.0, y: 90.0 },
+            direction: DIRECTION_PI_2 / 4.0,
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector { x: 90.0, y: 80.0 },
+            direction: DIRECTION_PI_2 / 4.0,
+        };
+
+        let left_hit_point = Vector {
+            x: 51.0639251369291,
+            y: 174.0,
+        };
+        let left_distance = (left_hit_point - actual_mouse.position).magnitude();
+
+        let front_hit_point = Vector {
+            x: 174.0,
+            y: 114.79393923934,
+        };
+        let front_distance = (front_hit_point - actual_mouse.position).magnitude();
+
+        let right_hit_point = Vector {
+            x: 120.651803615609,
+            y: 6.0,
+        };
+        let right_distance = (right_hit_point - actual_mouse.position).magnitude();
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 0,
+                y: 1,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 1,
+                y: 0,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 0,
+                y: 0,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn h_h2() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1600.0105,
+                y: 1150.0,
+            },
+            direction: DIRECTION_PI / 16.0,
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1600.0105,
+                y: 1170.0,
+            },
+            direction: Direction::from(0.19660425),
+        };
+
+        let left_hit_point = Vector {
+            x: 1583.29,
+            y: 1254.0,
+        };
+        let left_distance = 85.65;
+
+        let front_hit_point = Vector {
+            x: 1794.0,
+            y: 1208.59,
+        };
+        let front_distance = 197.8;
+
+        let right_hit_point = Vector {
+            x: 1616.71,
+            y: 1086.0,
+        };
+        let right_distance = 85.65;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 7,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 10,
+                y: 6,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 6,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn h_h3() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1600.0105,
+                y: 1150.0,
+            },
+            direction: DIRECTION_0 - (DIRECTION_PI / 16.0),
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1600.0105,
+                y: 1170.0,
+            },
+            direction: DIRECTION_0 - Direction::from(0.19660425),
+        };
+
+        let left_hit_point = Vector {
+            x: 1583.29,
+            y: 1254.0,
+        };
+        let left_distance = 85.65;
+
+        let front_hit_point = Vector {
+            x: 1794.0,
+            y: 1208.59,
+        };
+        let front_distance = 197.8;
+
+        let right_hit_point = Vector {
+            x: 1616.71,
+            y: 1086.0,
+        };
+        let right_distance = 85.65;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 7,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 10,
+                y: 6,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 8,
+                y: 6,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
     fn vhv() {
         let approx_orientation = Orientation {
             position: Vector { x: 90.0, y: 90.0 },
@@ -470,6 +979,436 @@ mod test_update_orientation_from_distance {
             maze_index: MazeIndex::Wall(WallIndex {
                 x: 0,
                 y: 0,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn vhv2() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1150.0,
+                y: 1506.0,
+            },
+            direction: Direction::from(5.49),
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1156.9972,
+                y: 1505.997,
+            },
+            direction: Direction::from(5.490993),
+        };
+
+        let left_hit_point = Vector {
+            x: 1254.0,
+            y: 1601.69,
+        };
+        let left_distance = 136.26;
+
+        let front_hit_point = Vector {
+            x: 1254.0,
+            y: 1407.67,
+        };
+        let front_distance = 138.12;
+
+        let right_hit_point = Vector {
+            x: 1086.0,
+            y: 1435.96,
+        };
+        let right_distance = 99.73;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 8,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 7,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 6,
+                y: 7,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn vhv3() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1150.0,
+                y: 1506.0,
+            },
+            direction: DIRECTION_PI - Direction::from(5.49),
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1156.9972,
+                y: 1505.997,
+            },
+            direction: DIRECTION_PI - Direction::from(5.490993),
+        };
+
+        let left_hit_point = Vector {
+            x: 1254.0,
+            y: 1601.69,
+        };
+        let left_distance = 136.26;
+
+        let front_hit_point = Vector {
+            x: 1254.0,
+            y: 1407.67,
+        };
+        let front_distance = 138.12;
+
+        let right_hit_point = Vector {
+            x: 1086.0,
+            y: 1435.96,
+        };
+        let right_distance = 99.73;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 8,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 7,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Horizontal,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 6,
+                y: 7,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn v_v() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1175.4,
+                y: 1485.0,
+            },
+            direction: Direction::from(3.867),
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1175.4408,
+                y: 1485.0,
+            },
+            direction: Direction::from(3.8670895),
+        };
+
+        let left_hit_point = Vector {
+            x: 1254.0,
+            y: 1396.0,
+        };
+        let left_distance = 118.4;
+
+        let front_hit_point = Vector {
+            x: 1086.0,
+            y: 1405.0,
+        };
+        let front_distance = 119.6;
+
+        let right_hit_point = Vector {
+            x: 1086.0,
+            y: 1585.0,
+        };
+        let right_distance = 134.8;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 7,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 6,
+                y: 7,
+                direction: WallDirection::Horizontal,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 6,
+                y: 8,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+        assert_close2(result_orientation.position, actual_mouse.position);
+    }
+
+    #[test]
+    fn v_v2() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1150.0,
+                y: 1506.0,
+            },
+            direction: Direction::from(5.49),
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1156.9972,
+                y: 1506.0,
+            },
+            direction: Direction::from(5.490993),
+        };
+
+        let left_hit_point = Vector {
+            x: 1254.0,
+            y: 1601.69,
+        };
+        let left_distance = 136.26;
+
+        let front_hit_point = Vector {
+            x: 1254.0,
+            y: 1407.67,
+        };
+        let front_distance = 138.12;
+
+        let right_hit_point = Vector {
+            x: 1086.0,
+            y: 1435.96,
+        };
+        let right_distance = 99.73;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 8,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 7,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 6,
+                y: 7,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: right_hit_point,
+            distance: right_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let result_orientation = update_orientation_from_distances(
+            approx_orientation,
+            Some(front_result),
+            Some(front_distance),
+            Some(left_result),
+            Some(left_distance),
+            Some(right_result),
+            Some(right_distance),
+        );
+
+        assert_close2(result_orientation.position, actual_mouse.position);
+        assert_close(
+            f32::from(result_orientation.direction),
+            f32::from(actual_mouse.direction),
+        );
+    }
+
+    #[test]
+    fn v_v3() {
+        let approx_orientation = Orientation {
+            position: Vector {
+                x: 1150.0,
+                y: 1506.0,
+            },
+            direction: DIRECTION_PI - Direction::from(5.49),
+        };
+
+        let actual_mouse = Orientation {
+            position: Vector {
+                x: 1156.9972,
+                y: 1506.0,
+            },
+            direction: DIRECTION_PI - Direction::from(5.490993),
+        };
+
+        let left_hit_point = Vector {
+            x: 1254.0,
+            y: 1601.69,
+        };
+        let left_distance = 136.26;
+
+        let front_hit_point = Vector {
+            x: 1254.0,
+            y: 1407.67,
+        };
+        let front_distance = 138.12;
+
+        let right_hit_point = Vector {
+            x: 1086.0,
+            y: 1435.96,
+        };
+        let right_distance = 99.73;
+
+        let left_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 8,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: left_hit_point,
+            distance: left_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let front_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 7,
+                y: 7,
+                direction: WallDirection::Vertical,
+            }),
+            hit_point: front_hit_point,
+            distance: front_distance,
+            direction: WallDirection::Vertical,
+        };
+
+        let right_result = MazeProjectionResult {
+            maze_index: MazeIndex::Wall(WallIndex {
+                x: 6,
+                y: 7,
                 direction: WallDirection::Vertical,
             }),
             hit_point: right_hit_point,

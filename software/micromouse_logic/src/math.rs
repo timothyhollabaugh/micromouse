@@ -8,6 +8,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::MechanicalConfig;
+use core::ops::Neg;
 
 /// A 2d vector
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -269,6 +270,14 @@ impl core::ops::Div<f32> for Direction {
 
     fn div(self, rhs: f32) -> Self::Output {
         Direction::from(self.0 / rhs)
+    }
+}
+
+impl core::ops::Neg for Direction {
+    type Output = Direction;
+
+    fn neg(self) -> Self::Output {
+        Direction::from(2.0 * PI - self.0)
     }
 }
 
