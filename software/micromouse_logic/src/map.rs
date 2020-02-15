@@ -244,9 +244,6 @@ impl Map {
             direction: DIRECTION_0,
         });
 
-        self.delta_position = orientation.position - self.orientation.position;
-        self.orientation = orientation;
-
         let debug = MapDebug {
             maze: self.maze.clone(),
             front_result,
@@ -259,6 +256,9 @@ impl Map {
             front_distance,
             right_distance,
         };
+
+        self.delta_position = orientation.position - self.orientation.position;
+        self.orientation = orientation;
 
         (self.orientation, debug)
     }
