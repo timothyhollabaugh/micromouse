@@ -154,10 +154,6 @@ impl Simulation {
             .mm_to_ticks(right_wheel_speed * (config.millis_per_step as f32))
             as i32;
 
-        self.left_encoder += delta_left_wheel;
-        self.right_encoder += delta_right_wheel;
-        self.time += config.millis_per_step;
-
         let left_accel = (left_wheel_speed - self.last_left_ground_speed)
             / config.millis_per_step as f32;
         let right_accel = (right_wheel_speed - self.last_right_ground_speed)
@@ -187,12 +183,6 @@ impl Simulation {
             .mm_to_ticks(right_ground_speed * (config.millis_per_step as f32))
             as i32;
 
-        self.orientation = self.orientation.update_from_encoders(
-            &config.mouse.mechanical,
-            delta_left_ground,
-            delta_right_ground,
-        );
-
         // Collect debug info from this run
         let debug = SimulationDebug {
             mouse: mouse_debug,
@@ -214,8 +204,17 @@ impl Simulation {
             config: config.clone(),
         };
 
+        // Update for next run
+        self.time += config.millis_per_step;
+        self.left_encoder += delta_left_wheel;
+        self.right_encoder += delta_right_wheel;
         self.last_left_ground_speed = left_ground_speed;
         self.last_right_ground_speed = right_ground_speed;
+        self.orientation = self.orientation.update_from_encoders(
+            &config.mouse.mechanical,
+            delta_left_ground,
+            delta_right_ground,
+        );
 
         debug
     }
