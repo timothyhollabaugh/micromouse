@@ -25,6 +25,7 @@ pub struct MapDebug {
     pub front_result: Option<MazeProjectionResult>,
     pub left_result: Option<MazeProjectionResult>,
     pub right_result: Option<MazeProjectionResult>,
+    pub delta_position: Vector,
     pub approx_sensor_orientation: Orientation,
     pub left_distance: Option<f32>,
     pub front_distance: Option<f32>,
@@ -78,6 +79,7 @@ fn cleanup_distance_reading(
 
 pub struct Map {
     orientation: Orientation,
+    delta_position: Vector,
     maze: Maze,
     left_encoder: i32,
     right_encoder: i32,
@@ -134,6 +136,7 @@ impl Map {
 
         Map {
             orientation,
+            delta_position: Vector { x: 0.0, y: 0.0 },
             left_encoder,
             right_encoder,
             maze,
@@ -223,7 +226,7 @@ impl Map {
         });
 
         let adjusted_orientation = update_orientation_from_distances(
-            self.orientation,
+            self.delta_position,
             approx_sensor_orientation,
             front_result,
             front_distance,
@@ -233,7 +236,7 @@ impl Map {
             right_distance,
         );
 
-        self.orientation = adjusted_orientation.offset(Orientation {
+        let orientation = adjusted_orientation.offset(Orientation {
             position: Vector {
                 x: -mech.sensor_center_offset,
                 y: 0.0,
@@ -241,11 +244,15 @@ impl Map {
             direction: DIRECTION_0,
         });
 
+        self.delta_position = orientation.position - self.orientation.position;
+        self.orientation = orientation;
+
         let debug = MapDebug {
             maze: self.maze.clone(),
             front_result,
             left_result,
             right_result,
+            delta_position: self.delta_position,
             approx_sensor_orientation,
             adjusted_orientation,
             left_distance,
@@ -258,7 +265,7 @@ impl Map {
 }
 
 fn h_h_direction(
-    last_orientation: Orientation,
+    delta_position: Vector,
     approx_orientation: Orientation,
     left_wall: f32,
     right_wall: f32,
@@ -273,22 +280,22 @@ fn h_h_direction(
         cos_theta = -1.0
     }
 
-    let mut direction = Direction::from(F32Ext::acos(cos_theta));
+    let direction = Direction::from(F32Ext::acos(cos_theta));
 
-    let approx_direction = if approx_orientation.direction == DIRECTION_0
-        || approx_orientation.direction == DIRECTION_PI
-    {
-        (approx_orientation.position - last_orientation.position).direction()
+    let direction = if delta_position.y > 0.0 {
+        direction
+    } else if delta_position.y < 0.0 {
+        -direction
     } else {
-        approx_orientation.direction
-    };
-
-    if approx_direction == DIRECTION_0 {
-        direction = DIRECTION_0;
-    } else if approx_direction == DIRECTION_PI {
-        direction = DIRECTION_PI;
-    } else if approx_orientation.direction > DIRECTION_PI {
-        direction = -direction
+        if approx_orientation.direction.close(&DIRECTION_0) {
+            DIRECTION_0
+        } else if approx_orientation.direction.close(&DIRECTION_PI) {
+            DIRECTION_PI
+        } else if approx_orientation.direction > DIRECTION_PI {
+            -direction
+        } else {
+            direction
+        }
     };
 
     (cos_theta, direction)
@@ -311,7 +318,7 @@ mod test_h_h_direction {
         };
 
         let (cos_theta, direction) = h_h_direction(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             174.0,
             6.0,
@@ -331,7 +338,7 @@ mod test_h_h_direction {
         };
 
         let (cos_theta, direction) = h_h_direction(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             174.0,
             6.0,
@@ -345,24 +352,15 @@ mod test_h_h_direction {
 
     #[test]
     fn zero_approx_direction() {
-        let last_orientation = Orientation {
-            position: Vector { x: 85.0, y: 89.0 },
-            direction: DIRECTION_0,
-        };
+        let delta_position = Vector { x: 5.0, y: 1.0 };
 
         let approx_orientation = Orientation {
             position: Vector { x: 90.0, y: 90.0 },
             direction: DIRECTION_0,
         };
 
-        let (cos_theta, direction) = h_h_direction(
-            last_orientation,
-            approx_orientation,
-            174.0,
-            6.0,
-            90.92,
-            90.92,
-        );
+        let (cos_theta, direction) =
+            h_h_direction(delta_position, approx_orientation, 174.0, 6.0, 90.92, 90.92);
 
         assert_close(f32::from(direction), f32::from(0.39267397));
         assert_close(cos_theta, 0.92388);
@@ -370,24 +368,15 @@ mod test_h_h_direction {
 
     #[test]
     fn pi_approx_direction() {
-        let last_orientation = Orientation {
-            position: Vector { x: 85.0, y: 89.0 },
-            direction: DIRECTION_PI,
-        };
+        let delta_position = Vector { x: 5.0, y: 1.0 };
 
         let approx_orientation = Orientation {
             position: Vector { x: 90.0, y: 90.0 },
             direction: DIRECTION_PI,
         };
 
-        let (cos_theta, direction) = h_h_direction(
-            last_orientation,
-            approx_orientation,
-            174.0,
-            6.0,
-            90.92,
-            90.92,
-        );
+        let (cos_theta, direction) =
+            h_h_direction(delta_position, approx_orientation, 174.0, 6.0, 90.92, 90.92);
 
         assert_close(f32::from(direction), f32::from(0.39267397));
         assert_close(cos_theta, 0.92388);
@@ -395,7 +384,7 @@ mod test_h_h_direction {
 }
 
 fn v_v_direction(
-    last_orientation: Orientation,
+    delta_position: Vector,
     approx_orientation: Orientation,
     left_wall: f32,
     right_wall: f32,
@@ -410,25 +399,25 @@ fn v_v_direction(
         sin_theta = -1.0
     }
 
-    let mut direction = Direction::from(F32Ext::asin(sin_theta));
+    let direction = Direction::from(F32Ext::asin(sin_theta));
 
-    let approx_direction = if approx_orientation.direction == DIRECTION_PI_2
-        || approx_orientation.direction == DIRECTION_3_PI_2
-    {
-        (approx_orientation.position - last_orientation.position).direction()
+    let direction = if delta_position.x > 0.0 {
+        direction
+    } else if delta_position.x < 0.0 {
+        DIRECTION_PI - direction
     } else {
-        approx_orientation.direction
+        if approx_orientation.direction.close(&DIRECTION_PI_2) {
+            DIRECTION_PI_2
+        } else if approx_orientation.direction.close(&DIRECTION_3_PI_2) {
+            DIRECTION_3_PI_2
+        } else if approx_orientation.direction > DIRECTION_PI_2
+            && approx_orientation.direction < DIRECTION_3_PI_2
+        {
+            DIRECTION_PI - direction
+        } else {
+            direction
+        }
     };
-
-    if approx_direction == DIRECTION_PI_2 {
-        direction = DIRECTION_PI_2;
-    } else if approx_direction == DIRECTION_3_PI_2 {
-        direction = DIRECTION_3_PI_2;
-    } else if approx_orientation.direction > DIRECTION_PI_2
-        && approx_orientation.direction < DIRECTION_3_PI_2
-    {
-        direction = DIRECTION_PI - direction;
-    }
 
     (sin_theta, direction)
 }
@@ -453,7 +442,7 @@ mod test_v_v_direction {
         };
 
         let (sin_theta, direction) = v_v_direction(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             6.0,
             174.0,
@@ -473,7 +462,7 @@ mod test_v_v_direction {
         };
 
         let (sin_theta, direction) = v_v_direction(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             6.0,
             174.0,
@@ -487,24 +476,15 @@ mod test_v_v_direction {
 
     #[test]
     fn pi_over_two_approx_direction() {
-        let last_orientation = Orientation {
-            position: Vector { x: 89.0, y: 85.0 },
-            direction: DIRECTION_PI_2,
-        };
+        let delta_position = Vector { x: 1.0, y: 5.0 };
 
         let approx_orientation = Orientation {
             position: Vector { x: 90.0, y: 90.0 },
             direction: DIRECTION_PI_2,
         };
 
-        let (sin_theta, direction) = v_v_direction(
-            last_orientation,
-            approx_orientation,
-            6.0,
-            174.0,
-            90.92,
-            90.92,
-        );
+        let (sin_theta, direction) =
+            v_v_direction(delta_position, approx_orientation, 6.0, 174.0, 90.92, 90.92);
 
         assert_close(f32::from(direction), f32::from(1.1781225));
         assert_close(sin_theta, 0.923889);
@@ -512,24 +492,15 @@ mod test_v_v_direction {
 
     #[test]
     fn three_pi_over_two_approx_direction() {
-        let last_orientation = Orientation {
-            position: Vector { x: 89.0, y: 85.0 },
-            direction: DIRECTION_3_PI_2,
-        };
+        let delta_position = Vector { x: 1.0, y: 5.0 };
 
         let approx_orientation = Orientation {
             position: Vector { x: 90.0, y: 90.0 },
             direction: DIRECTION_3_PI_2,
         };
 
-        let (sin_theta, direction) = v_v_direction(
-            last_orientation,
-            approx_orientation,
-            6.0,
-            174.0,
-            90.92,
-            90.92,
-        );
+        let (sin_theta, direction) =
+            v_v_direction(delta_position, approx_orientation, 6.0, 174.0, 90.92, 90.92);
 
         assert_close(f32::from(direction), f32::from(1.1781225));
         assert_close(sin_theta, 0.923889);
@@ -537,7 +508,7 @@ mod test_v_v_direction {
 }
 
 fn update_orientation_from_distances(
-    last_orientation: Orientation,
+    delta_position: Vector,
     approx_orientation: Orientation,
     front_result: Option<MazeProjectionResult>,
     front_distance: Option<f32>,
@@ -561,7 +532,7 @@ fn update_orientation_from_distances(
             && right_result.direction == WallDirection::Horizontal =>
         {
             let (cos_theta, direction) = h_h_direction(
-                last_orientation,
+                delta_position,
                 approx_orientation,
                 left_result.hit_point.y,
                 right_result.hit_point.y,
@@ -587,7 +558,7 @@ fn update_orientation_from_distances(
             && right_result.direction == WallDirection::Horizontal =>
         {
             let (cos_theta, direction) = h_h_direction(
-                last_orientation,
+                delta_position,
                 approx_orientation,
                 left_result.hit_point.y,
                 right_result.hit_point.y,
@@ -614,7 +585,7 @@ fn update_orientation_from_distances(
             && right_result.direction == WallDirection::Vertical =>
         {
             let (sin_theta, direction) = v_v_direction(
-                last_orientation,
+                delta_position,
                 approx_orientation,
                 left_result.hit_point.x,
                 right_result.hit_point.x,
@@ -640,7 +611,7 @@ fn update_orientation_from_distances(
             && right_result.direction == WallDirection::Vertical =>
         {
             let (sin_theta, direction) = v_v_direction(
-                last_orientation,
+                delta_position,
                 approx_orientation,
                 left_result.hit_point.x,
                 right_result.hit_point.x,
@@ -738,7 +709,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -825,7 +796,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -912,7 +883,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -931,10 +902,7 @@ mod test_update_orientation_from_distance {
 
     #[test]
     fn hvh4() {
-        let last_orientation = Orientation {
-            position: Vector { x: 85.0, y: 89.0 },
-            direction: DIRECTION_0,
-        };
+        let delta_position = Vector { x: 5.0, y: 1.0 };
 
         let approx_orientation = Orientation {
             position: Vector { x: 90.0, y: 90.0 },
@@ -998,7 +966,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            last_orientation,
+            delta_position,
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1079,7 +1047,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1166,7 +1134,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1253,7 +1221,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1334,7 +1302,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1421,7 +1389,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1508,7 +1476,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1595,7 +1563,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1682,7 +1650,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),
@@ -1769,7 +1737,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_orientation_from_distances(
-            approx_orientation,
+            Vector { x: 0.0, y: 0.0 },
             approx_orientation,
             Some(front_result),
             Some(front_distance),

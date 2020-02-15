@@ -114,7 +114,7 @@ function Node(path, f) {
                     if (isNaN(data)) {
                         value.innerText = 'NaN';
                     } else {
-                        value.innerText = math.format(data, {precision: 4, upperExp: 4});
+                        value.innerText = math.format(data, {precision: 5, upperExp: 4});
                     }
                 } else if (typeof data === 'string') {
                     value.innerText = data;

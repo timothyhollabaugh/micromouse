@@ -209,6 +209,13 @@ impl Direction {
             y: F32Ext::sin(self.0),
         }
     }
+
+    /// Checks if this direction is 'close enough' to the other direction.
+    ///
+    /// Accounts for floating point errors
+    pub fn close(&self, other: &Direction) -> bool {
+        (self.0 - other.0).abs() < 0.0005
+    }
 }
 
 impl From<f32> for Direction {
