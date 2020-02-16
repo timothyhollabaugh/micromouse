@@ -19,6 +19,7 @@ pub struct RemoteDebug {
     mouse: MouseDebug,
     delta_time_msg: u32,
     config: RemoteConfig,
+    bytes: usize,
 }
 
 pub struct Remote {
@@ -49,6 +50,7 @@ impl Remote {
             self.buf.push(byte);
             match postcard::take_from_bytes::<DebugPacket>(&self.buf) {
                 Ok((packet, remaining)) => {
+                    self.debug.bytes = self.buf.len() - remaining.len();
                     self.buf = Vec::from(remaining.clone());
 
                     self.debug.mouse.time = packet.time;
@@ -62,12 +64,8 @@ impl Remote {
                                 self.debug.mouse.orientation = orientation
                             }
                             DebugMsg::Map(map) => self.debug.mouse.map = map,
-                            DebugMsg::Motion(motion) => {
-                                self.debug.mouse.motion = motion
-                            }
-                            DebugMsg::Path(path) => {
-                                self.debug.mouse.path = path
-                            }
+                            DebugMsg::Motion(motion) => self.debug.mouse.motion = motion,
+                            DebugMsg::Path(path) => self.debug.mouse.path = path,
                         }
                     }
 

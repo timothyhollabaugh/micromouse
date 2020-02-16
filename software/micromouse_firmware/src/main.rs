@@ -324,6 +324,12 @@ fn main() -> ! {
     let p = stm32f4::stm32::Peripherals::take().unwrap();
     let _cp = stm32f405::CorePeripherals::take().unwrap();
 
+    // Enable pll on mco2
+    //p.RCC.ahb1enr.write(|w| w.gpiocen().set_bit());
+    //p.RCC.cfgr.modify(|_, w| w.mco2().sysclk().mco2pre().div5());
+    //p.GPIOC.moder.write(|w| w.moder9().alternate());
+    //p.GPIOC.afrh.write(|w| w.afrh9().af0());
+
     // Init non-hal things
     let mut time = Time::setup(&p.RCC, p.TIM1);
 
@@ -341,7 +347,13 @@ fn main() -> ! {
 
     // Init the hal things
     let rcc = p.RCC.constrain();
-    let clocks = rcc.cfgr.freeze();
+    let clocks = rcc
+        .cfgr
+        .hclk(168.mhz())
+        .sysclk(168.mhz())
+        .pclk2(84.mhz())
+        .pclk1(42.mhz())
+        .freeze();
 
     let gpioa = p.GPIOA.split();
     let gpiob = p.GPIOB.split();
@@ -373,7 +385,7 @@ fn main() -> ! {
 
         let i2c = stm32f4::i2c::I2c::i2c1(p.I2C1, (scl, sda), 100.khz(), clocks);
 
-        time.delay(10000);
+        time.delay(1000);
 
         let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
         distance.init_private_registers();

@@ -70,18 +70,21 @@ impl Uart {
 
         // set buadrate
 
-        // 9600 baud
+        // 9600 baud (16MHz APB2)
         //uart.brr.write(|w| unsafe { w.bits(0x683) });
 
-        // 115200 baud
+        // 115200 baud (16MHz APB2)
         //uart.brr.write(|w| unsafe { w.bits(0x008b) });
 
-        // 230400 baud
-        uart.brr.write(|w| unsafe { w.bits(0x0045) });
+        // 230400 baud (16MHz APB2)
+        //uart.brr.write(|w| unsafe { w.bits(0x0045) });
 
-        // 2M baud doesn't seem to work
+        // 2M baud doesn't seem to work (16MHz APB2)
         //uart.cr1.write(|w| w.over8().set_bit());
         //uart.brr.write(|w| unsafe { w.bits(0x0010) });
+
+        // 230400 baud (84MHz APB2)
+        uart.brr.write(|w| unsafe { w.bits(0x016d) });
 
         // enable rx and tx
         uart.cr1.write(|w| {
