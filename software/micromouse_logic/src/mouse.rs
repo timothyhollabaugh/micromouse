@@ -21,7 +21,17 @@ use crate::path::PathDebug;
 use crate::path::{Path, Segment};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct HardwareDebug {
+    pub left_encoder: i32,
+    pub right_encoder: i32,
+    pub left_distance: u8,
+    pub front_distance: u8,
+    pub right_distance: u8,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MouseDebug {
+    pub hardware: HardwareDebug,
     pub orientation: Orientation,
     pub path: PathDebug,
     pub map: MapDebug,
@@ -254,7 +264,16 @@ impl Mouse {
             target_curvature,
         );
 
+        let hardware_debug = HardwareDebug {
+            left_encoder,
+            right_encoder,
+            left_distance,
+            front_distance,
+            right_distance,
+        };
+
         let debug = MouseDebug {
+            hardware: hardware_debug,
             orientation,
             path: path_debug,
             map: map_debug,
