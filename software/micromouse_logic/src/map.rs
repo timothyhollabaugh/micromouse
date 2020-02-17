@@ -8,10 +8,31 @@ use crate::math::{
     DIRECTION_PI_2,
 };
 
+use heapless::Vec;
+use typenum::U8;
+
 use crate::config::MechanicalConfig;
 use crate::maze::{
     Maze, MazeConfig, MazeIndex, MazeProjectionResult, Wall, WallDirection,
 };
+use itertools::Itertools;
+
+pub struct DistanceFilter {
+    values: [Option<f32>; 8],
+}
+
+impl DistanceFilter {
+    pub fn new() -> DistanceFilter {
+        DistanceFilter { values: [None; 8] }
+    }
+
+    pub fn filter(&mut self, value: Option<f32>) -> f32 {
+        self.values.rotate_right(1);
+        self.values[0] = value;
+        let count = self.values.iter().flatten().count() as f32;
+        self.values.iter().flatten().sum1().unwrap_or(0.0) / count
+    }
+}
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
@@ -52,6 +73,7 @@ fn cleanup_distance_reading(
     offset: f32,
     limit: f32,
     tolerance: f32,
+    filter: &mut DistanceFilter,
     distance: u8,
     result: Option<MazeProjectionResult>,
 ) -> Option<f32> {
@@ -82,6 +104,9 @@ pub struct Map {
     maze: Maze,
     left_encoder: i32,
     right_encoder: i32,
+    left_filter: DistanceFilter,
+    front_filter: DistanceFilter,
+    right_filter: DistanceFilter,
 }
 
 impl Map {
@@ -138,6 +163,9 @@ impl Map {
             delta_position: Vector { x: 0.0, y: 0.0 },
             left_encoder,
             right_encoder,
+            left_filter: DistanceFilter::new(),
+            front_filter: DistanceFilter::new(),
+            right_filter: DistanceFilter::new(),
             maze,
         }
     }
@@ -196,6 +224,7 @@ impl Map {
             mech.front_sensor_offset,
             mech.front_sensor_limit as f32,
             maze_config.cell_width / 2.0,
+            &mut self.front_filter,
             front_distance,
             front_result,
         );
@@ -204,6 +233,7 @@ impl Map {
             mech.left_sensor_offset,
             mech.left_sensor_limit as f32,
             maze_config.cell_width / 2.0,
+            &mut self.left_filter,
             left_distance,
             left_result,
         );
@@ -212,6 +242,7 @@ impl Map {
             mech.right_sensor_offset,
             mech.right_sensor_limit as f32,
             maze_config.cell_width / 2.0,
+            &mut self.right_filter,
             right_distance,
             right_result,
         );
