@@ -208,14 +208,25 @@ where
     let mut last_packet_time = last_time;
     let mut packet_count = 0;
 
+    let mut sensor_updating = 0;
+
     loop {
         let now: u32 = time.now();
 
-        /*
-        front_distance.update();
-        right_distance.update();
-        left_distance.update();
-        */
+        match sensor_updating {
+            0 => {
+                front_distance.update();
+                sensor_updating += 1;
+            }
+            1 => {
+                right_distance.update();
+                sensor_updating += 1;
+            }
+            _ => {
+                left_distance.update();
+                sensor_updating = 0;
+            }
+        }
 
         if let Ok(byte) = uart.read_byte() {
             blue_led.set_high().ok();
@@ -266,8 +277,9 @@ where
 
                 if debugging && uart.tx_len() == Ok(0) {
                     let mut msgs = Vec::new();
-                    msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
-                    msgs.push(DebugMsg::Path(debug.path.clone())).ok();
+                    //msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
+                    //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
+                    //msgs.push(DebugMsg::Map(debug.map.clone())).ok();
 
                     //if step_count % 2 == 0 {
                     msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
