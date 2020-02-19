@@ -17,8 +17,8 @@ use crate::math::Direction;
 use crate::math::Orientation;
 use crate::math::Vector;
 
-use crate::bezier::Bezier3;
 use crate::bezier::Curve;
+use crate::bezier::{Bezier3, Bezier5};
 use pid_control::{Controller, PIDController};
 
 /**
@@ -34,7 +34,7 @@ use pid_control::{Controller, PIDController};
  */
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Segment {
-    bezier: Bezier3,
+    bezier: Bezier5,
 }
 
 impl Segment {
@@ -55,12 +55,16 @@ impl Segment {
         end: Direction,
         radius: f32,
     ) -> Segment {
+        let start_v = start.into_unit_vector();
+        let end_v = end.into_unit_vector();
         Segment {
-            bezier: Bezier3 {
-                start: center - radius * start.into_unit_vector(),
-                ctrl0: center,
-                ctrl1: center,
-                end: center + radius * end.into_unit_vector(),
+            bezier: Bezier5 {
+                start: center - radius * start_v,
+                ctrl0: center - (radius / 2.0) * start_v,
+                ctrl1: center - (radius / 3.0) * start_v,
+                ctrl2: center + (radius / 3.0) * end_v,
+                ctrl3: center + (radius / 2.0) * end_v,
+                end: center + radius * end_v,
             },
         }
     }
@@ -69,10 +73,12 @@ impl Segment {
     pub fn line(start: Vector, end: Vector) -> Segment {
         let mid = (end - start) * 0.5 + start;
         Segment {
-            bezier: Bezier3 {
+            bezier: Bezier5 {
                 start,
                 ctrl0: mid,
                 ctrl1: mid,
+                ctrl2: mid,
+                ctrl3: mid,
                 end,
             },
         }

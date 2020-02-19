@@ -34,8 +34,7 @@ pub trait Curve {
 
         let d1_magnitude = d1.magnitude();
 
-        (d1.x * d2.y - d2.x * d1.y)
-            / (d1_magnitude * d1_magnitude * d1_magnitude)
+        (d1.x * d2.y - d2.x * d1.y) / (d1_magnitude * d1_magnitude * d1_magnitude)
     }
 
     /// The closest point on the curve
@@ -617,5 +616,83 @@ mod bezier3_tests {
     #[test]
     fn end_curvature() {
         assert_close(B.curvature(1.0), 1.3333333);
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Bezier4 {
+    pub start: Vector,
+    pub ctrl0: Vector,
+    pub ctrl1: Vector,
+    pub ctrl2: Vector,
+    pub end: Vector,
+}
+
+impl Curve for Bezier4 {
+    type Derivative = Bezier3;
+
+    fn at(&self, t: f32) -> Vector {
+        Vector {
+            x: self.start.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t)
+                + 4.0 * self.ctrl0.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * t
+                + 6.0 * self.ctrl1.x * (1.0 - t) * (1.0 - t) * t * t
+                + 4.0 * self.ctrl2.x * (1.0 - t) * t * t * t
+                + self.end.x * t * t * t * t,
+            y: self.start.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t)
+                + 4.0 * self.ctrl0.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * t
+                + 6.0 * self.ctrl1.y * (1.0 - t) * (1.0 - t) * t * t
+                + 4.0 * self.ctrl2.y * (1.0 - t) * t * t * t
+                + self.end.y * t * t * t * t,
+        }
+    }
+
+    fn derivative(&self) -> Self::Derivative {
+        Bezier3 {
+            start: 4.0 * (self.ctrl0 - self.start),
+            ctrl0: 4.0 * (self.ctrl1 - self.ctrl0),
+            ctrl1: 4.0 * (self.ctrl2 - self.ctrl1),
+            end: 4.0 * (self.end - self.ctrl2),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Bezier5 {
+    pub start: Vector,
+    pub ctrl0: Vector,
+    pub ctrl1: Vector,
+    pub ctrl2: Vector,
+    pub ctrl3: Vector,
+    pub end: Vector,
+}
+
+impl Curve for Bezier5 {
+    type Derivative = Bezier4;
+
+    fn at(&self, t: f32) -> Vector {
+        Vector {
+            x: self.start.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t)
+                + 5.0 * self.ctrl0.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * t
+                + 10.0 * self.ctrl1.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * t * t
+                + 10.0 * self.ctrl2.x * (1.0 - t) * (1.0 - t) * t * t * t
+                + 5.0 * self.ctrl3.x * (1.0 - t) * t * t * t * t
+                + self.end.x * t * t * t * t * t,
+            y: self.start.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t)
+                + 5.0 * self.ctrl0.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * t
+                + 10.0 * self.ctrl1.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * t * t
+                + 10.0 * self.ctrl2.y * (1.0 - t) * (1.0 - t) * t * t * t
+                + 5.0 * self.ctrl3.y * (1.0 - t) * t * t * t * t
+                + self.end.y * t * t * t * t * t,
+        }
+    }
+
+    fn derivative(&self) -> Self::Derivative {
+        Bezier4 {
+            start: 5.0 * (self.ctrl0 - self.start),
+            ctrl0: 5.0 * (self.ctrl1 - self.ctrl0),
+            ctrl1: 5.0 * (self.ctrl2 - self.ctrl1),
+            ctrl2: 5.0 * (self.ctrl3 - self.ctrl2),
+            end: 5.0 * (self.end - self.ctrl3),
+        }
     }
 }

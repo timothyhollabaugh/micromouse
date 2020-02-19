@@ -95,8 +95,8 @@ impl Mouse {
             };
 
             let width = 3.0 * 180.0;
-            let height = 3.0 * 180.0;
-            let radius = 180.0;
+            let height = 2.0 * 180.0;
+            let radius = 90.0;
 
             /*
             self.path
@@ -110,63 +110,64 @@ impl Mouse {
                 .ok();
                 */
 
-            self.path
-                .add_segments(&[
-                    Segment::corner(start, DIRECTION_3_PI_2, DIRECTION_0, radius),
-                    Segment::corner(
-                        Vector {
-                            x: start.x,
-                            y: start.y + 2.0 * 180.0,
-                        },
-                        DIRECTION_PI,
-                        DIRECTION_3_PI_2,
-                        radius,
-                    ),
-                    Segment::line(
-                        Vector {
-                            x: start.x + width - radius,
-                            y: start.y + 2.0 * 180.0,
-                        },
-                        Vector {
-                            x: start.x + radius,
-                            y: start.y + 2.0 * 180.0,
-                        },
-                    ),
-                    Segment::corner(
-                        Vector {
-                            x: start.x + width,
-                            y: start.y + 2.0 * 180.0,
-                        },
-                        DIRECTION_PI_2,
-                        DIRECTION_PI,
-                        radius,
-                    ),
-                    Segment::corner(
-                        Vector {
-                            x: start.x + width,
-                            y: start.y,
-                        },
-                        DIRECTION_0,
-                        DIRECTION_PI_2,
-                        radius,
-                    ),
-                    Segment::line(
-                        Vector {
-                            x: start.x + radius,
-                            y: start.y,
-                        },
-                        Vector {
-                            x: start.x + width - radius,
-                            y: start.y,
-                        },
-                    ),
-                ])
-                .ok();
-
             /*
             self.path
                 .add_segments(&[
                     Segment::corner(start, DIRECTION_3_PI_2, DIRECTION_0, radius),
+                    Segment::corner(
+                        Vector {
+                            x: start.x,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                        DIRECTION_PI,
+                        DIRECTION_3_PI_2,
+                        radius,
+                    ),
+                    Segment::line(
+                        Vector {
+                            x: start.x + width - radius,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                        Vector {
+                            x: start.x + radius,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                    ),
+                    Segment::corner(
+                        Vector {
+                            x: start.x + width,
+                            y: start.y + 2.0 * 180.0,
+                        },
+                        DIRECTION_PI_2,
+                        DIRECTION_PI,
+                        radius,
+                    ),
+                    Segment::corner(
+                        Vector {
+                            x: start.x + width,
+                            y: start.y,
+                        },
+                        DIRECTION_0,
+                        DIRECTION_PI_2,
+                        radius,
+                    ),
+                    Segment::line(
+                        Vector {
+                            x: start.x + radius,
+                            y: start.y,
+                        },
+                        Vector {
+                            x: start.x + width - radius,
+                            y: start.y,
+                        },
+                    ),
+                ])
+                .ok();
+            */
+
+            self.path
+                .add_segments(&[
+                    Segment::corner(start, DIRECTION_3_PI_2, DIRECTION_0, radius),
                     Segment::line(
                         Vector {
                             x: start.x,
@@ -236,7 +237,6 @@ impl Mouse {
                     ),
                 ])
                 .ok();
-                */
         }
 
         let (orientation, map_debug) = self.map.update(

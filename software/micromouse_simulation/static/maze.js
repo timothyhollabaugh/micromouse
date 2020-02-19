@@ -228,8 +228,7 @@ function MazeUi(parent, state) {
 
         if (debug.mouse.path.path && debug.mouse.path.path.length > 0) {
             let path_string = debug.mouse.path.path.reduce(function(str, segment) {
-                let b = segment.bezier;
-                return str + "M " + b.start.x + " " + b.start.y + " C " + b.ctrl0.x + " " + b.ctrl0.y + " " + b.ctrl1.x + " " + b.ctrl1.y + " " + b.end.x + " " + b.end.y + " ";
+                return str + bezier6_path(segment.bezier);
             }, "");
 
             self.path.plot(path_string);
@@ -261,5 +260,33 @@ function MazeUi(parent, state) {
                 oldzoom = zoom;
             }
         }
+    }
+}
+
+function bezier6_path(b) {
+    let str = " M " + b.start.x + " " + b.start.y;
+    for (let n = 1; n < 10; n += 1) {
+        const t = n / 10;
+        const p = bezier6(b, t);
+        str = str + " L " + p.x + " " + p.y;
+    }
+    str = str + "L " + b.end.x + " " + b.end.y;
+    return str;
+}
+
+function bezier6(b, t) {
+    return {
+        'x': b.start.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t)
+            + 5.0 * b.ctrl0.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * t
+            + 10.0 * b.ctrl1.x * (1.0 - t) * (1.0 - t) * (1.0 - t) * t * t
+            + 10.0 * b.ctrl2.x * (1.0 - t) * (1.0 - t) * t * t * t
+            + 5.0 * b.ctrl3.x * (1.0 - t) * t * t * t * t
+            + b.end.x * t * t * t * t * t,
+        'y': b.start.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t)
+            + 5.0 * b.ctrl0.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * (1.0 - t) * t
+            + 10.0 * b.ctrl1.y * (1.0 - t) * (1.0 - t) * (1.0 - t) * t * t
+            + 10.0 * b.ctrl2.y * (1.0 - t) * (1.0 - t) * t * t * t
+            + 5.0 * b.ctrl3.y * (1.0 - t) * t * t * t * t
+            + b.end.y * t * t * t * t * t,
     }
 }
