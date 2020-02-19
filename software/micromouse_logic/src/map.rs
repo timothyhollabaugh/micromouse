@@ -41,7 +41,7 @@ pub struct MapConfig {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
-    pub maze: Maze,
+    //pub maze: Maze,
     pub front_result: Option<MazeProjectionResult>,
     pub left_result: Option<MazeProjectionResult>,
     pub right_result: Option<MazeProjectionResult>,
@@ -93,6 +93,17 @@ fn cleanup_distance_reading(
         }
     } else {
         None
+    };
+
+    // If we don't see a wall, but should
+    let distance = if let (None, Some(result)) = (distance, result) {
+        if result.distance < limit {
+            Some(limit)
+        } else {
+            None
+        }
+    } else {
+        distance
     };
 
     //filter.filter(distance)
@@ -285,7 +296,7 @@ impl Map {
         };
 
         let debug = MapDebug {
-            maze: self.maze.clone(),
+            //maze: self.maze.clone(),
             front_result,
             left_result,
             right_result,
