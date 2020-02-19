@@ -16,8 +16,8 @@ use crate::math::DIRECTION_PI_2;
 use crate::motion::Motion;
 use crate::motion::MotionConfig;
 use crate::motion::MotionDebug;
-use crate::path::PathConfig;
-use crate::path::PathDebug;
+use crate::path::{path_from_directions, MazeDirection, PathConfig};
+use crate::path::{MazeOrientation, MazePosition, PathDebug};
 use crate::path::{Path, Segment};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -89,6 +89,30 @@ impl Mouse {
     ) -> (i32, i32, MouseDebug) {
         let delta_time = time - self.last_time;
         if self.done {
+            let directions = [
+                MazeDirection::East,
+                MazeDirection::East,
+                MazeDirection::North,
+                MazeDirection::North,
+                MazeDirection::West,
+                MazeDirection::West,
+                MazeDirection::West,
+                MazeDirection::South,
+                MazeDirection::South,
+                MazeDirection::East,
+            ];
+
+            let starting_orientation = MazeOrientation {
+                position: MazePosition { x: 7, y: 6 },
+                direction: MazeDirection::East,
+            };
+
+            let path =
+                path_from_directions(&config.map.maze, starting_orientation, &directions);
+
+            self.path.add_segments(&path);
+
+            /*
             let start = Vector {
                 x: 6.5 * 180.0,
                 y: 6.5 * 180.0,
@@ -97,6 +121,7 @@ impl Mouse {
             let width = 3.0 * 180.0;
             let height = 2.0 * 180.0;
             let radius = 90.0;
+            */
 
             /*
             self.path
@@ -165,6 +190,7 @@ impl Mouse {
                 .ok();
             */
 
+            /*
             self.path
                 .add_segments(&[
                     Segment::corner(start, DIRECTION_3_PI_2, DIRECTION_0, radius),
@@ -237,6 +263,7 @@ impl Mouse {
                     ),
                 ])
                 .ok();
+            */
         }
 
         let (orientation, map_debug) = self.map.update(

@@ -13,13 +13,90 @@ use heapless::consts::U16;
 use heapless::Vec;
 use typenum::Unsigned;
 
-use crate::math::Direction;
 use crate::math::Orientation;
 use crate::math::Vector;
+use crate::math::{
+    Direction, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI, DIRECTION_PI_2,
+};
 
 use crate::bezier::Curve;
 use crate::bezier::{Bezier3, Bezier5};
+use crate::maze::MazeConfig;
 use pid_control::{Controller, PIDController};
+
+#[derive(Copy, Clone, PartialEq, Deserialize, Serialize)]
+pub enum MazeDirection {
+    North,
+    South,
+    East,
+    West,
+}
+
+impl MazeDirection {
+    pub fn into_direction(self) -> Direction {
+        match self {
+            MazeDirection::North => DIRECTION_PI_2,
+            MazeDirection::South => DIRECTION_3_PI_2,
+            MazeDirection::East => DIRECTION_0,
+            MazeDirection::West => DIRECTION_PI,
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Deserialize, Serialize)]
+pub struct MazePosition {
+    pub x: usize,
+    pub y: usize,
+}
+
+impl MazePosition {
+    pub fn into_vector(self, config: &MazeConfig) -> Vector {
+        Vector {
+            x: self.x as f32 * config.cell_width + config.cell_width / 2.0,
+            y: self.y as f32 * config.cell_width + config.cell_width / 2.0,
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Deserialize, Serialize)]
+pub struct MazeOrientation {
+    pub position: MazePosition,
+    pub direction: MazeDirection,
+}
+
+pub fn path_from_directions(
+    config: &MazeConfig,
+    mouse: MazeOrientation,
+    directions: &[MazeDirection],
+) -> PathBuf {
+    let mut out = Vec::new();
+
+    let mut current_orientation = mouse;
+
+    for direction in directions.iter().copied() {
+        let current_position = current_orientation.position.into_vector(config);
+        let current_direction = current_orientation.direction.into_direction();
+        let next_direction = direction.into_direction();
+
+        // Very dumb, but it should work.
+        let segment =
+            Segment::corner(current_position, current_direction, next_direction, 90.0);
+
+        out.push(segment);
+
+        current_orientation.direction = direction;
+        match direction {
+            MazeDirection::North => current_orientation.position.y += 1,
+            MazeDirection::South => current_orientation.position.y -= 1,
+            MazeDirection::East => current_orientation.position.x += 1,
+            MazeDirection::West => current_orientation.position.x -= 1,
+        }
+    }
+
+    out.reverse();
+
+    return out;
+}
 
 /**
  * A segment of a larger path
