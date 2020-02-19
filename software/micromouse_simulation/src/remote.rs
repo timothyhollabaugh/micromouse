@@ -60,6 +60,9 @@ impl Remote {
 
                     for msg in packet.msgs {
                         match msg {
+                            DebugMsg::Hardware(hardware) => {
+                                self.debug.mouse.hardware = hardware
+                            }
                             DebugMsg::Orientation(orientation) => {
                                 self.debug.mouse.orientation = orientation
                             }

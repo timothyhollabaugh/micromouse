@@ -151,6 +151,51 @@ where
     }
 }
 
+pub fn do_sensors<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
+    mut time: Time,
+    mut battery: Battery,
+    mut red_led: RL,
+    mut green_led: GL,
+    mut blue_led: BL,
+    mut orange_led: OL,
+    left_button: LB,
+    right_button: RB,
+    mut left_motor: LeftMotor,
+    mut right_motor: RightMotor,
+    left_encoder: LeftEncoder,
+    right_encoder: RightEncoder,
+    mut front_distance: VL6180x<I2C1>,
+    mut left_distance: VL6180x<I2C2>,
+    mut right_distance: VL6180x<I2C3>,
+    mut uart: Uart,
+) -> !
+where
+    RL: OutputPin + ToggleableOutputPin,
+    GL: OutputPin + ToggleableOutputPin,
+    BL: OutputPin + ToggleableOutputPin,
+    OL: OutputPin + ToggleableOutputPin,
+    LB: InputPin,
+    RB: InputPin,
+    I2C1: i2c::Read + i2c::Write + i2c::WriteRead,
+    I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
+    I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
+{
+    loop {
+        left_distance.update();
+        front_distance.update();
+        right_distance.update();
+        write!(
+            uart,
+            "{}\t {}\t {}\t {}\t {}\n",
+            left_encoder.count(),
+            right_encoder.count(),
+            left_distance.range(),
+            front_distance.range(),
+            right_distance.range(),
+        );
+    }
+}
+
 pub fn do_mouse<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
     mut time: Time,
     mut battery: Battery,
@@ -279,11 +324,12 @@ where
                     let mut msgs = Vec::new();
                     //msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
                     //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
-                    //msgs.push(DebugMsg::Map(debug.map.clone())).ok();
+                    msgs.push(DebugMsg::Map(debug.map.clone())).ok();
 
                     //if step_count % 2 == 0 {
                     msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
                         .ok();
+                    msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
                     //}
 
                     let packet = DebugPacket {
@@ -397,7 +443,7 @@ fn main() -> ! {
 
         let i2c = stm32f4::i2c::I2c::i2c1(p.I2C1, (scl, sda), 100.khz(), clocks);
 
-        time.delay(1000);
+        time.delay(10000);
 
         let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
         distance.init_private_registers();
@@ -461,6 +507,7 @@ fn main() -> ! {
     uart.add_bytes(b"\n\nstart").ok();
 
     do_mouse(
+        //do_sensors(
         time,
         battery,
         red_led,

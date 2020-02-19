@@ -6,7 +6,7 @@ use typenum::consts::U3;
 use crate::map::MapDebug;
 use crate::math::Orientation;
 use crate::motion::MotionDebug;
-use crate::mouse::MouseConfig;
+use crate::mouse::{HardwareDebug, MouseConfig};
 use crate::path::PathDebug;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,6 +22,7 @@ pub enum MouseMsg {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum DebugMsg {
+    Hardware(HardwareDebug),
     Orientation(Orientation),
     Path(PathDebug),
     Map(MapDebug),
