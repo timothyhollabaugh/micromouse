@@ -162,31 +162,33 @@ function MazeUi(parent, state) {
     function update(debug) {
         world.scale(px_per_mm * zoom, px_per_mm * zoom);
 
-        for (let i = 1; i < MAZE_WIDTH; i++) {
-            for (let j = 1; j < MAZE_HEIGHT; j++) {
-                if (i < MAZE_WIDTH) {
-                    let wall = debug.mouse.map.maze.horizontal_walls[i][j - 1];
-                    if (wall === "Closed") {
-                        self.horizontal_walls[i][j].fill(wall_closed_color);
-                    } else if (wall === "Open") {
-                        self.horizontal_walls[i][j].fill(wall_open_color);
-                    } else if (wall === "Unknown") {
-                        self.horizontal_walls[i][j].fill(wall_unknown_color);
-                    } else {
-                        self.horizontal_walls[i][j].fill(wall_err_color);
+        if (debug.mouse.maze) {
+            for (let i = 1; i < MAZE_WIDTH; i++) {
+                for (let j = 1; j < MAZE_HEIGHT; j++) {
+                    if (i < MAZE_WIDTH) {
+                        let wall = debug.mouse.map.maze.horizontal_walls[i][j - 1];
+                        if (wall === "Closed") {
+                            self.horizontal_walls[i][j].fill(wall_closed_color);
+                        } else if (wall === "Open") {
+                            self.horizontal_walls[i][j].fill(wall_open_color);
+                        } else if (wall === "Unknown") {
+                            self.horizontal_walls[i][j].fill(wall_unknown_color);
+                        } else {
+                            self.horizontal_walls[i][j].fill(wall_err_color);
+                        }
                     }
-                }
 
-                if (j < MAZE_HEIGHT) {
-                    let wall = debug.mouse.map.maze.vertical_walls[i - 1][j];
-                    if (wall === "Closed") {
-                        self.vertical_walls[i][j].fill(wall_closed_color);
-                    } else if (wall === "Open") {
-                        self.vertical_walls[i][j].fill(wall_open_color);
-                    } else if (wall === "Unknown") {
-                        self.vertical_walls[i][j].fill(wall_unknown_color);
-                    } else {
-                        self.vertical_walls[i][j].fill(wall_err_color);
+                    if (j < MAZE_HEIGHT) {
+                        let wall = debug.mouse.map.maze.vertical_walls[i - 1][j];
+                        if (wall === "Closed") {
+                            self.vertical_walls[i][j].fill(wall_closed_color);
+                        } else if (wall === "Open") {
+                            self.vertical_walls[i][j].fill(wall_open_color);
+                        } else if (wall === "Unknown") {
+                            self.vertical_walls[i][j].fill(wall_unknown_color);
+                        } else {
+                            self.vertical_walls[i][j].fill(wall_err_color);
+                        }
                     }
                 }
             }
