@@ -215,6 +215,11 @@ impl Direction {
     pub fn close(&self, other: &Direction) -> bool {
         (self.0 - other.0).abs() < 0.0005
     }
+
+    /// Checks if this direction is within some angle of the other direction
+    pub fn within(&self, other: &Direction, within: f32) -> bool {
+        (self.0 - other.0).abs() < within
+    }
 }
 
 impl From<f32> for Direction {

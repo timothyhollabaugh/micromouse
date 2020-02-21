@@ -426,10 +426,34 @@ fn main() -> ! {
     let _middle_button = gpioc.pc11.into_pull_up_input();
     let right_button = gpioc.pc12.into_pull_up_input();
 
+    time.delay(10000);
+
     orange_led.set_high().ok();
     blue_led.set_low().ok();
 
     uart.add_bytes(b"Initializing\n").ok();
+    let mut left_distance = {
+        let scl = gpiob.pb10.into_open_drain_output().into_alternate_af4();
+        let sda = gpiob.pb11.into_open_drain_output().into_alternate_af4();
+
+        let mut gpio0 = gpioc.pc2.into_open_drain_output();
+        gpio0.set_high().ok();
+
+        let mut gpio1 = gpioc.pc3.into_open_drain_output();
+        gpio1.set_high().ok();
+
+        let i2c = stm32f4::i2c::I2c::i2c2(p.I2C2, (scl, sda), 100.khz(), clocks);
+
+        time.delay(1000);
+
+        let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
+        distance.init_private_registers();
+        distance.init_default();
+        distance
+    };
+
+    orange_led.set_high().ok();
+    blue_led.set_high().ok();
 
     let mut front_distance = {
         let scl = gpiob.pb8.into_open_drain_output().into_alternate_af4();
@@ -452,29 +476,6 @@ fn main() -> ! {
     };
 
     orange_led.set_low().ok();
-    blue_led.set_high().ok();
-
-    let mut left_distance = {
-        let scl = gpiob.pb10.into_open_drain_output().into_alternate_af4();
-        let sda = gpiob.pb11.into_open_drain_output().into_alternate_af4();
-
-        let mut gpio0 = gpioc.pc2.into_open_drain_output();
-        gpio0.set_high().ok();
-
-        let mut gpio1 = gpioc.pc3.into_open_drain_output();
-        gpio1.set_high().ok();
-
-        let i2c = stm32f4::i2c::I2c::i2c2(p.I2C2, (scl, sda), 100.khz(), clocks);
-
-        time.delay(1000);
-
-        let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
-        distance.init_private_registers();
-        distance.init_default();
-        distance
-    };
-
-    orange_led.set_high().ok();
     blue_led.set_high().ok();
 
     let mut right_distance = {

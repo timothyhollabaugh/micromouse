@@ -1,3 +1,6 @@
+use core::f32::consts::FRAC_PI_2;
+use core::f32::consts::FRAC_PI_8;
+
 use libm::F32Ext;
 
 use serde::Deserialize;
@@ -320,6 +323,7 @@ impl Map {
         );
 
         let (maybe_x_sensor, maybe_y_sensor) = update_position_from_distances(
+            encoder_orientation.direction,
             front_result,
             front_distance,
             left_result,
@@ -456,6 +460,7 @@ mod test_v_v_direction {
 }
 
 fn update_position_from_distances(
+    direction: Direction,
     front_result: Option<MazeProjectionResult>,
     front_distance: Option<f32>,
     left_result: Option<MazeProjectionResult>,
@@ -475,7 +480,9 @@ fn update_position_from_distances(
             (Some(right_result), Some(right_distance)),
         ) if left_result.direction == WallDirection::Horizontal
             && front_result.direction == WallDirection::Vertical
-            && right_result.direction == WallDirection::Horizontal =>
+            && right_result.direction == WallDirection::Horizontal
+            && (direction.within(&DIRECTION_0, FRAC_PI_8)
+                || direction.within(&DIRECTION_PI, FRAC_PI_8)) =>
         {
             let cos_theta = h_h_direction(
                 left_result.hit_point.y,
@@ -496,7 +503,9 @@ fn update_position_from_distances(
             _,
             (Some(right_result), Some(right_distance)),
         ) if left_result.direction == WallDirection::Horizontal
-            && right_result.direction == WallDirection::Horizontal =>
+            && right_result.direction == WallDirection::Horizontal
+            && (direction.within(&DIRECTION_0, FRAC_PI_8)
+                || direction.within(&DIRECTION_PI, FRAC_PI_8)) =>
         {
             let cos_theta = h_h_direction(
                 left_result.hit_point.y,
@@ -518,7 +527,9 @@ fn update_position_from_distances(
             (Some(right_result), Some(right_distance)),
         ) if left_result.direction == WallDirection::Vertical
             && front_result.direction == WallDirection::Horizontal
-            && right_result.direction == WallDirection::Vertical =>
+            && right_result.direction == WallDirection::Vertical
+            && (direction.within(&DIRECTION_PI_2, FRAC_PI_8)
+                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_8)) =>
         {
             let sin_theta = v_v_direction(
                 left_result.hit_point.x,
@@ -539,7 +550,9 @@ fn update_position_from_distances(
             _,
             (Some(right_result), Some(right_distance)),
         ) if left_result.direction == WallDirection::Vertical
-            && right_result.direction == WallDirection::Vertical =>
+            && right_result.direction == WallDirection::Vertical
+            && (direction.within(&DIRECTION_PI_2, FRAC_PI_8)
+                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_8)) =>
         {
             let sin_theta = v_v_direction(
                 left_result.hit_point.x,
@@ -630,6 +643,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_position_from_distances(
+            DIRECTION_0,
             Some(front_result),
             Some(front_distance),
             Some(left_result),
@@ -700,6 +714,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_position_from_distances(
+            DIRECTION_0,
             Some(front_result),
             Some(front_distance),
             Some(left_result),
@@ -770,6 +785,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_position_from_distances(
+            DIRECTION_PI_2,
             Some(front_result),
             Some(front_distance),
             Some(left_result),
@@ -843,6 +859,7 @@ mod test_update_orientation_from_distance {
         };
 
         let result_orientation = update_position_from_distances(
+            DIRECTION_PI_2,
             Some(front_result),
             Some(front_distance),
             Some(left_result),
