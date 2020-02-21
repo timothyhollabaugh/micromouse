@@ -1,5 +1,5 @@
-use core::f32::consts::FRAC_PI_8;
 use core::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+use core::f32::consts::{FRAC_PI_6, FRAC_PI_8};
 
 use libm::F32Ext;
 
@@ -254,6 +254,7 @@ impl Map {
         left_distance: u8,
         front_distance: u8,
         right_distance: u8,
+        path_direction: Direction,
     ) -> (Orientation, MapDebug) {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
@@ -323,7 +324,7 @@ impl Map {
         );
 
         let (maybe_x_sensor, maybe_y_sensor) = update_position_from_distances(
-            encoder_orientation.direction,
+            path_direction,
             front_result,
             front_distance,
             left_result,
@@ -468,7 +469,7 @@ fn update_position_from_distances(
     right_result: Option<MazeProjectionResult>,
     right_distance: Option<f32>,
 ) -> (Option<f32>, Option<f32>) {
-    const WITHIN_ANGLE: f32 = FRAC_PI_4;
+    const WITHIN_ANGLE: f32 = FRAC_PI_8;
 
     match (
         (left_result, left_distance),

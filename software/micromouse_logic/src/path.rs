@@ -288,7 +288,7 @@ impl Path {
         config: &PathConfig,
         time: u32,
         orientation: Orientation,
-    ) -> (f32, f32, bool, PathDebug) {
+    ) -> (f32, f32, Option<Direction>, bool, PathDebug) {
         let mut debug = PathDebug::default();
 
         let delta_time = time - self.time;
@@ -388,6 +388,6 @@ impl Path {
 
         self.time = time;
 
-        (curvature, velocity, done, debug)
+        (curvature, velocity, segment_info.map(|s| s.2), done, debug)
     }
 }

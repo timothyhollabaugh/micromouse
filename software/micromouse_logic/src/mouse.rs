@@ -7,12 +7,12 @@ use crate::config::MechanicalConfig;
 use crate::map::Map;
 use crate::map::MapConfig;
 use crate::map::MapDebug;
-use crate::math::Orientation;
 use crate::math::Vector;
 use crate::math::DIRECTION_0;
 use crate::math::DIRECTION_3_PI_2;
 use crate::math::DIRECTION_PI;
 use crate::math::DIRECTION_PI_2;
+use crate::math::{Direction, Orientation};
 use crate::motion::Motion;
 use crate::motion::MotionConfig;
 use crate::motion::MotionDebug;
@@ -54,6 +54,7 @@ pub struct Mouse {
     map: Map,
     path: Path,
     motion: Motion,
+    path_direction: Direction,
     done: bool,
 }
 
@@ -72,6 +73,7 @@ impl Mouse {
             map: Map::new(orientation, left_encoder, right_encoder),
             path,
             motion: Motion::new(&config.motion, time, left_encoder, right_encoder),
+            path_direction: orientation.direction,
             done: true,
         }
     }
@@ -121,10 +123,13 @@ impl Mouse {
             left_distance,
             front_distance,
             right_distance,
+            self.path_direction,
         );
 
-        let (target_curvature, target_velocity, done, path_debug) =
+        let (target_curvature, target_velocity, path_direction, done, path_debug) =
             self.path.update(&config.path, time, orientation);
+
+        self.path_direction = path_direction.unwrap_or(orientation.direction);
 
         self.done = done;
 
