@@ -134,7 +134,7 @@ pub const MOUSE_2019_PATH: PathConfig = PathConfig {
     i: 0.0,
     d: 0.0,
     offset_p: 0.01,
-    velocity: 0.3,
+    velocity: 0.2,
 };
 
 pub const MOUSE_2019_PIDF: PidfConfig = PidfConfig {

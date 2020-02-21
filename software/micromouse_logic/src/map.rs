@@ -1,5 +1,5 @@
-use core::f32::consts::FRAC_PI_2;
 use core::f32::consts::FRAC_PI_8;
+use core::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use libm::F32Ext;
 
@@ -468,6 +468,8 @@ fn update_position_from_distances(
     right_result: Option<MazeProjectionResult>,
     right_distance: Option<f32>,
 ) -> (Option<f32>, Option<f32>) {
+    const WITHIN_ANGLE: f32 = FRAC_PI_4;
+
     match (
         (left_result, left_distance),
         (front_result, front_distance),
@@ -481,8 +483,8 @@ fn update_position_from_distances(
         ) if left_result.direction == WallDirection::Horizontal
             && front_result.direction == WallDirection::Vertical
             && right_result.direction == WallDirection::Horizontal
-            && (direction.within(&DIRECTION_0, FRAC_PI_8)
-                || direction.within(&DIRECTION_PI, FRAC_PI_8)) =>
+            && (direction.within(&DIRECTION_0, FRAC_PI_4)
+                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
         {
             let cos_theta = h_h_direction(
                 left_result.hit_point.y,
@@ -504,8 +506,8 @@ fn update_position_from_distances(
             (Some(right_result), Some(right_distance)),
         ) if left_result.direction == WallDirection::Horizontal
             && right_result.direction == WallDirection::Horizontal
-            && (direction.within(&DIRECTION_0, FRAC_PI_8)
-                || direction.within(&DIRECTION_PI, FRAC_PI_8)) =>
+            && (direction.within(&DIRECTION_0, FRAC_PI_4)
+                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
         {
             let cos_theta = h_h_direction(
                 left_result.hit_point.y,
@@ -520,6 +522,42 @@ fn update_position_from_distances(
             )
         }
 
+        // HV_
+        (
+            (Some(left_result), Some(left_distance)),
+            (Some(front_result), Some(front_distance)),
+            _,
+        ) if left_result.direction == WallDirection::Horizontal
+            && front_result.direction == WallDirection::Vertical
+            && (direction.within(&DIRECTION_0, FRAC_PI_4)
+                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
+        {
+            let cos_theta = F32Ext::cos(f32::from(direction));
+
+            (
+                Some(front_result.hit_point.x - front_distance * cos_theta),
+                Some(left_result.hit_point.y - left_distance * cos_theta),
+            )
+        }
+
+        // _VH
+        (
+            _,
+            (Some(front_result), Some(front_distance)),
+            (Some(right_result), Some(right_distance)),
+        ) if front_result.direction == WallDirection::Vertical
+            && right_result.direction == WallDirection::Horizontal
+            && (direction.within(&DIRECTION_0, FRAC_PI_4)
+                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
+        {
+            let cos_theta = F32Ext::cos(f32::from(direction));
+
+            (
+                Some(front_result.hit_point.x - front_distance * cos_theta),
+                Some(right_result.hit_point.y + right_distance * cos_theta),
+            )
+        }
+
         // VHV
         (
             (Some(left_result), Some(left_distance)),
@@ -528,8 +566,8 @@ fn update_position_from_distances(
         ) if left_result.direction == WallDirection::Vertical
             && front_result.direction == WallDirection::Horizontal
             && right_result.direction == WallDirection::Vertical
-            && (direction.within(&DIRECTION_PI_2, FRAC_PI_8)
-                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_8)) =>
+            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
+                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
         {
             let sin_theta = v_v_direction(
                 left_result.hit_point.x,
@@ -551,8 +589,8 @@ fn update_position_from_distances(
             (Some(right_result), Some(right_distance)),
         ) if left_result.direction == WallDirection::Vertical
             && right_result.direction == WallDirection::Vertical
-            && (direction.within(&DIRECTION_PI_2, FRAC_PI_8)
-                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_8)) =>
+            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
+                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
         {
             let sin_theta = v_v_direction(
                 left_result.hit_point.x,
@@ -564,6 +602,42 @@ fn update_position_from_distances(
             (
                 Some(left_result.hit_point.x + left_distance * sin_theta),
                 None,
+            )
+        }
+
+        // VH_
+        (
+            (Some(left_result), Some(left_distance)),
+            (Some(front_result), Some(front_distance)),
+            _,
+        ) if left_result.direction == WallDirection::Vertical
+            && front_result.direction == WallDirection::Horizontal
+            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
+                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
+        {
+            let sin_theta = F32Ext::sin(f32::from(direction));
+
+            (
+                Some(left_result.hit_point.x - left_distance * sin_theta),
+                Some(front_result.hit_point.y - front_distance * sin_theta),
+            )
+        }
+
+        // _HV
+        (
+            _,
+            (Some(front_result), Some(front_distance)),
+            (Some(right_result), Some(right_distance)),
+        ) if front_result.direction == WallDirection::Vertical
+            && right_result.direction == WallDirection::Horizontal
+            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
+                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
+        {
+            let sin_theta = F32Ext::sin(f32::from(direction));
+
+            (
+                Some(right_result.hit_point.x + right_distance * sin_theta),
+                Some(front_result.hit_point.y - front_distance * sin_theta),
             )
         }
 
