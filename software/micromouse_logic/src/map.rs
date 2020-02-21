@@ -8,7 +8,9 @@ use crate::math::{
     DIRECTION_PI_2,
 };
 
+use heapless::ArrayLength;
 use heapless::Vec;
+use typenum::U1;
 use typenum::U8;
 
 use crate::config::MechanicalConfig;
@@ -17,20 +19,74 @@ use crate::maze::{
 };
 use itertools::Itertools;
 
-pub struct DistanceFilter {
-    values: [Option<f32>; 8],
+pub struct DistanceFilter<N: ArrayLength<f32>> {
+    values: Vec<f32, N>,
 }
 
-impl DistanceFilter {
-    pub fn new() -> DistanceFilter {
-        DistanceFilter { values: [None; 8] }
+impl<N: ArrayLength<f32>> DistanceFilter<N> {
+    pub fn new() -> DistanceFilter<N> {
+        DistanceFilter { values: Vec::new() }
     }
 
-    pub fn filter(&mut self, value: Option<f32>) -> Option<f32> {
-        self.values.rotate_right(1);
-        self.values[0] = value;
-        let count = self.values.iter().flatten().count() as f32;
-        self.values.iter().flatten().sum1().map(|x: f32| x / count)
+    pub fn filter(&mut self, value: f32) -> f32 {
+        let len = self.values.len();
+        if len >= self.values.capacity() {
+            self.values.rotate_left(1);
+            self.values[len - 1] = value;
+        } else {
+            self.values.push(value);
+        }
+
+        if let Some(sum) = self.values.iter().sum1::<f32>() {
+            sum / self.values.len() as f32
+        } else {
+            value
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_filter {
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    use super::DistanceFilter;
+    use typenum::U8;
+
+    #[test]
+    fn unfilled() {
+        let mut filter = DistanceFilter::<U8>::new();
+
+        assert_close(filter.filter(1.0), 1.0);
+        assert_close(filter.filter(2.0), (1.0 + 2.0) / 2.0);
+        assert_close(filter.filter(3.0), (1.0 + 2.0 + 3.0) / 3.0);
+    }
+
+    #[test]
+    fn filled() {
+        let mut filter = DistanceFilter::<U8>::new();
+
+        assert_close(filter.filter(1.0), 1.0);
+        assert_close(filter.filter(2.0), (1.0 + 2.0) / 2.0);
+        assert_close(filter.filter(3.0), (1.0 + 2.0 + 3.0) / 3.0);
+        assert_close(filter.filter(4.0), (1.0 + 2.0 + 3.0 + 4.0) / 4.0);
+        assert_close(filter.filter(5.0), (1.0 + 2.0 + 3.0 + 4.0 + 5.0) / 5.0);
+        assert_close(
+            filter.filter(6.0),
+            (1.0 + 2.0 + 3.0 + 4.0 + 5.0 + 6.0) / 6.0,
+        );
+        assert_close(
+            filter.filter(7.0),
+            (1.0 + 2.0 + 3.0 + 4.0 + 5.0 + 6.0 + 7.0) / 7.0,
+        );
+        assert_close(
+            filter.filter(8.0),
+            (1.0 + 2.0 + 3.0 + 4.0 + 5.0 + 6.0 + 7.0 + 8.0) / 8.0,
+        );
+        assert_close(
+            filter.filter(9.0),
+            (2.0 + 3.0 + 4.0 + 5.0 + 6.0 + 7.0 + 8.0 + 9.0) / 8.0,
+        );
     }
 }
 
@@ -69,11 +125,11 @@ pub fn find_closed_wall(
 }
 
 /// Makes sure the distance reading is in range and not too far from the expected result
-fn cleanup_distance_reading(
+fn cleanup_distance_reading<N: ArrayLength<f32>>(
     offset: f32,
     limit: f32,
     tolerance: f32,
-    filter: &mut DistanceFilter,
+    filter: &mut DistanceFilter<N>,
     distance: u8,
     result: Option<MazeProjectionResult>,
 ) -> Option<f32> {
@@ -106,8 +162,12 @@ fn cleanup_distance_reading(
         distance
     };
 
-    //filter.filter(distance)
-    distance
+    if let Some(d) = distance {
+        Some(filter.filter(d))
+    } else {
+        *filter = DistanceFilter::new();
+        None
+    }
 }
 
 pub struct Map {
@@ -116,9 +176,9 @@ pub struct Map {
     maze: Maze,
     left_encoder: i32,
     right_encoder: i32,
-    left_filter: DistanceFilter,
-    front_filter: DistanceFilter,
-    right_filter: DistanceFilter,
+    left_filter: DistanceFilter<U8>,
+    front_filter: DistanceFilter<U1>,
+    right_filter: DistanceFilter<U8>,
 }
 
 impl Map {

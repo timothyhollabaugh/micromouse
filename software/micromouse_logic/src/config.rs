@@ -22,7 +22,7 @@ pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
     p: 0.1,
     i: 0.0,
     d: 0.0,
-    offset_p: 0.002,
+    offset_p: 0.02,
     velocity: 0.5,
 };
 

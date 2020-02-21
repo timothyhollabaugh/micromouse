@@ -443,7 +443,7 @@ fn main() -> ! {
 
         let i2c = stm32f4::i2c::I2c::i2c1(p.I2C1, (scl, sda), 100.khz(), clocks);
 
-        time.delay(10000);
+        time.delay(1000);
 
         let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
         distance.init_private_registers();
