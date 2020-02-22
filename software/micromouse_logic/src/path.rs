@@ -283,6 +283,10 @@ impl Path {
         Ok(PathBufLen::to_usize() - self.segment_buffer.len())
     }
 
+    pub fn buffer_len(&self) -> usize {
+        self.segment_buffer.len()
+    }
+
     pub fn update(
         &mut self,
         config: &PathConfig,

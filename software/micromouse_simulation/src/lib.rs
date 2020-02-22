@@ -112,7 +112,7 @@ impl JsSimulation {
                 },
                 direction: Direction::from(0.0),
             },
-            max_wheel_accel: 0.03,
+            max_wheel_accel: 0.04,
             max_speed: 1.0,
             maze,
         })

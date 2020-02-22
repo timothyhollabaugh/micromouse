@@ -101,13 +101,13 @@ pub struct MapConfig {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     //pub maze: Maze,
-    pub front_result: Option<MazeProjectionResult>,
-    pub left_result: Option<MazeProjectionResult>,
-    pub right_result: Option<MazeProjectionResult>,
-    pub left_distance: Option<f32>,
-    pub front_distance: Option<f32>,
-    pub right_distance: Option<f32>,
+    pub left_distance: f32,
+    pub front_distance: f32,
+    pub right_distance: f32,
     pub encoder_orientation: Orientation,
+    pub cell_center: Vector,
+    pub sensor_width: f32,
+    pub center_offset: f32,
     pub maybe_x: Option<f32>,
     pub maybe_y: Option<f32>,
 }
@@ -182,6 +182,7 @@ pub struct Map {
     left_filter: DistanceFilter<U8>,
     front_filter: DistanceFilter<U1>,
     right_filter: DistanceFilter<U8>,
+    last_buffer_len: usize,
 }
 
 impl Map {
@@ -242,6 +243,7 @@ impl Map {
             front_filter: DistanceFilter::new(),
             right_filter: DistanceFilter::new(),
             maze,
+            last_buffer_len: 0,
         }
     }
 
@@ -255,6 +257,7 @@ impl Map {
         front_distance: u8,
         right_distance: u8,
         path_direction: Direction,
+        buffer_len: usize,
     ) -> (Orientation, MapDebug) {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
@@ -263,686 +266,122 @@ impl Map {
             self.orientation
                 .update_from_encoders(&mech, delta_left, delta_right);
 
-        self.left_encoder = left_encoder;
-        self.right_encoder = right_encoder;
+        let cell_center_x = (encoder_orientation.position.x / maze_config.cell_width)
+            .floor()
+            * maze_config.cell_width
+            + maze_config.cell_width / 2.0;
 
-        let front_result = find_closed_wall(
-            maze_config,
-            &self.maze,
-            encoder_orientation.offset(mech.front_sensor_orientation()),
-        )
-        .map(|front_result| MazeProjectionResult {
-            distance: front_result.distance + mech.front_sensor_offset,
-            ..front_result
-        });
+        let cell_center_y = (encoder_orientation.position.y / maze_config.cell_width)
+            .floor()
+            * maze_config.cell_width
+            + maze_config.cell_width / 2.0;
 
-        let left_result = find_closed_wall(
-            maze_config,
-            &self.maze,
-            encoder_orientation.offset(mech.left_sensor_orientation()),
-        )
-        .map(|left_result| MazeProjectionResult {
-            distance: left_result.distance + mech.left_sensor_offset,
-            ..left_result
-        });
+        let left_distance = left_distance as f32 + mech.left_sensor_offset;
+        let right_distance = right_distance as f32 + mech.right_sensor_offset;
+        let front_distance =
+            front_distance as f32 + mech.sensor_center_offset + mech.front_sensor_offset;
 
-        let right_result = find_closed_wall(
-            maze_config,
-            &self.maze,
-            encoder_orientation.offset(mech.right_sensor_orientation()),
-        )
-        .map(|right_result| MazeProjectionResult {
-            distance: right_result.distance + mech.right_sensor_offset,
-            ..right_result
-        });
+        let sensor_width = left_distance + right_distance;
 
-        let front_distance = cleanup_distance_reading(
-            mech.front_sensor_offset,
-            mech.front_sensor_limit as f32,
-            maze_config.cell_width / 2.0,
-            &mut self.front_filter,
-            front_distance,
-            front_result,
-        );
+        let center_to_wall = maze_config.cell_width / 2.0 - maze_config.wall_width / 2.0;
 
-        let left_distance = cleanup_distance_reading(
-            mech.left_sensor_offset,
-            mech.left_sensor_limit as f32,
-            maze_config.cell_width / 2.0,
-            &mut self.left_filter,
-            left_distance,
-            left_result,
-        );
-
-        let right_distance = cleanup_distance_reading(
-            mech.right_sensor_offset,
-            mech.right_sensor_limit as f32,
-            maze_config.cell_width / 2.0,
-            &mut self.right_filter,
-            right_distance,
-            right_result,
-        );
-
-        let (maybe_x_sensor, maybe_y_sensor) = update_position_from_distances(
-            path_direction,
-            front_result,
-            front_distance,
-            left_result,
-            left_distance,
-            right_result,
-            right_distance,
-        );
-
-        let maybe_x = maybe_x_sensor.map(|x| {
-            x - mech.sensor_center_offset
-                * F32Ext::cos(f32::from(self.orientation.direction))
-        });
-
-        let maybe_y = maybe_y_sensor.map(|y| {
-            y - mech.sensor_center_offset
-                * F32Ext::sin(f32::from(self.orientation.direction))
-        });
-
-        let position = Vector {
-            x: maybe_x.unwrap_or(encoder_orientation.position.x),
-            y: maybe_y.unwrap_or(encoder_orientation.position.y),
+        let center_offset = if sensor_width <= maze_config.cell_width {
+            (right_distance - left_distance) / 2.0
+        } else if left_distance > right_distance {
+            right_distance - center_to_wall
+        } else if right_distance > left_distance {
+            center_to_wall - left_distance
+        } else {
+            0.0
         };
 
-        let direction = if maybe_x.is_none() && maybe_y.is_none() {
-            encoder_orientation.direction
+        const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
+        const FRONT_TOLERANCE: f32 = 20.0;
+
+        let (maybe_x, maybe_y) = if path_direction.within(&DIRECTION_0, DIRECTION_WITHIN)
+        {
+            let y = Some(cell_center_y + center_offset);
+            let x = if front_distance
+                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
+            {
+                Some(cell_center_x + center_to_wall - front_distance)
+            } else {
+                None
+            };
+
+            (x, y)
+        } else if path_direction.within(&DIRECTION_PI, DIRECTION_WITHIN) {
+            let y = Some(cell_center_y - center_offset);
+            let x = if front_distance
+                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
+            {
+                Some(cell_center_x - center_to_wall + front_distance)
+            } else {
+                None
+            };
+
+            (x, y)
+        } else if path_direction.within(&DIRECTION_PI_2, DIRECTION_WITHIN) {
+            let x = Some(cell_center_x - center_offset);
+            let y = if front_distance
+                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
+            {
+                Some(cell_center_y + center_to_wall - front_distance)
+            } else {
+                None
+            };
+
+            (x, y)
+        } else if path_direction.within(&DIRECTION_3_PI_2, DIRECTION_WITHIN) {
+            let x = Some(cell_center_x + center_offset);
+            let y = if front_distance
+                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
+            {
+                Some(cell_center_y - center_to_wall + front_distance)
+            } else {
+                None
+            };
+
+            (x, y)
         } else {
-            //(position - self.orientation.position).direction()
+            (None, None)
+        };
+
+        let direction = if buffer_len < self.last_buffer_len {
+            path_direction
+        } else {
             encoder_orientation.direction
         };
 
         let orientation = Orientation {
-            position,
+            position: Vector {
+                x: maybe_x.unwrap_or(encoder_orientation.position.x),
+                y: maybe_y.unwrap_or(encoder_orientation.position.y),
+            },
             direction,
         };
 
         let debug = MapDebug {
             //maze: self.maze.clone(),
-            front_result,
-            left_result,
-            right_result,
             left_distance,
             front_distance,
             right_distance,
             encoder_orientation,
+            cell_center: Vector {
+                x: cell_center_x,
+                y: cell_center_y,
+            },
+            sensor_width,
+            center_offset,
             maybe_x,
             maybe_y,
         };
 
+        self.left_encoder = left_encoder;
+        self.right_encoder = right_encoder;
         self.orientation = orientation;
+        self.last_buffer_len = buffer_len;
 
         (self.orientation, debug)
-    }
-}
-
-fn h_h_direction(
-    left_wall: f32,
-    right_wall: f32,
-    left_distance: f32,
-    right_distance: f32,
-) -> f32 {
-    let mut cos_theta = (left_wall - right_wall) / (left_distance + right_distance);
-
-    if cos_theta >= 1.0 {
-        cos_theta = 1.0
-    } else if cos_theta <= -1.0 {
-        cos_theta = -1.0
-    }
-
-    cos_theta
-}
-
-#[cfg(test)]
-mod test_h_h_direction {
-    #[allow(unused_imports)]
-    use crate::test::*;
-
-    use crate::map::h_h_direction;
-    use crate::math::{Direction, Orientation, Vector, DIRECTION_0, DIRECTION_PI};
-    use core::f32::consts::FRAC_PI_8;
-
-    #[test]
-    fn facing_left() {
-        let cos_theta = h_h_direction(174.0, 6.0, 90.92, 90.92);
-        assert_close(cos_theta, 0.92388);
-    }
-
-    #[test]
-    fn facing_right() {
-        let cos_theta = h_h_direction(6.0, 174.0, 90.92, 90.92);
-        assert_close(cos_theta, -0.92388);
-    }
-}
-
-fn v_v_direction(
-    left_wall: f32,
-    right_wall: f32,
-    left_distance: f32,
-    right_distance: f32,
-) -> f32 {
-    let mut sin_theta = (right_wall - left_wall) / (left_distance + right_distance);
-
-    if sin_theta >= 1.0 {
-        sin_theta = 1.0
-    } else if sin_theta <= -1.0 {
-        sin_theta = -1.0
-    }
-
-    sin_theta
-}
-
-#[cfg(test)]
-mod test_v_v_direction {
-    #[allow(unused_imports)]
-    use crate::test::*;
-
-    use crate::map::v_v_direction;
-    use crate::math::{
-        Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI,
-        DIRECTION_PI_2,
-    };
-    use core::f32::consts::{FRAC_PI_2, FRAC_PI_8};
-
-    #[test]
-    fn facing_up() {
-        let sin_theta = v_v_direction(6.0, 174.0, 90.92, 90.92);
-        assert_close(sin_theta, 0.923889);
-    }
-
-    #[test]
-    fn facing_down() {
-        let sin_theta = v_v_direction(174.0, 6.0, 90.92, 90.92);
-        assert_close(sin_theta, -0.923889);
-    }
-}
-
-fn update_position_from_distances(
-    direction: Direction,
-    front_result: Option<MazeProjectionResult>,
-    front_distance: Option<f32>,
-    left_result: Option<MazeProjectionResult>,
-    left_distance: Option<f32>,
-    right_result: Option<MazeProjectionResult>,
-    right_distance: Option<f32>,
-) -> (Option<f32>, Option<f32>) {
-    const WITHIN_ANGLE: f32 = FRAC_PI_8;
-
-    match (
-        (left_result, left_distance),
-        (front_result, front_distance),
-        (right_result, right_distance),
-    ) {
-        // HVH
-        (
-            (Some(left_result), Some(left_distance)),
-            (Some(front_result), Some(front_distance)),
-            (Some(right_result), Some(right_distance)),
-        ) if left_result.direction == WallDirection::Horizontal
-            && front_result.direction == WallDirection::Vertical
-            && right_result.direction == WallDirection::Horizontal
-            && (direction.within(&DIRECTION_0, FRAC_PI_4)
-                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
-        {
-            let cos_theta = h_h_direction(
-                left_result.hit_point.y,
-                right_result.hit_point.y,
-                left_distance,
-                right_distance,
-            );
-
-            (
-                Some(front_result.hit_point.x - front_distance * cos_theta),
-                Some(left_result.hit_point.y - left_distance * cos_theta),
-            )
-        }
-
-        // H_H
-        (
-            (Some(left_result), Some(left_distance)),
-            _,
-            (Some(right_result), Some(right_distance)),
-        ) if left_result.direction == WallDirection::Horizontal
-            && right_result.direction == WallDirection::Horizontal
-            && (direction.within(&DIRECTION_0, FRAC_PI_4)
-                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
-        {
-            let cos_theta = h_h_direction(
-                left_result.hit_point.y,
-                right_result.hit_point.y,
-                left_distance,
-                right_distance,
-            );
-
-            (
-                None,
-                Some(left_result.hit_point.y - left_distance * cos_theta),
-            )
-        }
-
-        // HV_
-        (
-            (Some(left_result), Some(left_distance)),
-            (Some(front_result), Some(front_distance)),
-            _,
-        ) if left_result.direction == WallDirection::Horizontal
-            && front_result.direction == WallDirection::Vertical
-            && (direction.within(&DIRECTION_0, FRAC_PI_4)
-                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
-        {
-            let cos_theta = F32Ext::cos(f32::from(direction));
-
-            (
-                Some(front_result.hit_point.x - front_distance * cos_theta),
-                Some(left_result.hit_point.y - left_distance * cos_theta),
-            )
-        }
-
-        // _VH
-        (
-            _,
-            (Some(front_result), Some(front_distance)),
-            (Some(right_result), Some(right_distance)),
-        ) if front_result.direction == WallDirection::Vertical
-            && right_result.direction == WallDirection::Horizontal
-            && (direction.within(&DIRECTION_0, FRAC_PI_4)
-                || direction.within(&DIRECTION_PI, FRAC_PI_4)) =>
-        {
-            let cos_theta = F32Ext::cos(f32::from(direction));
-
-            (
-                Some(front_result.hit_point.x - front_distance * cos_theta),
-                Some(right_result.hit_point.y + right_distance * cos_theta),
-            )
-        }
-
-        // VHV
-        (
-            (Some(left_result), Some(left_distance)),
-            (Some(front_result), Some(front_distance)),
-            (Some(right_result), Some(right_distance)),
-        ) if left_result.direction == WallDirection::Vertical
-            && front_result.direction == WallDirection::Horizontal
-            && right_result.direction == WallDirection::Vertical
-            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
-                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
-        {
-            let sin_theta = v_v_direction(
-                left_result.hit_point.x,
-                right_result.hit_point.x,
-                left_distance,
-                right_distance,
-            );
-
-            (
-                Some(left_result.hit_point.x + left_distance * sin_theta),
-                Some(front_result.hit_point.y - front_distance * sin_theta),
-            )
-        }
-
-        // V_V
-        (
-            (Some(left_result), Some(left_distance)),
-            _,
-            (Some(right_result), Some(right_distance)),
-        ) if left_result.direction == WallDirection::Vertical
-            && right_result.direction == WallDirection::Vertical
-            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
-                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
-        {
-            let sin_theta = v_v_direction(
-                left_result.hit_point.x,
-                right_result.hit_point.x,
-                left_distance,
-                right_distance,
-            );
-
-            (
-                Some(left_result.hit_point.x + left_distance * sin_theta),
-                None,
-            )
-        }
-
-        // VH_
-        (
-            (Some(left_result), Some(left_distance)),
-            (Some(front_result), Some(front_distance)),
-            _,
-        ) if left_result.direction == WallDirection::Vertical
-            && front_result.direction == WallDirection::Horizontal
-            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
-                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
-        {
-            let sin_theta = F32Ext::sin(f32::from(direction));
-
-            (
-                Some(left_result.hit_point.x - left_distance * sin_theta),
-                Some(front_result.hit_point.y - front_distance * sin_theta),
-            )
-        }
-
-        // _HV
-        (
-            _,
-            (Some(front_result), Some(front_distance)),
-            (Some(right_result), Some(right_distance)),
-        ) if front_result.direction == WallDirection::Vertical
-            && right_result.direction == WallDirection::Horizontal
-            && (direction.within(&DIRECTION_PI_2, FRAC_PI_4)
-                || direction.within(&DIRECTION_3_PI_2, FRAC_PI_4)) =>
-        {
-            let sin_theta = F32Ext::sin(f32::from(direction));
-
-            (
-                Some(right_result.hit_point.x + right_distance * sin_theta),
-                Some(front_result.hit_point.y - front_distance * sin_theta),
-            )
-        }
-
-        _ => (None, None),
-    }
-}
-
-#[cfg(test)]
-mod test_update_orientation_from_distance {
-    #[allow(unused_imports)]
-    use crate::test;
-
-    use crate::map::update_position_from_distances;
-    use crate::math::{
-        Direction, Orientation, Vector, DIRECTION_0, DIRECTION_PI, DIRECTION_PI_2,
-    };
-    use crate::maze::{MazeIndex, MazeProjectionResult, WallDirection, WallIndex};
-    use crate::test::{assert_close, assert_close2};
-    use core::f32::consts::FRAC_PI_8;
-
-    #[test]
-    fn hvh() {
-        let actual_mouse = Orientation {
-            position: Vector { x: 90.0, y: 80.0 },
-            direction: DIRECTION_PI_2 / 4.0,
-        };
-
-        let left_hit_point = Vector {
-            x: 51.0639251369291,
-            y: 174.0,
-        };
-        let left_distance = (left_hit_point - actual_mouse.position).magnitude();
-
-        let front_hit_point = Vector {
-            x: 174.0,
-            y: 114.79393923934,
-        };
-        let front_distance = (front_hit_point - actual_mouse.position).magnitude();
-
-        let right_hit_point = Vector {
-            x: 120.651803615609,
-            y: 6.0,
-        };
-        let right_distance = (right_hit_point - actual_mouse.position).magnitude();
-
-        let left_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 0,
-                y: 1,
-                direction: WallDirection::Horizontal,
-            }),
-            hit_point: left_hit_point,
-            distance: left_distance,
-            direction: WallDirection::Horizontal,
-        };
-
-        let front_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 1,
-                y: 0,
-                direction: WallDirection::Vertical,
-            }),
-            hit_point: front_hit_point,
-            distance: front_distance,
-            direction: WallDirection::Vertical,
-        };
-
-        let right_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 0,
-                y: 0,
-                direction: WallDirection::Horizontal,
-            }),
-            hit_point: right_hit_point,
-            distance: right_distance,
-            direction: WallDirection::Horizontal,
-        };
-
-        let result_orientation = update_position_from_distances(
-            DIRECTION_0,
-            Some(front_result),
-            Some(front_distance),
-            Some(left_result),
-            Some(left_distance),
-            Some(right_result),
-            Some(right_distance),
-        );
-
-        assert_eq!(result_orientation, (Some(90.0), Some(80.0)));
-    }
-
-    #[test]
-    fn h_h() {
-        let actual_mouse = Orientation {
-            position: Vector { x: 90.0, y: 80.0 },
-            direction: DIRECTION_PI_2 / 4.0,
-        };
-
-        let left_hit_point = Vector {
-            x: 51.0639251369291,
-            y: 174.0,
-        };
-        let left_distance = (left_hit_point - actual_mouse.position).magnitude();
-
-        let front_hit_point = Vector {
-            x: 174.0,
-            y: 114.79393923934,
-        };
-        let front_distance = (front_hit_point - actual_mouse.position).magnitude();
-
-        let right_hit_point = Vector {
-            x: 120.651803615609,
-            y: 6.0,
-        };
-        let right_distance = (right_hit_point - actual_mouse.position).magnitude();
-
-        let left_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 0,
-                y: 1,
-                direction: WallDirection::Horizontal,
-            }),
-            hit_point: left_hit_point,
-            distance: left_distance,
-            direction: WallDirection::Horizontal,
-        };
-
-        let front_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 1,
-                y: 0,
-                direction: WallDirection::Horizontal,
-            }),
-            hit_point: front_hit_point,
-            distance: front_distance,
-            direction: WallDirection::Horizontal,
-        };
-
-        let right_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 0,
-                y: 0,
-                direction: WallDirection::Horizontal,
-            }),
-            hit_point: right_hit_point,
-            distance: right_distance,
-            direction: WallDirection::Horizontal,
-        };
-
-        let result_orientation = update_position_from_distances(
-            DIRECTION_0,
-            Some(front_result),
-            Some(front_distance),
-            Some(left_result),
-            Some(left_distance),
-            Some(right_result),
-            Some(right_distance),
-        );
-
-        assert_eq!(result_orientation, (None, Some(80.0)));
-    }
-
-    #[test]
-    fn vhv() {
-        let actual_mouse = Orientation {
-            position: Vector { x: 90.0, y: 80.0 },
-            direction: DIRECTION_PI_2 - DIRECTION_PI_2 / 4.0,
-        };
-
-        let left_hit_point = Vector {
-            x: 6.0,
-            y: 114.79393923934,
-        };
-        let left_distance = (left_hit_point - actual_mouse.position).magnitude();
-
-        let front_hit_point = Vector {
-            x: 128.936074863071,
-            y: 174.0,
-        };
-        let front_distance = (front_hit_point - actual_mouse.position).magnitude();
-
-        let right_hit_point = Vector {
-            x: 174.0,
-            y: 45.20606076066,
-        };
-        let right_distance = (right_hit_point - actual_mouse.position).magnitude();
-
-        let left_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 0,
-                y: 1,
-                direction: WallDirection::Vertical,
-            }),
-            hit_point: left_hit_point,
-            distance: left_distance,
-            direction: WallDirection::Vertical,
-        };
-
-        let front_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 1,
-                y: 0,
-                direction: WallDirection::Horizontal,
-            }),
-            hit_point: front_hit_point,
-            distance: front_distance,
-            direction: WallDirection::Horizontal,
-        };
-
-        let right_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 0,
-                y: 0,
-                direction: WallDirection::Vertical,
-            }),
-            hit_point: right_hit_point,
-            distance: right_distance,
-            direction: WallDirection::Vertical,
-        };
-
-        let result_orientation = update_position_from_distances(
-            DIRECTION_PI_2,
-            Some(front_result),
-            Some(front_distance),
-            Some(left_result),
-            Some(left_distance),
-            Some(right_result),
-            Some(right_distance),
-        );
-
-        assert_eq!(result_orientation, (Some(90.0), Some(79.99999)));
-    }
-
-    #[test]
-    fn v_v() {
-        let actual_mouse = Orientation {
-            position: Vector {
-                x: 1175.4408,
-                y: 1485.0,
-            },
-            direction: Direction::from(3.8670895),
-        };
-
-        let left_hit_point = Vector {
-            x: 1254.0,
-            y: 1396.0,
-        };
-        let left_distance = 118.4;
-
-        let front_hit_point = Vector {
-            x: 1086.0,
-            y: 1405.0,
-        };
-        let front_distance = 119.6;
-
-        let right_hit_point = Vector {
-            x: 1086.0,
-            y: 1585.0,
-        };
-        let right_distance = 134.8;
-
-        let left_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 7,
-                y: 7,
-                direction: WallDirection::Vertical,
-            }),
-            hit_point: left_hit_point,
-            distance: left_distance,
-            direction: WallDirection::Vertical,
-        };
-
-        let front_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 6,
-                y: 7,
-                direction: WallDirection::Horizontal,
-            }),
-            hit_point: front_hit_point,
-            distance: front_distance,
-            direction: WallDirection::Vertical,
-        };
-
-        let right_result = MazeProjectionResult {
-            maze_index: MazeIndex::Wall(WallIndex {
-                x: 6,
-                y: 8,
-                direction: WallDirection::Vertical,
-            }),
-            hit_point: right_hit_point,
-            distance: right_distance,
-            direction: WallDirection::Vertical,
-        };
-
-        let result_orientation = update_position_from_distances(
-            DIRECTION_PI_2,
-            Some(front_result),
-            Some(front_distance),
-            Some(left_result),
-            Some(left_distance),
-            Some(right_result),
-            Some(right_distance),
-        );
-
-        assert_eq!(result_orientation, (Some(1175.4408), None));
     }
 }

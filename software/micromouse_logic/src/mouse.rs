@@ -124,6 +124,7 @@ impl Mouse {
             front_distance,
             right_distance,
             self.path_direction,
+            self.path.buffer_len(),
         );
 
         let (target_curvature, target_velocity, path_direction, done, path_debug) =
