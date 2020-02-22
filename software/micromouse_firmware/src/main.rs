@@ -299,7 +299,7 @@ where
         if now - last_time >= 10 {
             green_led.toggle().ok();
 
-            if running {
+            let debug = if running {
                 let left_encoder_count = left_encoder.count();
                 let right_encoder_count = right_encoder.count();
                 let left_distance_range = left_distance.range();
@@ -320,40 +320,43 @@ where
                 right_motor.change_power((right_power) as i32);
                 left_motor.change_power((left_power) as i32);
 
-                if debugging && uart.tx_len() == Ok(0) {
-                    let mut msgs = Vec::new();
-                    msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
-                    //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
-                    //msgs.push(DebugMsg::Map(debug.map.clone())).ok();
-
-                    //if step_count % 2 == 0 {
-                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
-                        .ok();
-                    msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
-                    //}
-
-                    let packet = DebugPacket {
-                        msgs,
-                        battery: debug.battery,
-                        time: debug.time,
-                        delta_time_sys: debug.delta_time,
-                        delta_time_msg: now - last_packet_time,
-                        count: packet_count,
-                    };
-
-                    if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
-                        uart.add_bytes(&bytes).ok();
-                        orange_led.set_high().ok();
-                    }
-
-                    packet_count += 1;
-                    last_packet_time = now;
-                } else {
-                    orange_led.set_low().ok();
-                }
+                Some(debug)
             } else {
                 right_motor.change_power(0);
                 left_motor.change_power(0);
+                None
+            };
+
+            if debugging && uart.tx_len() == Ok(0) {
+                let mut msgs = Vec::new();
+
+                if let Some(debug) = debug {
+                    msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
+                        .ok();
+                    //msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
+                    msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
+                    //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
+                    //msgs.push(DebugMsg::Map(debug.map.clone())).ok();
+                }
+
+                let packet = DebugPacket {
+                    msgs,
+                    battery: battery.raw(),
+                    time: now,
+                    delta_time_sys: now - last_time,
+                    delta_time_msg: now - last_packet_time,
+                    count: packet_count,
+                };
+
+                if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
+                    uart.add_bytes(&bytes).ok();
+                    orange_led.set_high().ok();
+                }
+
+                packet_count += 1;
+                last_packet_time = now;
+            } else {
+                orange_led.set_low().ok();
             }
 
             if let Ok(true) = left_button.is_low() {
@@ -417,10 +420,15 @@ fn main() -> ! {
     let gpiob = p.GPIOB.split();
     let gpioc = p.GPIOC.split();
 
-    let red_led = gpiob.pb12.into_push_pull_output();
-    let green_led = gpiob.pb13.into_push_pull_output();
+    let mut red_led = gpiob.pb12.into_push_pull_output();
+    let mut green_led = gpiob.pb13.into_push_pull_output();
     let mut blue_led = gpiob.pb14.into_push_pull_output();
     let mut orange_led = gpiob.pb15.into_push_pull_output();
+
+    red_led.set_high().ok();
+    green_led.set_high().ok();
+    orange_led.set_high().ok();
+    blue_led.set_high().ok();
 
     let left_button = gpioc.pc10.into_pull_up_input();
     let _middle_button = gpioc.pc11.into_pull_up_input();
@@ -428,6 +436,8 @@ fn main() -> ! {
 
     time.delay(10000);
 
+    red_led.set_low().ok();
+    green_led.set_low().ok();
     orange_led.set_high().ok();
     blue_led.set_low().ok();
 
