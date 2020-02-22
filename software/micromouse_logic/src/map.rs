@@ -276,10 +276,32 @@ impl Map {
             * maze_config.cell_width
             + maze_config.cell_width / 2.0;
 
-        let left_distance = left_distance as f32 + mech.left_sensor_offset;
-        let right_distance = right_distance as f32 + mech.right_sensor_offset;
-        let front_distance =
-            front_distance as f32 + mech.sensor_center_offset + mech.front_sensor_offset;
+        let left_distance = if left_distance <= mech.left_sensor_limit {
+            self.left_filter
+                .filter(left_distance as f32 + mech.left_sensor_offset)
+        } else {
+            self.left_filter = DistanceFilter::new();
+            left_distance as f32 + mech.left_sensor_offset
+        };
+
+        let right_distance = if right_distance <= mech.right_sensor_limit {
+            self.right_filter
+                .filter(right_distance as f32 + mech.right_sensor_offset)
+        } else {
+            self.right_filter = DistanceFilter::new();
+            right_distance as f32 + mech.right_sensor_offset
+        };
+
+        let front_distance = if front_distance <= mech.front_sensor_limit {
+            self.front_filter.filter(
+                front_distance as f32
+                    + mech.sensor_center_offset
+                    + mech.front_sensor_offset,
+            )
+        } else {
+            self.front_filter = DistanceFilter::new();
+            front_distance as f32 + mech.sensor_center_offset + mech.front_sensor_offset
+        };
 
         let sensor_width = left_distance + right_distance;
 
