@@ -1,6 +1,6 @@
 use stm32f4xx_hal::stm32 as stm32f405;
 
-static OVERFLOW_VALUE: u32 = 65535;
+static OVERFLOW_VALUE: u32 = 65535 / 4;
 
 pub struct Time {
     timer: stm32f405::TIM1,
@@ -19,6 +19,7 @@ impl Time {
         //timer.psc.write(|w| w.psc().bits(8000));
 
         // 84MHz ABP2
+        // Runs at 4 ticks every ms, so needs division later on
         timer.psc.write(|w| w.psc().bits(42000));
 
         timer.cr1.modify(|_, w| w.cen().set_bit());
