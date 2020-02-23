@@ -334,9 +334,9 @@ where
                     msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
                         .ok();
                     //msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
-                    msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
+                    //msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
                     //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
-                    //msgs.push(DebugMsg::Map(debug.map.clone())).ok();
+                    msgs.push(DebugMsg::Map(debug.map.clone())).ok();
                 }
 
                 let packet = DebugPacket {

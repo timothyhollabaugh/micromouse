@@ -68,22 +68,6 @@ impl Mouse {
     ) -> Mouse {
         let mut path = Path::new(&config.path, time);
 
-        let directions = [
-            MazeDirection::East,
-            MazeDirection::East,
-            MazeDirection::East,
-        ];
-
-        let starting_orientation = MazeOrientation {
-            position: MazePosition { x: 7, y: 6 },
-            direction: MazeDirection::East,
-        };
-
-        let pathv =
-            path_from_directions(&config.map.maze, starting_orientation, &directions);
-
-        path.add_segments(&pathv);
-
         Mouse {
             last_time: time,
             map: Map::new(orientation, left_encoder, right_encoder),
@@ -106,7 +90,6 @@ impl Mouse {
         right_distance: u8,
     ) -> (i32, i32, MouseDebug) {
         let delta_time = time - self.last_time;
-        /*
         if self.done {
             let directions = [
                 MazeDirection::East,
@@ -131,7 +114,6 @@ impl Mouse {
 
             self.path.add_segments(&path);
         }
-        */
 
         let (orientation, map_debug) = self.map.update(
             &config.mechanical,
