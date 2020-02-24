@@ -96,15 +96,21 @@ mod test_filter {
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
     pub maze: MazeConfig,
+    pub use_sensors: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     //pub maze: Maze,
+    pub encoder_orientation: Orientation,
+    pub sensor: Option<SensorDebug>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SensorDebug {
     pub left_distance: f32,
     pub front_distance: f32,
     pub right_distance: f32,
-    pub encoder_orientation: Orientation,
     pub cell_center: Vector,
     pub sensor_width: f32,
     pub center_offset: f32,
@@ -125,52 +131,6 @@ pub fn find_closed_wall(
             true
         }
     })
-}
-
-/// Makes sure the distance reading is in range and not too far from the expected result
-fn cleanup_distance_reading<N: ArrayLength<f32>>(
-    offset: f32,
-    limit: f32,
-    tolerance: f32,
-    filter: &mut DistanceFilter<N>,
-    distance: u8,
-    result: Option<MazeProjectionResult>,
-) -> Option<f32> {
-    let distance = distance as f32;
-
-    let distance = if distance <= limit {
-        Some(distance + offset)
-    } else {
-        None
-    };
-
-    let distance = if let (Some(distance), Some(result)) = (distance, result) {
-        if (distance - result.distance).abs() < tolerance {
-            Some(distance)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
-    // If we don't see a wall, but should
-    let distance = if let (None, Some(result)) = (distance, result) {
-        if result.distance < limit {
-            Some(limit)
-        } else {
-            None
-        }
-    } else {
-        distance
-    };
-
-    if let Some(d) = distance {
-        Some(filter.filter(d))
-    } else {
-        *filter = DistanceFilter::new();
-        None
-    }
 }
 
 pub struct Map {
@@ -250,7 +210,7 @@ impl Map {
     pub fn update(
         &mut self,
         mech: &MechanicalConfig,
-        maze_config: &MazeConfig,
+        config: &MapConfig,
         left_encoder: i32,
         right_encoder: i32,
         left_distance: u8,
@@ -259,6 +219,7 @@ impl Map {
         path_direction: Direction,
         buffer_len: usize,
     ) -> (Orientation, MapDebug) {
+        let maze_config = config.maze;
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
@@ -266,137 +227,159 @@ impl Map {
             self.orientation
                 .update_from_encoders(&mech, delta_left, delta_right);
 
-        let cell_center_x = (encoder_orientation.position.x / maze_config.cell_width)
-            .floor()
-            * maze_config.cell_width
-            + maze_config.cell_width / 2.0;
+        let (orientation, sensor_debug) = if config.use_sensors {
+            const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
+            const FRONT_TOLERANCE: f32 = 20.0;
 
-        let cell_center_y = (encoder_orientation.position.y / maze_config.cell_width)
-            .floor()
-            * maze_config.cell_width
-            + maze_config.cell_width / 2.0;
+            let left_distance = if left_distance <= mech.left_sensor_limit {
+                self.left_filter
+                    .filter(left_distance as f32 + mech.left_sensor_offset)
+            } else {
+                self.left_filter = DistanceFilter::new();
+                left_distance as f32 + mech.left_sensor_offset
+            };
 
-        let left_distance = if left_distance <= mech.left_sensor_limit {
-            self.left_filter
-                .filter(left_distance as f32 + mech.left_sensor_offset)
-        } else {
-            self.left_filter = DistanceFilter::new();
-            left_distance as f32 + mech.left_sensor_offset
-        };
+            let right_distance = if right_distance <= mech.right_sensor_limit {
+                self.right_filter
+                    .filter(right_distance as f32 + mech.right_sensor_offset)
+            } else {
+                self.right_filter = DistanceFilter::new();
+                right_distance as f32 + mech.right_sensor_offset
+            };
 
-        let right_distance = if right_distance <= mech.right_sensor_limit {
-            self.right_filter
-                .filter(right_distance as f32 + mech.right_sensor_offset)
-        } else {
-            self.right_filter = DistanceFilter::new();
-            right_distance as f32 + mech.right_sensor_offset
-        };
-
-        let front_distance = if front_distance <= mech.front_sensor_limit {
-            self.front_filter.filter(
+            let front_distance = if front_distance <= mech.front_sensor_limit {
+                self.front_filter.filter(
+                    front_distance as f32
+                        + mech.sensor_center_offset
+                        + mech.front_sensor_offset,
+                )
+            } else {
+                self.front_filter = DistanceFilter::new();
                 front_distance as f32
                     + mech.sensor_center_offset
-                    + mech.front_sensor_offset,
-            )
-        } else {
-            self.front_filter = DistanceFilter::new();
-            front_distance as f32 + mech.sensor_center_offset + mech.front_sensor_offset
-        };
-
-        let sensor_width = left_distance + right_distance;
-
-        let center_to_wall = maze_config.cell_width / 2.0 - maze_config.wall_width / 2.0;
-
-        let center_offset = if sensor_width <= maze_config.cell_width {
-            (right_distance - left_distance) / 2.0
-        } else if left_distance > right_distance {
-            right_distance - center_to_wall
-        } else if right_distance > left_distance {
-            center_to_wall - left_distance
-        } else {
-            0.0
-        };
-
-        const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
-        const FRONT_TOLERANCE: f32 = 20.0;
-
-        let (maybe_x, maybe_y) = if path_direction.within(&DIRECTION_0, DIRECTION_WITHIN)
-        {
-            let y = Some(cell_center_y + center_offset);
-            let x = if front_distance
-                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
-            {
-                Some(cell_center_x + center_to_wall - front_distance)
-            } else {
-                None
+                    + mech.front_sensor_offset
             };
 
-            (x, y)
-        } else if path_direction.within(&DIRECTION_PI, DIRECTION_WITHIN) {
-            let y = Some(cell_center_y - center_offset);
-            let x = if front_distance
-                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
-            {
-                Some(cell_center_x - center_to_wall + front_distance)
+            let cell_center_x = (encoder_orientation.position.x / maze_config.cell_width)
+                .floor()
+                * maze_config.cell_width
+                + maze_config.cell_width / 2.0;
+
+            let cell_center_y = (encoder_orientation.position.y / maze_config.cell_width)
+                .floor()
+                * maze_config.cell_width
+                + maze_config.cell_width / 2.0;
+
+            let sensor_width = left_distance + right_distance;
+
+            let center_to_wall =
+                maze_config.cell_width / 2.0 - maze_config.wall_width / 2.0;
+
+            let center_offset = if sensor_width <= maze_config.cell_width {
+                (right_distance - left_distance) / 2.0
+            } else if left_distance > right_distance {
+                right_distance - center_to_wall
+            } else if right_distance > left_distance {
+                center_to_wall - left_distance
             } else {
-                None
+                0.0
             };
 
-            (x, y)
-        } else if path_direction.within(&DIRECTION_PI_2, DIRECTION_WITHIN) {
-            let x = Some(cell_center_x - center_offset);
-            let y = if front_distance
-                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
-            {
-                Some(cell_center_y + center_to_wall - front_distance)
+            let (maybe_x, maybe_y) =
+                if path_direction.within(&DIRECTION_0, DIRECTION_WITHIN) {
+                    let y = Some(cell_center_y + center_offset);
+                    let x = if front_distance
+                        < maze_config.cell_width
+                            - maze_config.wall_width / 2.0
+                            - FRONT_TOLERANCE
+                    {
+                        Some(cell_center_x + center_to_wall - front_distance)
+                    } else {
+                        None
+                    };
+
+                    (x, y)
+                } else if path_direction.within(&DIRECTION_PI, DIRECTION_WITHIN) {
+                    let y = Some(cell_center_y - center_offset);
+                    let x = if front_distance
+                        < maze_config.cell_width
+                            - maze_config.wall_width / 2.0
+                            - FRONT_TOLERANCE
+                    {
+                        Some(cell_center_x - center_to_wall + front_distance)
+                    } else {
+                        None
+                    };
+
+                    (x, y)
+                } else if path_direction.within(&DIRECTION_PI_2, DIRECTION_WITHIN) {
+                    let x = Some(cell_center_x - center_offset);
+                    let y = if front_distance
+                        < maze_config.cell_width
+                            - maze_config.wall_width / 2.0
+                            - FRONT_TOLERANCE
+                    {
+                        Some(cell_center_y + center_to_wall - front_distance)
+                    } else {
+                        None
+                    };
+
+                    (x, y)
+                } else if path_direction.within(&DIRECTION_3_PI_2, DIRECTION_WITHIN) {
+                    let x = Some(cell_center_x + center_offset);
+                    let y = if front_distance
+                        < maze_config.cell_width
+                            - maze_config.wall_width / 2.0
+                            - FRONT_TOLERANCE
+                    {
+                        Some(cell_center_y - center_to_wall + front_distance)
+                    } else {
+                        None
+                    };
+
+                    (x, y)
+                } else {
+                    (None, None)
+                };
+
+            let direction = if buffer_len < self.last_buffer_len {
+                path_direction
+            //encoder_orientation.direction
             } else {
-                None
+                encoder_orientation.direction
             };
 
-            (x, y)
-        } else if path_direction.within(&DIRECTION_3_PI_2, DIRECTION_WITHIN) {
-            let x = Some(cell_center_x + center_offset);
-            let y = if front_distance
-                < maze_config.cell_width - maze_config.wall_width / 2.0 - FRONT_TOLERANCE
-            {
-                Some(cell_center_y - center_to_wall + front_distance)
-            } else {
-                None
+            let orienation = Orientation {
+                position: Vector {
+                    x: maybe_x.unwrap_or(encoder_orientation.position.x),
+                    y: maybe_y.unwrap_or(encoder_orientation.position.y),
+                },
+                direction,
             };
 
-            (x, y)
+            let sensor_debug = SensorDebug {
+                left_distance,
+                front_distance,
+                right_distance,
+                cell_center: Vector {
+                    x: cell_center_x,
+                    y: cell_center_y,
+                },
+                sensor_width,
+                center_offset,
+                maybe_x,
+                maybe_y,
+            };
+
+            (orienation, Some(sensor_debug))
         } else {
-            (None, None)
-        };
-
-        let direction = if buffer_len < self.last_buffer_len {
-            path_direction
-        } else {
-            encoder_orientation.direction
-        };
-
-        let orientation = Orientation {
-            position: Vector {
-                x: maybe_x.unwrap_or(encoder_orientation.position.x),
-                y: maybe_y.unwrap_or(encoder_orientation.position.y),
-            },
-            direction,
+            (encoder_orientation, None)
         };
 
         let debug = MapDebug {
             //maze: self.maze.clone(),
-            left_distance,
-            front_distance,
-            right_distance,
             encoder_orientation,
-            cell_center: Vector {
-                x: cell_center_x,
-                y: cell_center_y,
-            },
-            sensor_width,
-            center_offset,
-            maybe_x,
-            maybe_y,
+            sensor: sensor_debug,
         };
 
         self.left_encoder = left_encoder;

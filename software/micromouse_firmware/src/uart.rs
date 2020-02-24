@@ -84,10 +84,10 @@ impl Uart {
         //uart.brr.write(|w| unsafe { w.bits(0x0010) });
 
         // 230400 baud (84MHz APB2)
-        //uart.brr.write(|w| unsafe { w.bits(0x016d) });
+        uart.brr.write(|w| unsafe { w.bits(0x016d) });
 
         // 115200 baud (84MHz APB2)
-        uart.brr.write(|w| unsafe { w.bits(0x02d9) });
+        //uart.brr.write(|w| unsafe { w.bits(0x02d9) });
 
         // enable rx and tx
         uart.cr1.write(|w| {

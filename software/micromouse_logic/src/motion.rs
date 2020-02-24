@@ -91,7 +91,9 @@ pub struct PidfConfig {
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MotionConfig {
     pub left_pidf: PidfConfig,
+    pub left_reverse: bool,
     pub right_pidf: PidfConfig,
+    pub right_reverse: bool,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -196,11 +198,21 @@ impl Motion {
             self.left_pid.set_target(target_left_velocity);
             self.right_pid.set_target(target_right_velocity);
 
-            let left_power = (target_left_velocity * config.left_pidf.f as f64) as i32
+            let mut left_power = (target_left_velocity * config.left_pidf.f as f64)
+                as i32
                 + self.left_pid.update(left_velocity, delta_time as f64) as i32;
 
-            let right_power = (target_right_velocity * config.right_pidf.f as f64) as i32
+            if config.left_reverse {
+                left_power *= -1;
+            }
+
+            let mut right_power = (target_right_velocity * config.right_pidf.f as f64)
+                as i32
                 + self.right_pid.update(right_velocity, delta_time as f64) as i32;
+
+            if config.right_reverse {
+                right_power *= -1;
+            }
 
             (left_power, right_power)
         } else {

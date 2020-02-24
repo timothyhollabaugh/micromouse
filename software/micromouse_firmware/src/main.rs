@@ -225,7 +225,7 @@ where
     I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
     I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
 {
-    let config = MOUSE_2019;
+    let config = MOUSE_2020;
 
     let initial_orientation = Orientation {
         position: Vector {
@@ -239,17 +239,11 @@ where
 
     let mut last_time: u32 = time.now();
 
-    let mut mouse = Mouse::new(
-        &config,
-        initial_orientation,
-        last_time,
-        left_encoder.count(),
-        right_encoder.count(),
-    );
+    let mut mouse = None;
 
-    let mut running = false;
     let mut debugging = false;
 
+    let mut start_time = None;
     let mut last_packet_time = last_time;
     let mut packet_count = 0;
 
@@ -257,6 +251,18 @@ where
 
     loop {
         let now: u32 = time.now();
+
+        if let Some(start_time) = start_time {
+            if now - start_time > 1000 && mouse.is_none() {
+                mouse = Some(Mouse::new(
+                    &config,
+                    initial_orientation,
+                    last_time,
+                    left_encoder.count(),
+                    right_encoder.count(),
+                ))
+            }
+        }
 
         match sensor_updating {
             0 => {
@@ -279,16 +285,12 @@ where
                 0 => {}
                 1 => debugging = false,
                 2 => debugging = true,
-                3 => running = false,
-                4 => running = true,
-                5 => {
-                    mouse = Mouse::new(
-                        &config,
-                        initial_orientation,
-                        last_time,
-                        left_encoder.count(),
-                        right_encoder.count(),
-                    )
+                3 => {
+                    start_time = Some(now);
+                }
+                4 => {
+                    mouse = None;
+                    start_time = None;
                 }
                 _ => {}
             }
@@ -299,7 +301,7 @@ where
         if now - last_time >= 10 {
             green_led.toggle().ok();
 
-            let debug = if running {
+            let debug = if let Some(mouse) = mouse.as_mut() {
                 let left_encoder_count = left_encoder.count();
                 let right_encoder_count = right_encoder.count();
                 let left_distance_range = left_distance.range();
@@ -334,9 +336,9 @@ where
                     msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
                         .ok();
                     //msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
-                    //msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
-                    //msgs.push(DebugMsg::Path(debug.path.clone())).ok();
-                    msgs.push(DebugMsg::Map(debug.map.clone())).ok();
+                    msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
+                    msgs.push(DebugMsg::Path(debug.path.clone())).ok();
+                    //msgs.push(DebugMsg::Map(debug.map.clone())).ok();
                 }
 
                 let packet = DebugPacket {
@@ -360,11 +362,12 @@ where
             }
 
             if let Ok(true) = left_button.is_low() {
-                running = true;
+                start_time = Some(now);
             }
 
             if let Ok(true) = right_button.is_low() {
-                running = false;
+                mouse = None;
+                start_time = None;
             }
 
             if battery.is_dead() {
@@ -434,7 +437,7 @@ fn main() -> ! {
     let _middle_button = gpioc.pc11.into_pull_up_input();
     let right_button = gpioc.pc12.into_pull_up_input();
 
-    time.delay(10000);
+    time.delay(6000);
 
     red_led.set_low().ok();
     green_led.set_low().ok();
@@ -454,7 +457,7 @@ fn main() -> ! {
 
         let i2c = stm32f4::i2c::I2c::i2c2(p.I2C2, (scl, sda), 100.khz(), clocks);
 
-        time.delay(1000);
+        time.delay(100);
 
         let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
         distance.init_private_registers();
@@ -477,7 +480,7 @@ fn main() -> ! {
 
         let i2c = stm32f4::i2c::I2c::i2c1(p.I2C1, (scl, sda), 100.khz(), clocks);
 
-        time.delay(1000);
+        time.delay(100);
 
         let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
         distance.init_private_registers();
@@ -500,7 +503,7 @@ fn main() -> ! {
 
         let i2c = stm32f4::i2c::I2c::i2c3(p.I2C3, (scl, sda), 100.khz(), clocks);
 
-        time.delay(1000);
+        time.delay(100);
 
         let mut distance = vl6180x::VL6180x::new(i2c, 0x29);
         distance.init_private_registers();

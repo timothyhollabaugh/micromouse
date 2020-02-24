@@ -16,6 +16,7 @@ pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
         cell_width: 180.0,
         wall_width: 12.0,
     },
+    use_sensors: true,
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
@@ -35,45 +36,30 @@ pub const MOUSE_SIM_PIDF: PidfConfig = PidfConfig {
 
 pub const MOUSE_SIM_MOTION: MotionConfig = MotionConfig {
     left_pidf: MOUSE_SIM_PIDF,
+    left_reverse: false,
     right_pidf: MOUSE_SIM_PIDF,
+    right_reverse: false,
 };
 
 pub const MOUSE_2020_PIDF: PidfConfig = PidfConfig {
-    p: 1.0,
-    i: 0.0,
-    d: 0.0,
+    p: 4000.0,
+    i: 0.5,
+    d: 25000.0,
     f: 0.0,
 };
 
 pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
     left_pidf: MOUSE_2020_PIDF,
+    left_reverse: false,
     right_pidf: MOUSE_2020_PIDF,
+    right_reverse: true,
 };
 
 pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
-    wheel_diameter: 29.5,
-    gearbox_ratio: 30.0,
-    ticks_per_rev: 12.0,
-    wheelbase: 80.0,
-    width: 64.0,
-    length: 57.5,
-    front_offset: 40.0,
-
-    sensor_center_offset: 26.0,
-    front_sensor_offset: 14.0,
-    left_sensor_offset: 32.0,
-    right_sensor_offset: 32.0,
-
-    front_sensor_limit: 200,
-    left_sensor_limit: 200,
-    right_sensor_limit: 200,
-};
-
-pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
     wheel_diameter: 32.0,
-    gearbox_ratio: 29.86,
+    gearbox_ratio: 50.00,
     ticks_per_rev: 12.0,
-    wheelbase: 85.0,
+    wheelbase: 78.0,
     width: 64.0,
     length: 57.5,
     front_offset: 40.0,
@@ -89,11 +75,11 @@ pub const MOUSE_2020_MECH2: MechanicalConfig = MechanicalConfig {
 };
 
 pub const MOUSE_2020_PATH: PathConfig = PathConfig {
-    p: 1.0,
+    p: 0.05,
     i: 0.0,
     d: 0.0,
-    offset_p: 0.005,
-    velocity: 1.0,
+    offset_p: 0.010,
+    velocity: 0.5,
 };
 
 pub const MOUSE_2020: MouseConfig = MouseConfig {
@@ -146,7 +132,9 @@ pub const MOUSE_2019_PIDF: PidfConfig = PidfConfig {
 
 pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
     left_pidf: MOUSE_2019_PIDF,
+    left_reverse: false,
     right_pidf: MOUSE_2019_PIDF,
+    right_reverse: false,
 };
 
 pub const MOUSE_2019: MouseConfig = MouseConfig {
