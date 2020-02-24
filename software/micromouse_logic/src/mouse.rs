@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::MechanicalConfig;
+use crate::localize::{Localize, LocalizeConfig, LocalizeDebug};
 use crate::map::Map;
 use crate::map::MapConfig;
 use crate::map::MapDebug;
@@ -13,6 +14,7 @@ use crate::math::DIRECTION_3_PI_2;
 use crate::math::DIRECTION_PI;
 use crate::math::DIRECTION_PI_2;
 use crate::math::{Direction, Orientation};
+use crate::maze::MazeConfig;
 use crate::motion::Motion;
 use crate::motion::MotionConfig;
 use crate::motion::MotionDebug;
@@ -34,7 +36,7 @@ pub struct MouseDebug {
     pub hardware: HardwareDebug,
     pub orientation: Orientation,
     pub path: PathDebug,
-    pub map: MapDebug,
+    pub localize: LocalizeDebug,
     pub motion: MotionDebug,
     pub battery: u16,
     pub time: u32,
@@ -45,7 +47,9 @@ pub struct MouseDebug {
 pub struct MouseConfig {
     pub mechanical: MechanicalConfig,
     pub path: PathConfig,
+    pub localize: LocalizeConfig,
     pub map: MapConfig,
+    pub maze: MazeConfig,
     pub motion: MotionConfig,
 }
 
@@ -55,6 +59,7 @@ pub struct Mouse {
     path: Path,
     motion: Motion,
     path_direction: Direction,
+    localize: Localize,
     done: bool,
 }
 
@@ -89,7 +94,8 @@ impl Mouse {
 
         Mouse {
             last_time: time,
-            map: Map::new(orientation, left_encoder, right_encoder),
+            map: Map::new(),
+            localize: Localize::new(orientation, left_encoder, right_encoder),
             path,
             motion: Motion::new(&config.motion, time, left_encoder, right_encoder),
             path_direction: orientation.direction,
@@ -129,14 +135,15 @@ impl Mouse {
             };
 
             let path =
-                path_from_directions(&config.map.maze, starting_orientation, &directions);
+                path_from_directions(&config.maze, starting_orientation, &directions);
 
             self.path.add_segments(&path);
         }
 
-        let (orientation, map_debug) = self.map.update(
+        let (orientation, localize_debug) = self.localize.update(
             &config.mechanical,
-            &config.map,
+            &config.maze,
+            &config.localize,
             left_encoder,
             right_encoder,
             left_distance,
@@ -175,7 +182,7 @@ impl Mouse {
             hardware: hardware_debug,
             orientation,
             path: path_debug,
-            map: map_debug,
+            localize: localize_debug,
             motion: motion_debug,
             battery,
             time,

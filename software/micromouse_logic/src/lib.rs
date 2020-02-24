@@ -3,6 +3,7 @@
 pub mod bezier;
 pub mod comms;
 pub mod config;
+pub mod localize;
 pub mod map;
 pub mod math;
 pub mod maze;

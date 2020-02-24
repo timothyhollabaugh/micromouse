@@ -3,6 +3,7 @@ use core::f32;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::localize::LocalizeConfig;
 use crate::map::MapConfig;
 use crate::math::{Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2};
 use crate::maze::MazeConfig;
@@ -11,12 +12,15 @@ use crate::motion::PidfConfig;
 use crate::mouse::MouseConfig;
 use crate::path::PathConfig;
 
-pub const MOUSE_MAZE_MAP: MapConfig = MapConfig {
-    maze: MazeConfig {
-        cell_width: 180.0,
-        wall_width: 12.0,
-    },
-    use_sensors: true,
+pub const MOUSE_MAZE: MazeConfig = MazeConfig {
+    cell_width: 180.0,
+    wall_width: 12.0,
+};
+
+pub const MOUSE_LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: true };
+
+pub const MOUSE_MAP: MapConfig = MapConfig {
+    wall_threshold: 200,
 };
 
 pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
@@ -64,8 +68,7 @@ pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
     length: 57.5,
     front_offset: 40.0,
 
-    sensor_center_offset: 26.0,
-    front_sensor_offset: 14.0,
+    front_sensor_offset: 40.0,
     left_sensor_offset: 32.0,
     right_sensor_offset: 32.0,
 
@@ -85,14 +88,18 @@ pub const MOUSE_2020_PATH: PathConfig = PathConfig {
 pub const MOUSE_2020: MouseConfig = MouseConfig {
     mechanical: MOUSE_2020_MECH,
     path: MOUSE_2020_PATH,
-    map: MOUSE_MAZE_MAP,
+    maze: MOUSE_MAZE,
+    map: MOUSE_MAP,
+    localize: MOUSE_LOCALIZE,
     motion: MOUSE_2020_MOTION,
 };
 
 pub const MOUSE_SIM_2020: MouseConfig = MouseConfig {
     mechanical: MOUSE_2020_MECH,
     path: MOUSE_SIM_PATH,
-    map: MOUSE_MAZE_MAP,
+    maze: MOUSE_MAZE,
+    map: MOUSE_MAP,
+    localize: MOUSE_LOCALIZE,
     motion: MOUSE_2020_MOTION,
 };
 
@@ -105,8 +112,7 @@ pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
     length: 90.0,
     front_offset: 48.0,
 
-    sensor_center_offset: 30.0,
-    front_sensor_offset: 18.0,
+    front_sensor_offset: 48.0,
     left_sensor_offset: 32.0,
     right_sensor_offset: 32.0,
 
@@ -140,14 +146,18 @@ pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
 pub const MOUSE_2019: MouseConfig = MouseConfig {
     mechanical: MOUSE_2019_MECH,
     path: MOUSE_2019_PATH,
-    map: MOUSE_MAZE_MAP,
+    maze: MOUSE_MAZE,
+    map: MOUSE_MAP,
+    localize: MOUSE_LOCALIZE,
     motion: MOUSE_2019_MOTION,
 };
 
 pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {
     mechanical: MOUSE_2019_MECH,
     path: MOUSE_SIM_PATH,
-    map: MOUSE_MAZE_MAP,
+    maze: MOUSE_MAZE,
+    map: MOUSE_MAP,
+    localize: MOUSE_LOCALIZE,
     motion: MOUSE_SIM_MOTION,
 };
 
@@ -176,9 +186,6 @@ pub struct MechanicalConfig {
 
     /// The offset from the front of the body to the center of rotation
     pub front_offset: f32,
-
-    /// The distance from the center of rotation to the center of the sensors
-    pub sensor_center_offset: f32,
 
     /// The distance from the sensor center to the front distance sensor
     pub front_sensor_offset: f32,
@@ -230,35 +237,5 @@ impl MechanicalConfig {
 
     pub fn rads_to_mm(&self, rads: f32) -> f32 {
         rads * self.mm_per_rad()
-    }
-
-    pub fn front_sensor_orientation(&self) -> Orientation {
-        Orientation {
-            position: Vector {
-                x: self.sensor_center_offset + self.front_sensor_offset,
-                y: 0.0,
-            },
-            direction: DIRECTION_0,
-        }
-    }
-
-    pub fn left_sensor_orientation(&self) -> Orientation {
-        Orientation {
-            position: Vector {
-                x: self.sensor_center_offset,
-                y: self.left_sensor_offset,
-            },
-            direction: DIRECTION_PI_2,
-        }
-    }
-
-    pub fn right_sensor_orientation(&self) -> Orientation {
-        Orientation {
-            position: Vector {
-                x: self.sensor_center_offset,
-                y: -self.right_sensor_offset,
-            },
-            direction: DIRECTION_3_PI_2,
-        }
     }
 }
