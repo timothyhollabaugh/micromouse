@@ -66,9 +66,17 @@ impl Remote {
                             DebugMsg::Orientation(orientation) => {
                                 self.debug.mouse.orientation = orientation
                             }
-                            DebugMsg::Map(map) => self.debug.mouse.map = map,
-                            DebugMsg::Motion(motion) => self.debug.mouse.motion = motion,
-                            DebugMsg::Path(path) => self.debug.mouse.path = path,
+                            DebugMsg::Slow(slow) => self.debug.mouse.slow = slow,
+                            DebugMsg::MotorControl(motor_control) => {
+                                self.debug.mouse.motion_control.motor_control =
+                                    motor_control
+                            }
+                            DebugMsg::MotionHandler(handler) => {
+                                self.debug.mouse.motion_control.handler = handler
+                            }
+                            DebugMsg::MotionQueue(queue) => {
+                                self.debug.mouse.motion_queue = queue
+                            }
                         }
                     }
 

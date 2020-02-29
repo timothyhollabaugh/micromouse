@@ -5,7 +5,7 @@ use core::cmp::Ordering;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::math::{Direction, Vector};
+use super::{Direction, Vector};
 
 /// Make sure `n` is between `min` and `max`
 pub fn clamp(n: f32, min: f32, max: f32) -> f32 {
@@ -196,9 +196,8 @@ mod arc_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use super::Arc;
-    use crate::bezier::Curve;
-    use crate::math::{Vector, DIRECTION_3_PI_2};
+    use super::super::{Vector, DIRECTION_3_PI_2};
+    use super::{Arc, Curve};
     use core::f32::consts::{FRAC_PI_2, PI, SQRT_2};
 
     const A: Arc = Arc {
@@ -312,9 +311,8 @@ mod line_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use crate::bezier::Curve;
-    use crate::bezier::Line;
-    use crate::math::Vector;
+    use super::super::Vector;
+    use super::{Curve, Line};
 
     const B: Line = Line {
         start: Vector { x: 0.0, y: 0.0 },
@@ -379,9 +377,8 @@ mod bezier2_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use crate::bezier::Bezier2;
-    use crate::bezier::Curve;
-    use crate::math::Vector;
+    use super::super::Vector;
+    use super::{Bezier2, Curve};
 
     const B: Bezier2 = Bezier2 {
         start: Vector { x: 0.0, y: 0.0 },
@@ -474,9 +471,8 @@ mod bezier3_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use crate::bezier::Bezier3;
-    use crate::bezier::Curve;
-    use crate::math::Vector;
+    use super::super::Vector;
+    use super::{Bezier3, Curve};
 
     const B: Bezier3 = Bezier3 {
         start: Vector { x: 0.0, y: 0.0 },

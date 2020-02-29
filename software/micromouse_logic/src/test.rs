@@ -1,6 +1,6 @@
 //! Various functions to help writing tests
 
-use crate::math::Vector;
+use crate::fast::Vector;
 
 const MAX_DELTA: f32 = 0.00002;
 

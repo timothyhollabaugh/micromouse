@@ -1,13 +1,15 @@
 use heapless::Vec;
 use serde::Deserialize;
 use serde::Serialize;
-use typenum::consts::U2;
+use typenum::consts::U3;
 
-use crate::map::MapDebug;
-use crate::math::Orientation;
-use crate::motion::MotionDebug;
+use crate::fast::motor_control::MotorControlDebug;
+use crate::fast::Orientation;
+
+use crate::fast::motion_control::MotionHandlerDebug;
+use crate::fast::motion_queue::MotionQueueDebug;
 use crate::mouse::{HardwareDebug, MouseConfig};
-use crate::path::PathDebug;
+use crate::slow::SlowDebug;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum MouseMsg {
@@ -24,14 +26,15 @@ pub enum MouseMsg {
 pub enum DebugMsg {
     Hardware(HardwareDebug),
     Orientation(Orientation),
-    Path(PathDebug),
-    Map(MapDebug),
-    Motion(MotionDebug),
+    MotionHandler(Option<MotionHandlerDebug>),
+    MotionQueue(MotionQueueDebug),
+    MotorControl(MotorControlDebug),
+    Slow(Option<SlowDebug>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DebugPacket {
-    pub msgs: Vec<DebugMsg, U2>,
+    pub msgs: Vec<DebugMsg, U3>,
     pub battery: u16,
     pub time: u32,
     pub delta_time_sys: u32,

@@ -13,9 +13,10 @@ use micromouse_logic::config::*;
 use simulation::Simulation;
 use simulation::SimulationConfig;
 
-use micromouse_logic::math::{Direction, Orientation, Vector};
-use micromouse_logic::maze;
-use micromouse_logic::maze::{Maze, Wall};
+use micromouse_logic::config::sim::MOUSE_2019;
+use micromouse_logic::fast::{Direction, Orientation, Vector};
+use micromouse_logic::slow::maze;
+use micromouse_logic::slow::maze::{Maze, Wall};
 use remote::Remote;
 use remote::RemoteConfig;
 
@@ -103,7 +104,7 @@ impl JsSimulation {
         let maze = Maze::from_walls(horizontal_walls, vertical_walls);
 
         JsValue::from_serde(&SimulationConfig {
-            mouse: MOUSE_SIM_2019,
+            mouse: MOUSE_2019,
             millis_per_step: 10,
             initial_orientation: Orientation {
                 position: Vector {
@@ -141,9 +142,6 @@ impl JsRemote {
     }
 
     pub fn default_config() -> JsValue {
-        JsValue::from_serde(&RemoteConfig {
-            mouse: MOUSE_SIM_2019,
-        })
-        .unwrap()
+        JsValue::from_serde(&RemoteConfig { mouse: MOUSE_2019 }).unwrap()
     }
 }

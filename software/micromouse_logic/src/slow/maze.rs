@@ -5,7 +5,7 @@ use libm::F32Ext;
 
 use itertools::Itertools;
 
-use crate::math::{Orientation, Vector};
+use crate::fast::{Orientation, Vector};
 
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
@@ -122,10 +122,10 @@ mod wall_projection_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use crate::config::MOUSE_MAZE_MAP;
-    use crate::math::{Direction, Orientation, Vector};
-    use crate::maze::{MazeIndex, WallDirection, WallIndex};
     use core::f32::consts::{FRAC_PI_8, PI};
+
+    use crate::fast::{Orientation, Vector};
+    use crate::slow::maze::{MazeIndex, WallDirection, WallIndex};
 
     #[test]
     fn wall_projection_positive() {

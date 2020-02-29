@@ -3,163 +3,206 @@ use core::f32;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::localize::LocalizeConfig;
-use crate::map::MapConfig;
-use crate::math::{Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2};
-use crate::maze::MazeConfig;
-use crate::motion::MotionConfig;
-use crate::motion::PidfConfig;
-use crate::mouse::MouseConfig;
-use crate::path::PathConfig;
+use crate::slow::map::MapConfig;
+use crate::slow::maze::MazeConfig;
 
-pub const MOUSE_MAZE: MazeConfig = MazeConfig {
+use crate::fast::localize::LocalizeConfig;
+use crate::slow::motion_plan::MotionPlanConfig;
+
+pub const MAZE: MazeConfig = MazeConfig {
     cell_width: 180.0,
     wall_width: 12.0,
 };
 
-pub const MOUSE_LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: true };
+pub const LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: true };
 
-pub const MOUSE_MAP: MapConfig = MapConfig {
+pub const MAP: MapConfig = MapConfig {
     wall_threshold: 200,
 };
 
-pub const MOUSE_SIM_PATH: PathConfig = PathConfig {
-    p: 0.1,
-    i: 0.0,
-    d: 0.0,
-    offset_p: 0.02,
-    velocity: 0.5,
-};
+pub const MOTION_PLAN: MotionPlanConfig = MotionPlanConfig {};
 
-pub const MOUSE_SIM_PIDF: PidfConfig = PidfConfig {
-    p: 0.0,
-    i: 0.0,
-    d: 0.0,
-    f: 1000.0,
-};
+pub mod sim {
+    use crate::fast::motion_control::MotionControlConfig;
+    use crate::fast::motor_control::{MotorControlConfig, PidfConfig};
+    use crate::fast::path::PathHandlerConfig;
+    use crate::fast::turn::TurnHandlerConfig;
+    use crate::mouse::MouseConfig;
 
-pub const MOUSE_SIM_MOTION: MotionConfig = MotionConfig {
-    left_pidf: MOUSE_SIM_PIDF,
-    left_reverse: false,
-    right_pidf: MOUSE_SIM_PIDF,
-    right_reverse: false,
-};
+    pub const PIDF: PidfConfig = PidfConfig {
+        p: 0.0,
+        i: 0.0,
+        d: 0.0,
+        f: 1000.0,
+    };
 
-pub const MOUSE_2020_PIDF: PidfConfig = PidfConfig {
-    p: 4000.0,
-    i: 0.5,
-    d: 25000.0,
-    f: 0.0,
-};
+    pub const MOTION_CONTROL: MotionControlConfig = MotionControlConfig {
+        path: PathHandlerConfig {
+            p: 0.1,
+            i: 0.0,
+            d: 0.0,
+            offset_p: 0.02,
+            velocity: 0.5,
+        },
+        turn: TurnHandlerConfig {
+            p: 1.0,
+            i: 0.0,
+            d: 0.0,
+        },
+        motor_control: MotorControlConfig {
+            left_pidf: PIDF,
+            left_reverse: false,
+            right_pidf: PIDF,
+            right_reverse: false,
+        },
+    };
 
-pub const MOUSE_2020_MOTION: MotionConfig = MotionConfig {
-    left_pidf: MOUSE_2020_PIDF,
-    left_reverse: false,
-    right_pidf: MOUSE_2020_PIDF,
-    right_reverse: true,
-};
+    pub const MOUSE_2020: MouseConfig = MouseConfig {
+        mechanical: super::mouse_2020::MECH,
+        maze: super::MAZE,
+        map: super::MAP,
+        motion_plan: super::MOTION_PLAN,
+        localize: super::LOCALIZE,
+        motion_control: MOTION_CONTROL,
+    };
 
-pub const MOUSE_2020_MECH: MechanicalConfig = MechanicalConfig {
-    wheel_diameter: 32.0,
-    gearbox_ratio: 50.00,
-    ticks_per_rev: 12.0,
-    wheelbase: 78.0,
-    width: 64.0,
-    length: 57.5,
-    front_offset: 40.0,
+    pub const MOUSE_2019: MouseConfig = MouseConfig {
+        mechanical: super::mouse_2019::MECH,
+        maze: super::MAZE,
+        map: super::MAP,
+        motion_plan: super::MOTION_PLAN,
+        localize: super::LOCALIZE,
+        motion_control: MOTION_CONTROL,
+    };
+}
 
-    front_sensor_offset: 40.0,
-    left_sensor_offset: 32.0,
-    right_sensor_offset: 32.0,
+pub mod mouse_2020 {
+    use crate::config::MechanicalConfig;
+    use crate::fast::motion_control::MotionControlConfig;
+    use crate::fast::motor_control::{MotorControlConfig, PidfConfig};
+    use crate::fast::path::PathHandlerConfig;
+    use crate::fast::turn::TurnHandlerConfig;
+    use crate::mouse::MouseConfig;
 
-    front_sensor_limit: 200,
-    left_sensor_limit: 200,
-    right_sensor_limit: 200,
-};
+    pub const PIDF: PidfConfig = PidfConfig {
+        p: 4000.0,
+        i: 0.5,
+        d: 25000.0,
+        f: 0.0,
+    };
 
-pub const MOUSE_2020_PATH: PathConfig = PathConfig {
-    p: 0.05,
-    i: 0.0,
-    d: 0.0,
-    offset_p: 0.010,
-    velocity: 0.5,
-};
+    pub const MECH: MechanicalConfig = MechanicalConfig {
+        wheel_diameter: 32.0,
+        gearbox_ratio: 50.00,
+        ticks_per_rev: 12.0,
+        wheelbase: 78.0,
+        width: 64.0,
+        length: 57.5,
+        front_offset: 40.0,
 
-pub const MOUSE_2020: MouseConfig = MouseConfig {
-    mechanical: MOUSE_2020_MECH,
-    path: MOUSE_2020_PATH,
-    maze: MOUSE_MAZE,
-    map: MOUSE_MAP,
-    localize: MOUSE_LOCALIZE,
-    motion: MOUSE_2020_MOTION,
-};
+        front_sensor_offset_x: 40.0,
+        left_sensor_offset_y: 32.0,
+        left_sensor_offset_x: 26.0,
+        right_sensor_offset_y: 32.0,
+        right_sensor_offset_x: 26.0,
 
-pub const MOUSE_SIM_2020: MouseConfig = MouseConfig {
-    mechanical: MOUSE_2020_MECH,
-    path: MOUSE_SIM_PATH,
-    maze: MOUSE_MAZE,
-    map: MOUSE_MAP,
-    localize: MOUSE_LOCALIZE,
-    motion: MOUSE_2020_MOTION,
-};
+        front_sensor_limit: 200,
+        left_sensor_limit: 200,
+        right_sensor_limit: 200,
+    };
 
-pub const MOUSE_2019_MECH: MechanicalConfig = MechanicalConfig {
-    wheel_diameter: 32.0,
-    gearbox_ratio: 75.81,
-    ticks_per_rev: 12.0,
-    wheelbase: 74.0,
-    width: 64.0,
-    length: 90.0,
-    front_offset: 48.0,
+    pub const MOUSE: MouseConfig = MouseConfig {
+        mechanical: MECH,
+        maze: super::MAZE,
+        map: super::MAP,
+        motion_plan: super::MOTION_PLAN,
+        localize: super::LOCALIZE,
+        motion_control: MotionControlConfig {
+            path: PathHandlerConfig {
+                p: 0.05,
+                i: 0.0,
+                d: 0.0,
+                offset_p: 0.010,
+                velocity: 0.5,
+            },
+            turn: TurnHandlerConfig {
+                p: 1.0,
+                i: 0.0,
+                d: 0.0,
+            },
+            motor_control: MotorControlConfig {
+                left_pidf: PIDF,
+                left_reverse: false,
+                right_pidf: PIDF,
+                right_reverse: true,
+            },
+        },
+    };
+}
 
-    front_sensor_offset: 48.0,
-    left_sensor_offset: 32.0,
-    right_sensor_offset: 32.0,
+pub mod mouse_2019 {
+    use crate::config::MechanicalConfig;
+    use crate::fast::motion_control::MotionControlConfig;
+    use crate::fast::motor_control::{MotorControlConfig, PidfConfig};
+    use crate::fast::path::PathHandlerConfig;
+    use crate::fast::turn::TurnHandlerConfig;
+    use crate::mouse::MouseConfig;
 
-    front_sensor_limit: 200,
-    left_sensor_limit: 200,
-    right_sensor_limit: 200,
-};
+    pub const MECH: MechanicalConfig = MechanicalConfig {
+        wheel_diameter: 32.0,
+        gearbox_ratio: 75.81,
+        ticks_per_rev: 12.0,
+        wheelbase: 74.0,
+        width: 64.0,
+        length: 90.0,
+        front_offset: 48.0,
 
-pub const MOUSE_2019_PATH: PathConfig = PathConfig {
-    p: 0.1,
-    i: 0.0,
-    d: 0.0,
-    offset_p: 0.01,
-    velocity: 0.3,
-};
+        front_sensor_offset_x: 48.0,
+        left_sensor_offset_y: 32.0,
+        left_sensor_offset_x: 30.0,
+        right_sensor_offset_y: 32.0,
+        right_sensor_offset_x: 30.0,
 
-pub const MOUSE_2019_PIDF: PidfConfig = PidfConfig {
-    p: 4000.0,
-    i: 0.5,
-    d: 25000.0,
-    f: 0.0,
-};
+        front_sensor_limit: 200,
+        left_sensor_limit: 200,
+        right_sensor_limit: 200,
+    };
 
-pub const MOUSE_2019_MOTION: MotionConfig = MotionConfig {
-    left_pidf: MOUSE_2019_PIDF,
-    left_reverse: false,
-    right_pidf: MOUSE_2019_PIDF,
-    right_reverse: false,
-};
+    pub const PIDF: PidfConfig = PidfConfig {
+        p: 4000.0,
+        i: 0.5,
+        d: 25000.0,
+        f: 0.0,
+    };
 
-pub const MOUSE_2019: MouseConfig = MouseConfig {
-    mechanical: MOUSE_2019_MECH,
-    path: MOUSE_2019_PATH,
-    maze: MOUSE_MAZE,
-    map: MOUSE_MAP,
-    localize: MOUSE_LOCALIZE,
-    motion: MOUSE_2019_MOTION,
-};
-
-pub const MOUSE_SIM_2019: MouseConfig = MouseConfig {
-    mechanical: MOUSE_2019_MECH,
-    path: MOUSE_SIM_PATH,
-    maze: MOUSE_MAZE,
-    map: MOUSE_MAP,
-    localize: MOUSE_LOCALIZE,
-    motion: MOUSE_SIM_MOTION,
-};
+    pub const MOUSE: MouseConfig = MouseConfig {
+        mechanical: MECH,
+        maze: super::MAZE,
+        map: super::MAP,
+        motion_plan: super::MOTION_PLAN,
+        localize: super::LOCALIZE,
+        motion_control: MotionControlConfig {
+            path: PathHandlerConfig {
+                p: 0.1,
+                i: 0.0,
+                d: 0.0,
+                offset_p: 0.01,
+                velocity: 0.3,
+            },
+            turn: TurnHandlerConfig {
+                p: 1.0,
+                i: 0.0,
+                d: 0.0,
+            },
+            motor_control: MotorControlConfig {
+                left_pidf: PIDF,
+                left_reverse: false,
+                right_pidf: PIDF,
+                right_reverse: false,
+            },
+        },
+    };
+}
 
 /**
  *  Various physical parameters about the mouse
@@ -187,14 +230,16 @@ pub struct MechanicalConfig {
     /// The offset from the front of the body to the center of rotation
     pub front_offset: f32,
 
-    /// The distance from the sensor center to the front distance sensor
-    pub front_sensor_offset: f32,
+    /// The distance from the center to the front distance sensor
+    pub front_sensor_offset_x: f32,
 
-    /// The distance from the sensor center to the left distance sensor
-    pub left_sensor_offset: f32,
+    /// The distance from the center to the left distance sensor
+    pub left_sensor_offset_y: f32,
+    pub left_sensor_offset_x: f32,
 
-    /// The distance from the sensor center to the right distance sensor
-    pub right_sensor_offset: f32,
+    /// The distance from the center to the right distance sensor
+    pub right_sensor_offset_y: f32,
+    pub right_sensor_offset_x: f32,
 
     pub front_sensor_limit: u8,
     pub left_sensor_limit: u8,

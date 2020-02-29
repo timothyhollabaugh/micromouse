@@ -1,25 +1,24 @@
-use core::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8};
+use core::f32::consts::{FRAC_PI_4, FRAC_PI_8};
+
+use itertools::Itertools;
 
 use libm::F32Ext;
 
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::math::{
+use heapless::{ArrayLength, Vec};
+
+use typenum::{U1, U8};
+
+use crate::config::MechanicalConfig;
+use crate::slow::maze::MazeConfig;
+use crate::slow::{MazeDirection, MazeOrientation, MazePosition};
+
+use super::{
     Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI,
     DIRECTION_PI_2,
 };
-
-use heapless::ArrayLength;
-use heapless::Vec;
-use typenum::U1;
-use typenum::U8;
-
-use crate::config::MechanicalConfig;
-use crate::maze::{
-    Maze, MazeConfig, MazeIndex, MazeProjectionResult, Wall, WallDirection,
-};
-use itertools::Itertools;
 
 pub struct AverageFilter<N: ArrayLength<f32>> {
     values: Vec<f32, N>,
@@ -36,7 +35,7 @@ impl<N: ArrayLength<f32>> AverageFilter<N> {
             self.values.rotate_left(1);
             self.values[len - 1] = value;
         } else {
-            self.values.push(value);
+            self.values.push(value).ok();
         }
 
         if let Some(sum) = self.values.iter().sum1::<f32>() {
@@ -118,7 +117,6 @@ pub struct SensorDebug {
 
 pub struct Localize {
     orientation: Orientation,
-    delta_position: Vector,
     left_encoder: i32,
     right_encoder: i32,
     left_filter: AverageFilter<U8>,
@@ -135,7 +133,6 @@ impl Localize {
     ) -> Localize {
         Localize {
             orientation,
-            delta_position: Vector { x: 0.0, y: 0.0 },
             left_encoder,
             right_encoder,
             left_filter: AverageFilter::new(),
@@ -157,7 +154,7 @@ impl Localize {
         right_distance: u8,
         path_direction: Direction,
         buffer_len: usize,
-    ) -> (Orientation, LocalizeDebug) {
+    ) -> (Orientation, MazeOrientation, LocalizeDebug) {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
@@ -171,26 +168,26 @@ impl Localize {
 
             let left_distance = if left_distance <= mech.left_sensor_limit {
                 self.left_filter
-                    .filter(left_distance as f32 + mech.left_sensor_offset)
+                    .filter(left_distance as f32 + mech.left_sensor_offset_y)
             } else {
                 self.left_filter = AverageFilter::new();
-                left_distance as f32 + mech.left_sensor_offset
+                left_distance as f32 + mech.left_sensor_offset_y
             };
 
             let right_distance = if right_distance <= mech.right_sensor_limit {
                 self.right_filter
-                    .filter(right_distance as f32 + mech.right_sensor_offset)
+                    .filter(right_distance as f32 + mech.right_sensor_offset_y)
             } else {
                 self.right_filter = AverageFilter::new();
-                right_distance as f32 + mech.right_sensor_offset
+                right_distance as f32 + mech.right_sensor_offset_y
             };
 
             let front_distance = if front_distance <= mech.front_sensor_limit {
                 self.front_filter
-                    .filter(front_distance as f32 + mech.front_sensor_offset)
+                    .filter(front_distance as f32 + mech.front_sensor_offset_x)
             } else {
                 self.front_filter = AverageFilter::new();
-                front_distance as f32 + mech.front_sensor_offset
+                front_distance as f32 + mech.front_sensor_offset_x
             };
 
             let cell_center_x = (encoder_orientation.position.x / maze.cell_width)
@@ -218,7 +215,7 @@ impl Localize {
             };
 
             let (maybe_x, maybe_y) =
-                if path_direction.within(&DIRECTION_0, DIRECTION_WITHIN) {
+                if path_direction.within(DIRECTION_0, DIRECTION_WITHIN) {
                     let y = Some(cell_center_y + center_offset);
                     let x = if front_distance
                         < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
@@ -229,7 +226,7 @@ impl Localize {
                     };
 
                     (x, y)
-                } else if path_direction.within(&DIRECTION_PI, DIRECTION_WITHIN) {
+                } else if path_direction.within(DIRECTION_PI, DIRECTION_WITHIN) {
                     let y = Some(cell_center_y - center_offset);
                     let x = if front_distance
                         < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
@@ -240,7 +237,7 @@ impl Localize {
                     };
 
                     (x, y)
-                } else if path_direction.within(&DIRECTION_PI_2, DIRECTION_WITHIN) {
+                } else if path_direction.within(DIRECTION_PI_2, DIRECTION_WITHIN) {
                     let x = Some(cell_center_x - center_offset);
                     let y = if front_distance
                         < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
@@ -251,7 +248,7 @@ impl Localize {
                     };
 
                     (x, y)
-                } else if path_direction.within(&DIRECTION_3_PI_2, DIRECTION_WITHIN) {
+                } else if path_direction.within(DIRECTION_3_PI_2, DIRECTION_WITHIN) {
                     let x = Some(cell_center_x + center_offset);
                     let y = if front_distance
                         < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
@@ -311,6 +308,25 @@ impl Localize {
         self.orientation = orientation;
         self.last_buffer_len = buffer_len;
 
-        (self.orientation, debug)
+        let maze_direction = if self.orientation.direction.within(DIRECTION_0, FRAC_PI_4)
+        {
+            MazeDirection::East
+        } else if self.orientation.direction.within(DIRECTION_PI_2, FRAC_PI_4) {
+            MazeDirection::North
+        } else if self.orientation.direction.within(DIRECTION_PI, FRAC_PI_4) {
+            MazeDirection::West
+        } else {
+            MazeDirection::South
+        };
+
+        let maze_orientation = MazeOrientation {
+            position: MazePosition {
+                x: (self.orientation.position.x / maze.cell_width) as usize,
+                y: (self.orientation.position.y / maze.cell_width) as usize,
+            },
+            direction: maze_direction,
+        };
+
+        (self.orientation, maze_orientation, debug)
     }
 }

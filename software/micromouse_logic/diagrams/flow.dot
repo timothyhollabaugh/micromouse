@@ -1,0 +1,109 @@
+digraph flow {
+    rankdir=LR
+
+    //edge [headport=w tailport=e]
+
+    subgraph cluster_inputs {
+        label=inputs
+        rank=source
+        distance_sensors
+        encoders
+    }
+
+    subgraph cluster_outputs {
+        label=outputs
+        rank=sink
+        wheel_powers
+    }
+
+    subgraph cluster_fast {
+        label=fast
+
+        subgraph cluster_localization {
+            label=localization
+            style=dashed
+
+            localization [shape=box]
+
+            encoders -> localization
+            distance_sensors -> localization
+
+            localization -> global_orientation
+            localization -> maze_orientation
+        }
+
+        subgraph cluster_motion_queue {
+            label=motion_queue
+            style=dashed
+
+            motion_popping [shape=box]
+
+            global_orientation -> motion_popping
+            motion_popping -> motions
+
+            motion_queuing [shape=box]
+
+            motions -> motion_queuing
+
+            motion_queuing -> updated_motions
+            updated_motions -> motion_popping
+        }
+
+        subgraph cluster_motion_control {
+            label=motion_control
+            style=dashed
+
+            motion_directing [shape=box]
+
+            updated_motions -> motion_directing
+            motion_directing -> path
+            motion_directing -> turn
+
+            path_following [shape=box]
+
+            path -> path_following
+            global_orientation -> path_following
+            path_following -> wheel_velocities
+            path_following -> target_direction
+
+            turning [shape=box]
+
+            turn -> turning
+            global_orientation -> turning
+            turning -> wheel_velocities
+            turning -> target_direction
+
+            target_direction -> localization [weight=0]
+
+            motor_control [shape=box]
+            
+            wheel_velocities -> motor_control
+            encoders -> motor_control
+            motor_control -> wheel_powers
+        }
+    }
+
+    subgraph cluster_slow {
+        label=slow
+        mapping [shape=box]
+
+        distance_sensors -> mapping
+        maze_orientation -> mapping
+
+        mapping -> map
+
+        navigation [shape=box]
+
+        map -> navigation
+        maze_orientation -> navigation
+
+        navigation -> moves
+
+        motion_planning [shape=box]
+
+        moves -> motion_planning
+
+        motion_planning -> new_motions
+        new_motions -> motion_queuing
+    }
+}

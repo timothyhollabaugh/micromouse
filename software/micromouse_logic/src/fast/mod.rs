@@ -1,11 +1,20 @@
-//! Various math related types
+//! All of the real-time control that needs to run quickly
+//!
+//! Includes localization, motion queuing, and motion control
+
+pub mod curve;
+pub mod localize;
+pub mod motion_control;
+pub mod motion_queue;
+pub mod motor_control;
+pub mod path;
+pub mod turn;
 
 use core::f32::consts::PI;
 
-use libm::F32Ext;
+use serde::{Deserialize, Serialize};
 
-use serde::Deserialize;
-use serde::Serialize;
+use libm::F32Ext;
 
 use crate::config::MechanicalConfig;
 
@@ -51,6 +60,20 @@ impl Vector {
                 + self.y * F32Ext::cos(f32::from(theta)),
         }
     }
+
+    pub fn offset_x(&self, offset: f32) -> Vector {
+        Vector {
+            x: self.x + offset,
+            y: self.y,
+        }
+    }
+
+    pub fn offset_y(&self, offset: f32) -> Vector {
+        Vector {
+            x: self.x,
+            y: self.y + offset,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -62,7 +85,7 @@ mod vector_tests {
     use core::f32::consts::SQRT_2;
 
     use super::Vector;
-    use crate::math::{DIRECTION_0, DIRECTION_PI_2};
+    use super::{DIRECTION_0, DIRECTION_PI_2};
 
     #[test]
     fn vector_magnitude_test() {
@@ -209,16 +232,9 @@ impl Direction {
         }
     }
 
-    /// Checks if this direction is 'close enough' to the other direction.
-    ///
-    /// Accounts for floating point errors
-    pub fn close(&self, other: &Direction) -> bool {
-        (self.0 - other.0).abs() < 0.0005
-    }
-
     /// Checks if this direction is within some angle of the other direction
-    pub fn within(&self, other: &Direction, within: f32) -> bool {
-        (self.0 - other.0).abs() < within
+    pub fn within(&self, other: Direction, within: f32) -> bool {
+        (self.centered_at(other) - other.0).abs() < within
     }
 }
 
@@ -337,7 +353,7 @@ mod orientation_tests {
     #[allow(unused_imports)]
     use crate::test::*;
 
-    use crate::math::{Orientation, Vector, DIRECTION_0, DIRECTION_PI_2};
+    use super::{Orientation, Vector, DIRECTION_0, DIRECTION_PI_2};
 
     #[test]
     fn offset() {

@@ -3,12 +3,13 @@ use std::f32;
 use serde::Deserialize;
 use serde::Serialize;
 
-use micromouse_logic::map::find_closed_wall;
-use micromouse_logic::math::Orientation;
-use micromouse_logic::maze::{Maze, MazeIndex, MazeProjectionResult, Wall};
-use micromouse_logic::mouse::Mouse;
-use micromouse_logic::mouse::MouseConfig;
-use micromouse_logic::mouse::MouseDebug;
+use micromouse_logic::fast::{
+    Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI_2,
+};
+use micromouse_logic::mouse::{Mouse, MouseConfig, MouseDebug};
+use micromouse_logic::slow::maze::{
+    Maze, MazeConfig, MazeIndex, MazeProjectionResult, Wall,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SimulationDebug {
@@ -50,6 +51,21 @@ impl SimulationConfig {
     }
 }
 
+/// Find the closest closed wall
+fn find_closed_wall(
+    config: &MazeConfig,
+    maze: &Maze,
+    from: Orientation,
+) -> Option<MazeProjectionResult> {
+    config.wall_projection(from).find(|maze_projection_result| {
+        if let MazeIndex::Wall(wall_index) = maze_projection_result.maze_index {
+            maze.get_wall(wall_index).unwrap_or(&Wall::Closed) == &Wall::Closed
+        } else {
+            true
+        }
+    })
+}
+
 pub struct Simulation {
     mouse: Mouse,
     orientation: Orientation,
@@ -82,27 +98,46 @@ impl Simulation {
 
         // Figure out what the sensors should read
         let front_result = find_closed_wall(
-            &config.mouse.map.maze,
+            &config.mouse.maze,
             &config.maze,
-            self.orientation.offset(mech.front_sensor_orientation()),
+            self.orientation.offset(Orientation {
+                position: Vector {
+                    x: config.mouse.mechanical.front_sensor_offset_x,
+                    y: 0.0,
+                },
+
+                direction: DIRECTION_0,
+            }),
         );
         let front_distance = front_result
             .filter(|result| result.distance < mech.front_sensor_limit as f32)
             .map_or(mech.front_sensor_limit + 10, |result| result.distance as u8);
 
         let left_result = find_closed_wall(
-            &config.mouse.map.maze,
+            &config.mouse.maze,
             &config.maze,
-            self.orientation.offset(mech.left_sensor_orientation()),
+            self.orientation.offset(Orientation {
+                position: Vector {
+                    x: config.mouse.mechanical.left_sensor_offset_x,
+                    y: config.mouse.mechanical.left_sensor_offset_y,
+                },
+                direction: DIRECTION_PI_2,
+            }),
         );
         let left_distance = left_result
             .filter(|result| result.distance < mech.left_sensor_limit as f32)
             .map_or(mech.left_sensor_limit + 10, |result| result.distance as u8);
 
         let right_result = find_closed_wall(
-            &config.mouse.map.maze,
+            &config.mouse.maze,
             &config.maze,
-            self.orientation.offset(mech.right_sensor_orientation()),
+            self.orientation.offset(Orientation {
+                position: Vector {
+                    x: config.mouse.mechanical.right_sensor_offset_x,
+                    y: -config.mouse.mechanical.right_sensor_offset_y,
+                },
+                direction: DIRECTION_3_PI_2,
+            }),
         );
         let right_distance = right_result
             .filter(|result| result.distance < mech.right_sensor_limit as f32)

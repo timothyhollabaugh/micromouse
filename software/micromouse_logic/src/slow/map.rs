@@ -1,23 +1,8 @@
-use libm::F32Ext;
-
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::math::{
-    Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI,
-    DIRECTION_PI_2,
-};
-
-use heapless::ArrayLength;
-use heapless::Vec;
-use typenum::U1;
-use typenum::U8;
-
 use crate::config::MechanicalConfig;
-use crate::maze::{
-    Maze, MazeConfig, MazeIndex, MazeProjectionResult, Wall, WallDirection,
-};
-use itertools::Itertools;
+use crate::slow::maze::MazeConfig;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
@@ -29,11 +14,11 @@ pub struct MapDebug {
     //pub maze: Maze,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MoveOptions {
-    left: bool,
-    front: bool,
-    right: bool,
+    pub left: bool,
+    pub front: bool,
+    pub right: bool,
 }
 
 /// Figures out what the maze is. For now, it will just tell you what of the three walls around are
@@ -49,8 +34,8 @@ impl Map {
 
     pub fn update(
         &mut self,
-        mech: &MechanicalConfig,
-        maze: &MazeConfig,
+        _mech: &MechanicalConfig,
+        _maze: &MazeConfig,
         config: &MapConfig,
         left_distance: u8,
         front_distance: u8,
@@ -62,9 +47,9 @@ impl Map {
 
         (
             MoveOptions {
-                left: left_distance <= config.wall_threshold,
-                front: front_distance <= config.wall_threshold,
-                right: right_distance <= config.wall_threshold,
+                left: left_distance >= config.wall_threshold,
+                front: front_distance >= config.wall_threshold,
+                right: right_distance >= config.wall_threshold,
             },
             debug,
         )

@@ -44,21 +44,17 @@ use embedded_hal::digital::v2::{InputPin, OutputPin, ToggleableOutputPin};
 
 use typenum::consts::U1024;
 
-use micromouse_logic::comms::DebugMsg;
-use micromouse_logic::comms::DebugPacket;
-#[allow(unused_imports)]
-use micromouse_logic::config::*;
-use micromouse_logic::math::Direction;
-use micromouse_logic::math::Orientation;
-use micromouse_logic::math::Vector;
-use micromouse_logic::mouse::{Mouse, MouseDebug};
-
 use crate::battery::Battery;
 use crate::time::Time;
 
 use crate::uart::Uart;
 
 use crate::motors::{Encoder, Motor};
+
+use micromouse_logic::comms::{DebugMsg, DebugPacket};
+use micromouse_logic::config::{mouse_2019, mouse_2020};
+use micromouse_logic::fast::{Orientation, Vector, DIRECTION_0};
+use micromouse_logic::mouse::Mouse;
 
 use crate::motors::left::{LeftEncoder, LeftMotor};
 use crate::motors::right::{RightEncoder, RightMotor};
@@ -152,16 +148,16 @@ where
 }
 
 pub fn do_sensors<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
-    mut time: Time,
-    mut battery: Battery,
-    mut red_led: RL,
-    mut green_led: GL,
-    mut blue_led: BL,
-    mut orange_led: OL,
-    left_button: LB,
-    right_button: RB,
-    mut left_motor: LeftMotor,
-    mut right_motor: RightMotor,
+    _time: Time,
+    _battery: Battery,
+    _red_led: RL,
+    _green_led: GL,
+    _blue_led: BL,
+    _orange_led: OL,
+    _left_button: LB,
+    _right_button: RB,
+    _left_motor: LeftMotor,
+    _right_motor: RightMotor,
     left_encoder: LeftEncoder,
     right_encoder: RightEncoder,
     mut front_distance: VL6180x<I2C1>,
@@ -192,7 +188,8 @@ where
             left_distance.range(),
             front_distance.range(),
             right_distance.range(),
-        );
+        )
+        .ok();
     }
 }
 
@@ -225,7 +222,7 @@ where
     I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
     I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
 {
-    let config = MOUSE_2020;
+    let config = mouse_2020::MOUSE;
 
     let initial_orientation = Orientation {
         position: Vector {
@@ -234,7 +231,7 @@ where
             //x: 1250.0,
             //y: 1350.0,
         },
-        direction: Direction::from(0.0),
+        direction: DIRECTION_0,
     };
 
     let mut last_time: u32 = time.now();
@@ -335,10 +332,11 @@ where
                 if let Some(debug) = debug {
                     msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
                         .ok();
-                    //msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
-                    msgs.push(DebugMsg::Motion(debug.motion.clone())).ok();
-                    msgs.push(DebugMsg::Path(debug.path.clone())).ok();
-                    //msgs.push(DebugMsg::Map(debug.map.clone())).ok();
+                    msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
+                    msgs.push(DebugMsg::MotorControl(
+                        debug.motion_control.motor_control.clone(),
+                    ))
+                    .ok();
                 }
 
                 let packet = DebugPacket {

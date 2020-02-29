@@ -53,7 +53,7 @@ function MazeUi(parent, state) {
 
     function redraw(config) {
 
-        const maze_config = config.mouse.map.maze;
+        const maze_config = config.mouse.maze;
         const maze_width_mm = MAZE_WIDTH * maze_config.cell_width + maze_config.wall_width;
         const maze_height_mm = MAZE_HEIGHT * maze_config.cell_width + maze_config.wall_width;
 
@@ -133,10 +133,6 @@ function MazeUi(parent, state) {
 
         self.path = world.path('').fill('none').stroke({color: '#0000ff', width: 2});
         self.path_closest = world.circle(20.0).fill({color: '#0000ff'});
-
-        self.front_hit_point = world.circle(20.0).fill({color: '#ffff00'})
-        self.left_hit_point = world.circle(20.0).fill({color: '#ff00ff'})
-        self.right_hit_point = world.circle(20.0).fill({color: '#00ffff'})
     }
 
     function wall_stroke(wall_or_post, stroke) {
@@ -162,11 +158,12 @@ function MazeUi(parent, state) {
     function update(debug) {
         world.scale(px_per_mm * zoom, px_per_mm * zoom);
 
-        if (debug.mouse.maze) {
+        if (debug.config.maze) {
+            const maze = debug.config.maze;
             for (let i = 1; i < MAZE_WIDTH; i++) {
                 for (let j = 1; j < MAZE_HEIGHT; j++) {
                     if (i < MAZE_WIDTH) {
-                        let wall = debug.mouse.map.maze.horizontal_walls[i][j - 1];
+                        let wall = maze.horizontal_walls[i][j - 1];
                         if (wall === "Closed") {
                             self.horizontal_walls[i][j].fill(wall_closed_color);
                         } else if (wall === "Open") {
@@ -179,7 +176,7 @@ function MazeUi(parent, state) {
                     }
 
                     if (j < MAZE_HEIGHT) {
-                        let wall = debug.mouse.map.maze.vertical_walls[i - 1][j];
+                        let wall = maze.vertical_walls[i - 1][j];
                         if (wall === "Closed") {
                             self.vertical_walls[i][j].fill(wall_closed_color);
                         } else if (wall === "Open") {
@@ -194,31 +191,10 @@ function MazeUi(parent, state) {
             }
         }
 
-        if (debug.mouse.map.front_result) {
-            wall_stroke(last_front_wall, {width: 0});
-            wall_stroke(debug.mouse.map.front_result.maze_index, {color: "#ffff00", width: 6});
-            last_front_wall = debug.mouse.map.front_result.maze_index;
-            self.front_hit_point.translate(debug.mouse.map.front_result.hit_point.x - 10, debug.mouse.map.front_result.hit_point.y - 10);
-        }
-
-        if (debug.mouse.map.left_result) {
-            wall_stroke(last_left_wall, {width: 0});
-            wall_stroke(debug.mouse.map.left_result.maze_index, {color: "#ff00ff", width: 6});
-            last_left_wall = debug.mouse.map.left_result.maze_index;
-            self.left_hit_point.translate(debug.mouse.map.left_result.hit_point.x - 10, debug.mouse.map.left_result.hit_point.y - 10);
-        }
-
-        if (debug.mouse.map.right_result) {
-            wall_stroke(last_right_wall, {width: 0});
-            wall_stroke(debug.mouse.map.right_result.maze_index, {color: "#00ffff", width: 6});
-            last_right_wall = debug.mouse.map.right_result.maze_index;
-            self.right_hit_point.translate(debug.mouse.map.right_result.hit_point.x - 10, debug.mouse.map.right_result.hit_point.y - 10);
-        }
-
         let orientation_int = debug.mouse.orientation;
         self.mouse_int.rotate(orientation_int.direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
-        if (debug.mouse.path.adjust_direction) {
-            self.mouse_adjust_dir.rotate(debug.mouse.path.adjust_direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
+        if (debug.mouse.motion_config && debug.mouse.motion_control.handler.Path && debug.mouse.motion_control.handler.Path.adjust_direction) {
+            self.mouse_adjust_dir.rotate(debug.mouse.motion_control.handler.Path.adjust_direction * 180 / Math.PI).translate(orientation_int.position.x, orientation_int.position.y);
         }
 
         if (debug.orientation) {
@@ -226,9 +202,15 @@ function MazeUi(parent, state) {
             self.mouse_ext.rotate(orientation_ext.direction * 180 / Math.PI).translate(orientation_ext.position.x, orientation_ext.position.y);
         }
 
-        if (debug.mouse.path.path && debug.mouse.path.path.length > 0) {
-            let path_string = debug.mouse.path.path.reduce(function(str, segment) {
-                return str + bezier6_path(segment.bezier);
+        if (debug.mouse.motion_queue.queue && debug.mouse.motion_queue.queue.length > 0) {
+            let path_string = debug.mouse.motion_queue.queue.reduce(function(str, motion) {
+                if (motion.Path) {
+                    return str + bezier6_path(motion.Path.bezier);
+                } else if (motion.Turn) {
+                    return str
+                } else {
+                    return str
+                }
             }, "");
 
             self.path.plot(path_string);
@@ -236,10 +218,12 @@ function MazeUi(parent, state) {
             self.path.plot("");
         }
 
+        /*
         if (debug.mouse.path.closest_point) {
             let p = debug.mouse.path.closest_point['1'];
             self.path_closest.translate(p.x - 10.0, p.y - 10.0);
         }
+        */
     }
 
     let oldconfig = null;
