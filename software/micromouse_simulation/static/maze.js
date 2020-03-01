@@ -171,7 +171,7 @@ function MazeUi(parent, state) {
             const maze = debug.config.maze;
             for (let i = 0; i < MAZE_WIDTH; i++) {
                 for (let j = 0; j < MAZE_HEIGHT; j++) {
-                    if (i > 0 && i < MAZE_WIDTH) {
+                    if (j > 0 && i < MAZE_WIDTH) {
                         let wall = maze.horizontal_walls[i][j - 1];
                         if (wall === "Closed") {
                             self.horizontal_walls[i][j].fill(wall_closed_color);
