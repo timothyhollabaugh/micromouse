@@ -78,10 +78,12 @@ function MazeUi(parent, state) {
         self.posts = [];
         self.horizontal_walls = [];
         self.vertical_walls = [];
+        self.cells = [];
         for (let i = 0; i < MAZE_WIDTH + 1; i++) {
             self.posts[i] = [];
             self.horizontal_walls[i] = [];
             self.vertical_walls[i] = [];
+            self.cells[i] = [];
             for (let j = 0; j < MAZE_HEIGHT + 1; j++) {
 
                 let post = maze.rect(maze_config.wall_width, maze_config.wall_width);
@@ -116,6 +118,13 @@ function MazeUi(parent, state) {
                         .rect(maze_config.wall_width, maze_config.cell_width - maze_config.wall_width)
                         .move(i * maze_config.cell_width - maze_config.wall_width/2.0, j * maze_config.cell_width + maze_config.wall_width/2.0)
                         .fill(wall_color);
+                }
+
+                if (i < MAZE_WIDTH && j < MAZE_HEIGHT) {
+                    self.cells[i][j] = maze
+                        .rect(maze_config.cell_width - maze_config.wall_width, maze_config.cell_width - maze_config.wall_width)
+                        .move(i * maze_config.cell_width + maze_config.wall_width / 2.0, j * maze_config.cell_width + maze_config.wall_width / 2.0)
+                        .fill({color: '#ff0000', opacity: 0.0});
                 }
             }
         }
@@ -160,9 +169,9 @@ function MazeUi(parent, state) {
 
         if (debug.config.maze) {
             const maze = debug.config.maze;
-            for (let i = 1; i < MAZE_WIDTH; i++) {
-                for (let j = 1; j < MAZE_HEIGHT; j++) {
-                    if (i < MAZE_WIDTH) {
+            for (let i = 0; i < MAZE_WIDTH; i++) {
+                for (let j = 0; j < MAZE_HEIGHT; j++) {
+                    if (i > 0 && i < MAZE_WIDTH) {
                         let wall = maze.horizontal_walls[i][j - 1];
                         if (wall === "Closed") {
                             self.horizontal_walls[i][j].fill(wall_closed_color);
@@ -175,7 +184,7 @@ function MazeUi(parent, state) {
                         }
                     }
 
-                    if (j < MAZE_HEIGHT) {
+                    if ( i > 0 && j < MAZE_HEIGHT) {
                         let wall = maze.vertical_walls[i - 1][j];
                         if (wall === "Closed") {
                             self.vertical_walls[i][j].fill(wall_closed_color);
@@ -185,6 +194,13 @@ function MazeUi(parent, state) {
                             self.vertical_walls[i][j].fill(wall_unknown_color);
                         } else {
                             self.vertical_walls[i][j].fill(wall_err_color);
+                        }
+                    }
+
+                    if (debug.mouse.slow) {
+                        if (i < MAZE_WIDTH && j < MAZE_HEIGHT) {
+                            let count = debug.mouse.slow.navigate.cells[i][j];
+                            self.cells[i][j].fill({opacity: count / 10})
                         }
                     }
                 }
