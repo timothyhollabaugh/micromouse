@@ -124,7 +124,8 @@ mod wall_projection_tests {
 
     use core::f32::consts::{FRAC_PI_8, PI};
 
-    use crate::fast::{Orientation, Vector};
+    use crate::config::MAZE;
+    use crate::fast::{Direction, Orientation, Vector};
     use crate::slow::maze::{MazeIndex, WallDirection, WallIndex};
 
     #[test]
@@ -137,7 +138,7 @@ mod wall_projection_tests {
             direction: Direction::from(FRAC_PI_8),
         };
 
-        let mut walls = MOUSE_MAZE_MAP.maze.wall_projection(mouse);
+        let mut walls = MAZE.wall_projection(mouse);
 
         let result = walls.next().unwrap();
         assert_eq!(
@@ -188,7 +189,7 @@ mod wall_projection_tests {
             direction: Direction::from(FRAC_PI_8 + PI),
         };
 
-        let mut walls = MOUSE_MAZE_MAP.maze.wall_projection(mouse);
+        let mut walls = MAZE.wall_projection(mouse);
 
         let result = walls.next().unwrap();
         assert_eq!(

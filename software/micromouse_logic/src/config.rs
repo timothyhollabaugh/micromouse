@@ -14,7 +14,7 @@ pub const MAZE: MazeConfig = MazeConfig {
     wall_width: 12.0,
 };
 
-pub const LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: true };
+pub const LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: false };
 
 pub const MAP: MapConfig = MapConfig {
     wall_threshold: 200,

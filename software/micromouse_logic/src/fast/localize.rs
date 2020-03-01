@@ -1,4 +1,4 @@
-use core::f32::consts::{FRAC_PI_4, FRAC_PI_8};
+use core::f32::consts::FRAC_PI_8;
 
 use itertools::Itertools;
 
@@ -13,7 +13,6 @@ use typenum::{U1, U8};
 
 use crate::config::MechanicalConfig;
 use crate::slow::maze::MazeConfig;
-use crate::slow::{MazeDirection, MazeOrientation, MazePosition};
 
 use super::{
     Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI,
@@ -154,7 +153,7 @@ impl Localize {
         right_distance: u8,
         path_direction: Direction,
         buffer_len: usize,
-    ) -> (Orientation, MazeOrientation, LocalizeDebug) {
+    ) -> (Orientation, LocalizeDebug) {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
 
@@ -308,25 +307,6 @@ impl Localize {
         self.orientation = orientation;
         self.last_buffer_len = buffer_len;
 
-        let maze_direction = if self.orientation.direction.within(DIRECTION_0, FRAC_PI_4)
-        {
-            MazeDirection::East
-        } else if self.orientation.direction.within(DIRECTION_PI_2, FRAC_PI_4) {
-            MazeDirection::North
-        } else if self.orientation.direction.within(DIRECTION_PI, FRAC_PI_4) {
-            MazeDirection::West
-        } else {
-            MazeDirection::South
-        };
-
-        let maze_orientation = MazeOrientation {
-            position: MazePosition {
-                x: (self.orientation.position.x / maze.cell_width) as usize,
-                y: (self.orientation.position.y / maze.cell_width) as usize,
-            },
-            direction: maze_direction,
-        };
-
-        (self.orientation, maze_orientation, debug)
+        (self.orientation, debug)
     }
 }

@@ -14,7 +14,7 @@ use simulation::Simulation;
 use simulation::SimulationConfig;
 
 use micromouse_logic::config::sim::MOUSE_2019;
-use micromouse_logic::fast::{Direction, Orientation, Vector};
+use micromouse_logic::fast::{Direction, Orientation, Vector, DIRECTION_PI_2};
 use micromouse_logic::slow::maze;
 use micromouse_logic::slow::maze::{Maze, Wall};
 use remote::Remote;
@@ -58,6 +58,7 @@ impl JsSimulation {
     }
 
     pub fn default_config() -> JsValue {
+        /*
         let mut horizontal_walls = [[Wall::Unknown; maze::HEIGHT - 1]; maze::WIDTH];
         let mut vertical_walls = [[Wall::Unknown; maze::HEIGHT]; maze::WIDTH - 1];
 
@@ -102,18 +103,21 @@ impl JsSimulation {
         vertical_walls[9][6] = Wall::Closed;
 
         let maze = Maze::from_walls(horizontal_walls, vertical_walls);
+        */
+        let bytes = include_bytes!("APEC2017.maz");
+        let maze = Maze::from_file(*bytes);
 
         JsValue::from_serde(&SimulationConfig {
             mouse: MOUSE_2019,
             millis_per_step: 10,
             initial_orientation: Orientation {
                 position: Vector {
-                    x: 7.0 * 180.0,
-                    y: 6.5 * 180.0,
+                    x: 0.5 * 180.0,
+                    y: 0.5 * 180.0,
                 },
-                direction: Direction::from(0.0),
+                direction: DIRECTION_PI_2,
             },
-            max_wheel_accel: 0.04,
+            max_wheel_accel: 1.0,
             max_speed: 1.0,
             maze,
         })

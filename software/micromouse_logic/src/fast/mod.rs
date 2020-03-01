@@ -10,13 +10,15 @@ pub mod motor_control;
 pub mod path;
 pub mod turn;
 
-use core::f32::consts::PI;
+use core::f32::consts::{FRAC_PI_4, PI};
 
 use serde::{Deserialize, Serialize};
 
 use libm::F32Ext;
 
 use crate::config::MechanicalConfig;
+use crate::slow::maze::MazeConfig;
+use crate::slow::{MazeDirection, MazeOrientation, MazePosition};
 
 /// A 2d vector
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -344,6 +346,26 @@ impl Orientation {
         Orientation {
             position: self.position + offset.position.rotated(self.direction),
             direction: self.direction + offset.direction,
+        }
+    }
+
+    pub fn to_maze_orientation(self, maze_config: &MazeConfig) -> MazeOrientation {
+        let maze_direction = if self.direction.within(DIRECTION_0, FRAC_PI_4) {
+            MazeDirection::East
+        } else if self.direction.within(DIRECTION_PI_2, FRAC_PI_4) {
+            MazeDirection::North
+        } else if self.direction.within(DIRECTION_PI, FRAC_PI_4) {
+            MazeDirection::West
+        } else {
+            MazeDirection::South
+        };
+
+        MazeOrientation {
+            position: MazePosition {
+                x: (self.position.x / maze_config.cell_width) as usize,
+                y: (self.position.y / maze_config.cell_width) as usize,
+            },
+            direction: maze_direction,
         }
     }
 }

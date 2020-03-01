@@ -97,6 +97,10 @@ impl PathMotion {
     pub fn done(&self, orientation: Orientation) -> bool {
         self.bezier.closest_point(orientation.position).0 >= 1.0
     }
+
+    pub fn end(&self) -> Vector {
+        self.bezier.end
+    }
 }
 
 // Adjust the curvature for the mouse not being on the path
@@ -244,6 +248,7 @@ impl PathHandler {
 
         // Gather some info about the segment
         let (t, p) = segment.closest_point(orientation.position);
+        debug.closest_point = Some((t, p));
         let v_tangent = segment.derivative(t);
         let v_m = orientation.position - p;
         let distance = if v_tangent.cross(v_m) > 0.0 {

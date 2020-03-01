@@ -6,6 +6,7 @@ use typenum::consts::U3;
 use crate::fast::motor_control::MotorControlDebug;
 use crate::fast::Orientation;
 
+use crate::fast::localize::LocalizeDebug;
 use crate::fast::motion_control::MotionHandlerDebug;
 use crate::fast::motion_queue::MotionQueueDebug;
 use crate::mouse::{HardwareDebug, MouseConfig};
@@ -29,6 +30,7 @@ pub enum DebugMsg {
     MotionHandler(Option<MotionHandlerDebug>),
     MotionQueue(MotionQueueDebug),
     MotorControl(MotorControlDebug),
+    Localize(LocalizeDebug),
     Slow(Option<SlowDebug>),
 }
 

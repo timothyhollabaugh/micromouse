@@ -1,5 +1,5 @@
 use heapless::Vec;
-use typenum::{Unsigned, U16};
+use typenum::{Unsigned, U8};
 
 use serde::{Deserialize, Serialize};
 
@@ -27,16 +27,21 @@ pub struct MotionQueueDebug {
     queue: MotionQueueBuffer,
 }
 
-pub type MotionQueueSize = U16;
+pub type MotionQueueSize = U8;
 pub type MotionQueueBuffer = Vec<Motion, MotionQueueSize>;
 
 pub struct MotionQueue {
     queue: MotionQueueBuffer,
 }
 
+// heapless::Vec is dump and needs to be a stack
 impl MotionQueue {
     pub fn new() -> MotionQueue {
         MotionQueue { queue: Vec::new() }
+    }
+
+    pub fn clear(&mut self) {
+        self.queue.clear();
     }
 
     pub fn add_motions(&mut self, motions: &[Motion]) -> Result<usize, usize> {
@@ -68,6 +73,6 @@ impl MotionQueue {
     }
 
     pub fn next_motion(&self) -> Option<Motion> {
-        self.queue.first().cloned()
+        self.queue.last().cloned()
     }
 }

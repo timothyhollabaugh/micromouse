@@ -66,47 +66,53 @@ impl MotionControl {
     ) -> (i32, i32, Direction, MotionControlDebug) {
         let handler = self.handler.take();
 
-        let (left_target, right_target, direction, handler_debug) = match motion {
-            Some(Motion::Path(motion)) => {
-                let mut handler = if let Some(MotionHandler::Path(handler)) = handler {
-                    handler
-                } else {
-                    PathHandler::new(&config.path, time)
-                };
+        let (left_target, right_target, direction, handler_debug) =
+            if let Some(motion) = motion {
+                match motion {
+                    Motion::Path(motion) => {
+                        let mut handler =
+                            if let Some(MotionHandler::Path(handler)) = handler {
+                                handler
+                            } else {
+                                PathHandler::new(&config.path, time)
+                            };
 
-                let (left, right, direction, debug) =
-                    handler.update(&config.path, mech, time, orientation, motion);
+                        let (left, right, direction, debug) =
+                            handler.update(&config.path, mech, time, orientation, motion);
 
-                self.handler = Some(MotionHandler::Path(handler));
+                        self.handler = Some(MotionHandler::Path(handler));
 
-                (
-                    left,
-                    right,
-                    direction,
-                    Some(MotionHandlerDebug::Path(debug)),
-                )
-            }
-            Some(Motion::Turn(motion)) => {
-                let mut handler = if let Some(MotionHandler::Turn(handler)) = handler {
-                    handler
-                } else {
-                    TurnHandler::new(&config.turn, time)
-                };
+                        (
+                            left,
+                            right,
+                            direction,
+                            Some(MotionHandlerDebug::Path(debug)),
+                        )
+                    }
+                    Motion::Turn(motion) => {
+                        let mut handler =
+                            if let Some(MotionHandler::Turn(handler)) = handler {
+                                handler
+                            } else {
+                                TurnHandler::new(&config.turn, time)
+                            };
 
-                let (left, right, direction, debug) =
-                    handler.update(&config.turn, mech, time, orientation, motion);
+                        let (left, right, direction, debug) =
+                            handler.update(&config.turn, mech, time, orientation, motion);
 
-                self.handler = Some(MotionHandler::Turn(handler));
+                        self.handler = Some(MotionHandler::Turn(handler));
 
-                (
-                    left,
-                    right,
-                    direction,
-                    Some(MotionHandlerDebug::Turn(debug)),
-                )
-            }
-            None => (0.0, 0.0, orientation.direction, None),
-        };
+                        (
+                            left,
+                            right,
+                            direction,
+                            Some(MotionHandlerDebug::Turn(debug)),
+                        )
+                    }
+                }
+            } else {
+                (0.0, 0.0, orientation.direction, None)
+            };
 
         let (left_power, right_power, motor_debug) = self.motor_control.update(
             &config.motor_control,

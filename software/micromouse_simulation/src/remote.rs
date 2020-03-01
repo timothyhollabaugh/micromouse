@@ -77,6 +77,9 @@ impl Remote {
                             DebugMsg::MotionQueue(queue) => {
                                 self.debug.mouse.motion_queue = queue
                             }
+                            DebugMsg::Localize(localize) => {
+                                self.debug.mouse.localize = localize
+                            }
                         }
                     }
 

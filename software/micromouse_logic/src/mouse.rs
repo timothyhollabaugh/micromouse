@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::MechanicalConfig;
 
 use crate::fast::localize::{Localize, LocalizeConfig, LocalizeDebug};
-use crate::fast::motion_queue::{MotionQueue, MotionQueueDebug};
+use crate::fast::motion_queue::{Motion, MotionQueue, MotionQueueDebug};
 use crate::fast::{Direction, Orientation};
 
 use crate::fast::motion_control::{
@@ -15,7 +15,7 @@ use crate::slow::map::{Map, MapConfig};
 use crate::slow::maze::MazeConfig;
 use crate::slow::motion_plan::{motion_plan, MotionPlanConfig};
 use crate::slow::navigate::TwelvePartitionNavigate;
-use crate::slow::{MazeOrientation, SlowDebug};
+use crate::slow::{MazeDirection, MazeOrientation, SlowDebug};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct HardwareDebug {
@@ -97,7 +97,7 @@ impl Mouse {
     ) -> (i32, i32, MouseDebug) {
         let delta_time = time - self.last_time;
 
-        let (orientation, maze_orientation, localize_debug) = self.localize.update(
+        let (orientation, localize_debug) = self.localize.update(
             &config.mechanical,
             &config.maze,
             &config.localize,
@@ -109,6 +109,23 @@ impl Mouse {
             self.target_direction,
             self.motion_queue.motions_remaining(),
         );
+
+        let next_motion_going_forward = match self.motion_queue.next_motion() {
+            Some(Motion::Path(path_motion)) => {
+                match orientation.to_maze_orientation(&config.maze).direction {
+                    MazeDirection::North => path_motion.end().y > orientation.position.y,
+                    MazeDirection::South => path_motion.end().y < orientation.position.y,
+                    MazeDirection::East => path_motion.end().x > orientation.position.x,
+                    MazeDirection::West => path_motion.end().x < orientation.position.x,
+                }
+            }
+
+            _ => false,
+        };
+
+        if front_distance < 50 && next_motion_going_forward {
+            self.motion_queue.clear();
+        }
 
         let motion_queue_debug = self.motion_queue.pop_completed(orientation);
 
@@ -122,13 +139,14 @@ impl Mouse {
                 right_distance,
             );
 
-            let (next_direction, navigate_debug) =
-                self.navigate.navigate(maze_orientation, move_options);
+            let (next_direction, navigate_debug) = self
+                .navigate
+                .navigate(orientation.to_maze_orientation(&config.maze), move_options);
 
             let path = motion_plan(
                 &config.motion_plan,
                 &config.maze,
-                maze_orientation,
+                orientation,
                 &[next_direction],
             );
 
@@ -138,6 +156,7 @@ impl Mouse {
                 map: map_debug,
                 move_options,
                 navigate: navigate_debug,
+                next_direction,
             })
         } else {
             None
@@ -165,7 +184,7 @@ impl Mouse {
         let debug = MouseDebug {
             hardware: hardware_debug,
             orientation,
-            maze_orientation,
+            maze_orientation: orientation.to_maze_orientation(&config.maze),
             localize: localize_debug,
             motion_control: motion_debug,
             motion_queue: motion_queue_debug,

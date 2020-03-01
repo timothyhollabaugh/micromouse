@@ -22,6 +22,7 @@ pub struct SlowDebug {
     pub map: MapDebug,
     pub move_options: MoveOptions,
     pub navigate: TwelvePartitionNavigateDebug,
+    pub next_direction: MazeDirection,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Deserialize, Serialize)]

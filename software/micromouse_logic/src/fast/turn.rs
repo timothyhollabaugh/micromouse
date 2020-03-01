@@ -30,10 +30,12 @@ impl TurnMotion {
     }
 
     pub fn done(&self, orientation: Orientation) -> bool {
-        if self.direction == TurnDirection::Counterclockwise {
-            orientation.direction >= self.target
-        } else {
-            orientation.direction <= self.target
+        let centered_direction = orientation.direction.centered_at(self.target);
+        match self.direction {
+            TurnDirection::Counterclockwise => {
+                centered_direction >= f32::from(self.target)
+            }
+            TurnDirection::Clockwise => centered_direction <= f32::from(self.target),
         }
     }
 }
@@ -73,11 +75,13 @@ impl TurnHandler {
         self.pid.i_gain = config.i as f64;
         self.pid.d_gain = config.d as f64;
 
+        let centered_direction = orientation.direction.centered_at(motion.target);
+
         self.pid.set_target(f32::from(motion.target) as f64);
 
         let turn_velocity = self
             .pid
-            .update(f32::from(orientation.direction) as f64, delta_time as f64)
+            .update(f32::from(centered_direction) as f64, delta_time as f64)
             as f32;
 
         let left_target = -mech.rads_to_mm(turn_velocity);

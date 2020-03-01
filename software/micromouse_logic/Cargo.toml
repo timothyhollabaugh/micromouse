@@ -24,3 +24,8 @@ version = "1.0"
 default-features = false
 features = ["derive"]
 
+
+
+[dev-dependencies]
+pretty_assertions = "0.6"
+
