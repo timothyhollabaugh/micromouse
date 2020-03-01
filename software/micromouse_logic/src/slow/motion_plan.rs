@@ -86,7 +86,8 @@ pub fn motion_plan(
                     cell_center,
                     current_orientation.direction,
                     next_direction.into_direction(),
-                    90.0,
+                    maze_config.cell_width / 2.0,
+                    maze_config.wall_width / 2.0,
                 )))
                 .ok();
             }

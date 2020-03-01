@@ -48,17 +48,18 @@ impl PathMotion {
         start: Direction,
         end: Direction,
         radius: f32,
+        offset: f32,
     ) -> PathMotion {
         let start_v = start.into_unit_vector();
         let end_v = end.into_unit_vector();
         PathMotion {
             bezier: Bezier5 {
-                start: center - radius * start_v,
+                start: center - (radius - offset) * start_v,
                 ctrl0: center - (radius / 2.0) * start_v,
                 ctrl1: center - (radius / 3.0) * start_v,
                 ctrl2: center + (radius / 3.0) * end_v,
                 ctrl3: center + (radius / 2.0) * end_v,
-                end: center + radius * end_v,
+                end: center + (radius + offset) * end_v,
             },
         }
     }
