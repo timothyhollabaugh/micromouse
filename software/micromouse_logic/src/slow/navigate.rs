@@ -5,12 +5,18 @@ use serde::{Deserialize, Serialize};
 use super::map::MoveOptions;
 use super::{MazeDirection, MazeOrientation};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Move {
     Forward,
     Left,
     Right,
     Backward,
+}
+
+impl Default for Move {
+    fn default() -> Self {
+        Move::Forward
+    }
 }
 
 impl Move {
@@ -27,11 +33,13 @@ impl Move {
 const CENTER_LEFT: [Move; 3] = [Move::Forward, Move::Left, Move::Right];
 const CENTER_RIGHT: [Move; 3] = [Move::Forward, Move::Right, Move::Left];
 const LEFT: [Move; 3] = [Move::Left, Move::Forward, Move::Right];
-const RIGHT: [Move; 3] = [Move::Right, Move::Forward, Move::Right];
+const RIGHT: [Move; 3] = [Move::Right, Move::Forward, Move::Left];
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct TwelvePartitionNavigateDebug {
     cells: [[u8; 16]; 16],
+    next_move: Move,
+    possibilities: [Move; 3],
 }
 
 pub struct TwelvePartitionNavigate {
@@ -215,7 +223,7 @@ impl TwelvePartitionNavigate {
             (_, _) => panic!("Invalid location!"),
         };
 
-        let mut moves = Move::Backward;
+        let mut next_move = Move::Backward;
 
         // filter by walls
         let possibilities_iter = possibilities.iter().filter(|&moves| match moves {
@@ -234,8 +242,8 @@ impl TwelvePartitionNavigate {
         .min()
         .unwrap();
 
-        for &possible_moves in possibilities_iter {
-            let value = match possible_moves {
+        for &possible_move in possibilities_iter {
+            let value = match possible_move {
                 Move::Forward => front_cell,
                 Move::Left => left_cell,
                 Move::Right => right_cell,
@@ -243,16 +251,20 @@ impl TwelvePartitionNavigate {
             };
 
             if value == min {
-                moves = possible_moves;
+                next_move = possible_move;
                 break;
             }
         }
 
-        let direction = moves.to_direction(orientation.direction);
+        let direction = next_move.to_direction(orientation.direction);
 
         (
             direction,
-            TwelvePartitionNavigateDebug { cells: self.cells },
+            TwelvePartitionNavigateDebug {
+                cells: self.cells,
+                next_move,
+                possibilities,
+            },
         )
         //}
     }
