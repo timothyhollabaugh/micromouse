@@ -29,14 +29,8 @@ impl TurnMotion {
         TurnMotion { target, direction }
     }
 
-    pub fn done(&self, orientation: Orientation) -> bool {
-        let centered_direction = orientation.direction.centered_at(self.target);
-        match self.direction {
-            TurnDirection::Counterclockwise => {
-                centered_direction >= f32::from(self.target)
-            }
-            TurnDirection::Clockwise => centered_direction <= f32::from(self.target),
-        }
+    pub fn done(&self, config: &TurnHandlerConfig, orientation: Orientation) -> bool {
+        orientation.direction.within(self.target, config.tolerance)
     }
 }
 
@@ -45,6 +39,7 @@ pub struct TurnHandlerConfig {
     pub p: f32,
     pub i: f32,
     pub d: f32,
+    pub tolerance: f32,
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]

@@ -127,7 +127,8 @@ impl Mouse {
             self.motion_queue.clear();
         }
 
-        let motion_queue_debug = self.motion_queue.pop_completed(orientation);
+        self.motion_queue
+            .pop_completed(&config.motion_control.turn, orientation);
 
         let slow_debug = if self.motion_queue.motions_remaining() == 0 {
             let (move_options, map_debug) = self.map.update(
@@ -187,7 +188,7 @@ impl Mouse {
             maze_orientation: orientation.to_maze_orientation(&config.maze),
             localize: localize_debug,
             motion_control: motion_debug,
-            motion_queue: motion_queue_debug,
+            motion_queue: self.motion_queue.debug(),
             slow: slow_debug,
             battery,
             time,

@@ -28,6 +28,7 @@ pub mod sim {
     use crate::fast::path::PathHandlerConfig;
     use crate::fast::turn::TurnHandlerConfig;
     use crate::mouse::MouseConfig;
+    use core::f32::consts::FRAC_PI_8;
 
     pub const PIDF: PidfConfig = PidfConfig {
         p: 0.0,
@@ -48,6 +49,7 @@ pub mod sim {
             p: 1.0,
             i: 0.0,
             d: 0.0,
+            tolerance: FRAC_PI_8 / 2.0,
         },
         motor_control: MotorControlConfig {
             left_pidf: PIDF,
@@ -83,6 +85,7 @@ pub mod mouse_2020 {
     use crate::fast::path::PathHandlerConfig;
     use crate::fast::turn::TurnHandlerConfig;
     use crate::mouse::MouseConfig;
+    use core::f32::consts::FRAC_PI_8;
 
     pub const PIDF: PidfConfig = PidfConfig {
         p: 4000.0,
@@ -129,6 +132,7 @@ pub mod mouse_2020 {
                 p: 1.0,
                 i: 0.0,
                 d: 0.0,
+                tolerance: FRAC_PI_8 / 2.0,
             },
             motor_control: MotorControlConfig {
                 left_pidf: PIDF,
@@ -147,6 +151,7 @@ pub mod mouse_2019 {
     use crate::fast::path::PathHandlerConfig;
     use crate::fast::turn::TurnHandlerConfig;
     use crate::mouse::MouseConfig;
+    use core::f32::consts::FRAC_PI_8;
 
     pub const MECH: MechanicalConfig = MechanicalConfig {
         wheel_diameter: 32.0,
@@ -193,6 +198,7 @@ pub mod mouse_2019 {
                 p: 1.0,
                 i: 0.0,
                 d: 0.0,
+                tolerance: FRAC_PI_8 / 2.0,
             },
             motor_control: MotorControlConfig {
                 left_pidf: PIDF,

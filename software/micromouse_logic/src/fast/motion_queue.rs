@@ -4,7 +4,7 @@ use typenum::{Unsigned, U8};
 use serde::{Deserialize, Serialize};
 
 use crate::fast::path::PathMotion;
-use crate::fast::turn::TurnMotion;
+use crate::fast::turn::{TurnHandlerConfig, TurnMotion};
 use crate::fast::Orientation;
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -14,10 +14,14 @@ pub enum Motion {
 }
 
 impl Motion {
-    pub fn done(&self, orientation: Orientation) -> bool {
+    pub fn done(
+        &self,
+        turn_config: &TurnHandlerConfig,
+        orientation: Orientation,
+    ) -> bool {
         match self {
             Motion::Path(path_motion) => path_motion.done(orientation),
-            Motion::Turn(turn_motion) => turn_motion.done(orientation),
+            Motion::Turn(turn_motion) => turn_motion.done(turn_config, orientation),
         }
     }
 }
@@ -54,17 +58,17 @@ impl MotionQueue {
         Ok(MotionQueueSize::to_usize() - self.queue.len())
     }
 
-    pub fn pop_completed(&mut self, orientation: Orientation) -> MotionQueueDebug {
+    pub fn pop_completed(
+        &mut self,
+        turn_config: &TurnHandlerConfig,
+        orientation: Orientation,
+    ) {
         // Go through the buffer and pop off any moves that have been completed
         while let Some(motion) = self.queue.pop() {
-            if !motion.done(orientation) {
+            if !motion.done(turn_config, orientation) {
                 self.queue.push(motion).ok();
                 break;
             }
-        }
-
-        MotionQueueDebug {
-            queue: self.queue.clone(),
         }
     }
 
@@ -74,5 +78,11 @@ impl MotionQueue {
 
     pub fn next_motion(&self) -> Option<Motion> {
         self.queue.last().cloned()
+    }
+
+    pub fn debug(&self) -> MotionQueueDebug {
+        MotionQueueDebug {
+            queue: self.queue.clone(),
+        }
     }
 }

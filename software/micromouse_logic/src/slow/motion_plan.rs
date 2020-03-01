@@ -36,48 +36,50 @@ pub fn motion_plan(
         };
 
         // Very dumb, but it should work.
-        if next_direction.opposite() == maze_orientation.direction {
-            let half_cell = maze_config.cell_width / 2.0;
-            let cell_start = match maze_orientation.direction {
-                MazeDirection::North => cell_center.offset_y(-half_cell),
-                MazeDirection::South => cell_center.offset_y(half_cell),
-                MazeDirection::East => cell_center.offset_x(-half_cell),
-                MazeDirection::West => cell_center.offset_x(half_cell),
-            };
 
-            out.push(Motion::Path(PathMotion::line(cell_start, cell_center)))
-                .ok();
+        // If we are not at the edge of the cell, stop and do a turn instead of a curve
+        let center_threshold = maze_config.cell_width / 4.0;
+        let do_manual_turn = match maze_orientation.direction {
+            MazeDirection::North => {
+                current_orientation.position.y > cell_center.y - center_threshold
+            }
+            MazeDirection::South => {
+                current_orientation.position.y < cell_center.y + center_threshold
+            }
+            MazeDirection::East => {
+                current_orientation.position.x > cell_center.x - center_threshold
+            }
+            MazeDirection::West => {
+                current_orientation.position.x < cell_center.x + center_threshold
+            }
+        };
+
+        if do_manual_turn {
             out.push(Motion::Turn(TurnMotion::new(
-                current_orientation.direction,
+                orientation.direction,
                 next_direction.into_direction(),
             )))
             .ok();
-            out.push(Motion::Path(PathMotion::line(cell_center, cell_start)))
+            out.push(Motion::Path(PathMotion::line(cell_center, end_position)))
                 .ok();
         } else {
-            let center_threshold = maze_config.cell_width / 4.0;
-            let do_manual_turn = match maze_orientation.direction {
-                MazeDirection::North => {
-                    current_orientation.position.y > cell_center.y - center_threshold
-                }
-                MazeDirection::South => {
-                    current_orientation.position.y < cell_center.y + center_threshold
-                }
-                MazeDirection::East => {
-                    current_orientation.position.x > cell_center.x - center_threshold
-                }
-                MazeDirection::West => {
-                    current_orientation.position.x < cell_center.x + center_threshold
-                }
-            };
+            if next_direction.opposite() == maze_orientation.direction {
+                let half_cell = maze_config.cell_width / 2.0;
+                let cell_start = match maze_orientation.direction {
+                    MazeDirection::North => cell_center.offset_y(-half_cell),
+                    MazeDirection::South => cell_center.offset_y(half_cell),
+                    MazeDirection::East => cell_center.offset_x(-half_cell),
+                    MazeDirection::West => cell_center.offset_x(half_cell),
+                };
 
-            if do_manual_turn {
+                out.push(Motion::Path(PathMotion::line(cell_start, cell_center)))
+                    .ok();
                 out.push(Motion::Turn(TurnMotion::new(
-                    orientation.direction,
+                    current_orientation.direction,
                     next_direction.into_direction(),
                 )))
                 .ok();
-                out.push(Motion::Path(PathMotion::line(cell_center, end_position)))
+                out.push(Motion::Path(PathMotion::line(cell_center, cell_start)))
                     .ok();
             } else {
                 out.push(Motion::Path(PathMotion::corner(
@@ -88,7 +90,7 @@ pub fn motion_plan(
                 )))
                 .ok();
             }
-        };
+        }
 
         current_orientation.direction = next_direction.into_direction();
 
