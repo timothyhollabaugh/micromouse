@@ -32,7 +32,7 @@ pub fn motion_plan(
             MazeDirection::North => cell_center.offset_y(offset_distance),
             MazeDirection::South => cell_center.offset_y(-offset_distance),
             MazeDirection::East => cell_center.offset_x(offset_distance),
-            MazeDirection::West => cell_center.offset_y(-offset_distance),
+            MazeDirection::West => cell_center.offset_x(-offset_distance),
         };
 
         // Very dumb, but it should work.
@@ -94,13 +94,7 @@ pub fn motion_plan(
 
         current_orientation.direction = next_direction.into_direction();
 
-        let offset_distance = maze_config.cell_width / 2.0 + maze_config.wall_width / 2.0;
-        current_orientation.position = match next_direction {
-            MazeDirection::North => cell_center.offset_y(offset_distance),
-            MazeDirection::South => cell_center.offset_y(-offset_distance),
-            MazeDirection::East => cell_center.offset_x(offset_distance),
-            MazeDirection::West => cell_center.offset_y(-offset_distance),
-        };
+        current_orientation.position = end_position;
     }
 
     out.reverse();
