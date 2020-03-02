@@ -62,14 +62,19 @@ impl MotionQueue {
         &mut self,
         turn_config: &TurnHandlerConfig,
         orientation: Orientation,
-    ) {
+    ) -> usize {
+        let mut i = 0;
         // Go through the buffer and pop off any moves that have been completed
         while let Some(motion) = self.queue.pop() {
-            if !motion.done(turn_config, orientation) {
+            if motion.done(turn_config, orientation) {
+                i += 1;
+            } else {
                 self.queue.push(motion).ok();
                 break;
             }
         }
+
+        i
     }
 
     pub fn motions_remaining(&self) -> usize {

@@ -122,7 +122,6 @@ pub struct Localize {
     left_filter: AverageFilter<U8>,
     front_filter: AverageFilter<U1>,
     right_filter: AverageFilter<U8>,
-    last_buffer_len: usize,
 }
 
 impl Localize {
@@ -138,7 +137,6 @@ impl Localize {
             left_filter: AverageFilter::new(),
             front_filter: AverageFilter::new(),
             right_filter: AverageFilter::new(),
-            last_buffer_len: 0,
         }
     }
 
@@ -153,7 +151,7 @@ impl Localize {
         front_distance: u8,
         right_distance: u8,
         path_direction: Direction,
-        buffer_len: usize,
+        moves_completed: usize,
     ) -> (Orientation, LocalizeDebug) {
         let delta_left = left_encoder - self.left_encoder;
         let delta_right = right_encoder - self.right_encoder;
@@ -278,9 +276,8 @@ impl Localize {
                     (None, None)
                 };
 
-            let direction = if buffer_len < self.last_buffer_len {
+            let direction = if moves_completed > 0 {
                 path_direction
-            //encoder_orientation.direction
             } else {
                 encoder_orientation.direction
             };
@@ -321,7 +318,6 @@ impl Localize {
         self.left_encoder = left_encoder;
         self.right_encoder = right_encoder;
         self.orientation = orientation;
-        self.last_buffer_len = buffer_len;
 
         (self.orientation, debug)
     }

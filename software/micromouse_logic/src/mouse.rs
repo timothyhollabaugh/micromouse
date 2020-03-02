@@ -58,6 +58,7 @@ pub struct Mouse {
     localize: Localize,
     motion_queue: MotionQueue,
     motion_control: MotionControl,
+    moves_completed: usize,
 }
 
 impl Mouse {
@@ -81,6 +82,7 @@ impl Mouse {
             ),
             target_direction: orientation.direction,
             motion_queue: MotionQueue::new(),
+            moves_completed: 0,
         }
     }
 
@@ -107,7 +109,7 @@ impl Mouse {
             front_distance,
             right_distance,
             self.target_direction,
-            self.motion_queue.motions_remaining(),
+            self.moves_completed,
         );
 
         let next_motion_going_forward = match self.motion_queue.next_motion() {
@@ -127,7 +129,8 @@ impl Mouse {
             self.motion_queue.clear();
         }
 
-        self.motion_queue
+        self.moves_completed = self
+            .motion_queue
             .pop_completed(&config.motion_control.turn, orientation);
 
         let slow_debug = if self.motion_queue.motions_remaining() == 0 {
