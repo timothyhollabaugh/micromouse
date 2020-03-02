@@ -123,7 +123,7 @@ impl Mouse {
             _ => false,
         };
 
-        if front_distance < 50 && next_motion_going_forward {
+        if front_distance < 40 && next_motion_going_forward {
             self.motion_queue.clear();
         }
 

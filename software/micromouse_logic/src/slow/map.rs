@@ -2,6 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::config::MechanicalConfig;
+use crate::fast::Orientation;
 use crate::slow::maze::MazeConfig;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]

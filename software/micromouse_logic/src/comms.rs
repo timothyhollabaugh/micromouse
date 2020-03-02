@@ -1,7 +1,7 @@
 use heapless::Vec;
 use serde::Deserialize;
 use serde::Serialize;
-use typenum::consts::U3;
+use typenum::consts::*;
 
 use crate::fast::motor_control::MotorControlDebug;
 use crate::fast::Orientation;
@@ -36,7 +36,7 @@ pub enum DebugMsg {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DebugPacket {
-    pub msgs: Vec<DebugMsg, U3>,
+    pub msgs: Vec<DebugMsg, U4>,
     pub battery: u16,
     pub time: u32,
     pub delta_time_sys: u32,

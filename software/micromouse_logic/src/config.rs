@@ -46,6 +46,7 @@ pub mod sim {
             velocity: 0.5,
         },
         turn: TurnHandlerConfig {
+            rad_per_sec: 0.1,
             p: 1.0,
             i: 0.0,
             d: 0.0,
@@ -87,16 +88,9 @@ pub mod mouse_2020 {
     use crate::mouse::MouseConfig;
     use core::f32::consts::FRAC_PI_8;
 
-    pub const PIDF: PidfConfig = PidfConfig {
-        p: 4000.0,
-        i: 0.5,
-        d: 25000.0,
-        f: 0.0,
-    };
-
     pub const MECH: MechanicalConfig = MechanicalConfig {
         wheel_diameter: 32.0,
-        gearbox_ratio: 50.00,
+        gearbox_ratio: 75.81,
         ticks_per_rev: 12.0,
         wheelbase: 78.0,
         width: 64.0,
@@ -114,6 +108,13 @@ pub mod mouse_2020 {
         right_sensor_limit: 200,
     };
 
+    pub const PIDF: PidfConfig = PidfConfig {
+        p: 5000.0,
+        i: 0.5,
+        d: 25000.0,
+        f: 0.0,
+    };
+
     pub const MOUSE: MouseConfig = MouseConfig {
         mechanical: MECH,
         maze: super::MAZE,
@@ -122,17 +123,18 @@ pub mod mouse_2020 {
         localize: super::LOCALIZE,
         motion_control: MotionControlConfig {
             path: PathHandlerConfig {
-                p: 0.05,
+                p: 0.07,
                 i: 0.0,
                 d: 0.0,
-                offset_p: 0.010,
+                offset_p: 0.01,
                 velocity: 0.5,
             },
             turn: TurnHandlerConfig {
-                p: 1.0,
+                rad_per_sec: 0.05,
+                p: 0.10,
                 i: 0.0,
                 d: 0.0,
-                tolerance: FRAC_PI_8 / 2.0,
+                tolerance: 0.02,
             },
             motor_control: MotorControlConfig {
                 left_pidf: PIDF,
@@ -174,7 +176,7 @@ pub mod mouse_2019 {
     };
 
     pub const PIDF: PidfConfig = PidfConfig {
-        p: 4000.0,
+        p: 5000.0,
         i: 0.5,
         d: 25000.0,
         f: 0.0,
@@ -188,17 +190,18 @@ pub mod mouse_2019 {
         localize: super::LOCALIZE,
         motion_control: MotionControlConfig {
             path: PathHandlerConfig {
-                p: 0.1,
+                p: 0.15,
                 i: 0.0,
                 d: 0.0,
                 offset_p: 0.01,
-                velocity: 0.3,
+                velocity: 0.2,
             },
             turn: TurnHandlerConfig {
+                rad_per_sec: 0.05,
                 p: 1.0,
                 i: 0.0,
                 d: 0.0,
-                tolerance: FRAC_PI_8 / 2.0,
+                tolerance: 0.02,
             },
             motor_control: MotorControlConfig {
                 left_pidf: PIDF,

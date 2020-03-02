@@ -18,6 +18,7 @@ use super::{
     Direction, Orientation, Vector, DIRECTION_0, DIRECTION_3_PI_2, DIRECTION_PI,
     DIRECTION_PI_2,
 };
+use crate::slow::MazeDirection;
 
 pub struct AverageFilter<N: ArrayLength<f32>> {
     values: Vec<f32, N>,
@@ -161,7 +162,22 @@ impl Localize {
             self.orientation
                 .update_from_encoders(&mech, delta_left, delta_right);
 
-        let (orientation, sensor_debug) = if config.use_sensors {
+        let encoder_maze_orientation = encoder_orientation.to_maze_orientation(maze);
+        let encoder_cell_center = encoder_maze_orientation.position.center_position(maze);
+        let tolerance = maze.cell_width / 2.0 - maze.wall_width;
+
+        let in_center = match encoder_maze_orientation.direction {
+            MazeDirection::North | MazeDirection::South => {
+                encoder_orientation.position.y > encoder_cell_center.y - tolerance
+                    && encoder_orientation.position.y < encoder_cell_center.y + tolerance
+            }
+            MazeDirection::East | MazeDirection::West => {
+                encoder_orientation.position.x > encoder_cell_center.x - tolerance
+                    && encoder_orientation.position.x < encoder_cell_center.x + tolerance
+            }
+        };
+
+        let (orientation, sensor_debug) = if config.use_sensors && in_center {
             const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
             const FRONT_TOLERANCE: f32 = 20.0;
 

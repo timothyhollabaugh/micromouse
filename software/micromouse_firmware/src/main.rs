@@ -59,6 +59,7 @@ use micromouse_logic::mouse::Mouse;
 use crate::motors::left::{LeftEncoder, LeftMotor};
 use crate::motors::right::{RightEncoder, RightMotor};
 use crate::vl6180x::VL6180x;
+use micromouse_logic::fast::motion_control::{MotionHandler, MotionHandlerDebug};
 
 // Setup the master clock out
 pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
@@ -258,7 +259,7 @@ where
     I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
     I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
 {
-    let config = mouse_2019::MOUSE;
+    let config = mouse_2020::MOUSE;
 
     let initial_orientation = Orientation {
         position: Vector {
@@ -303,7 +304,7 @@ where
         }
 
         if let Ok(byte) = uart.read_byte() {
-            blue_led.set_high().ok();
+            //blue_led.set_high().ok();
             match byte {
                 0 => {}
                 1 => debugging = false,
@@ -318,7 +319,7 @@ where
                 _ => {}
             }
         } else {
-            blue_led.set_low().ok();
+            //blue_led.set_low().ok();
         }
 
         if now - last_time >= 10 {
@@ -345,6 +346,16 @@ where
                 right_motor.change_power((right_power) as i32);
                 left_motor.change_power((left_power) as i32);
 
+                match debug.motion_control.handler {
+                    Some(MotionHandlerDebug::Turn(_)) => blue_led.set_high().ok(),
+                    _ => blue_led.set_low().ok(),
+                };
+
+                match debug.slow {
+                    Some(_) => orange_led.set_high().ok(),
+                    _ => orange_led.set_low().ok(),
+                };
+
                 Some(debug)
             } else {
                 right_motor.change_power(0);
@@ -362,10 +373,13 @@ where
                         msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
                         //msgs.push(DebugMsg::Slow(debug.slow)).ok();
                         //msgs.push(DebugMsg::Localize(debug.localize.clone())).ok();
+                        msgs.push(DebugMsg::MotionQueue(debug.motion_queue.clone()))
+                            .ok();
                         //msgs.push(DebugMsg::MotorControl(
-                        //debug.motion_control.motor_control.clone(),
+                        //   debug.motion_control.motor_control.clone(),
                         //))
-                        //.ok();
+                        msgs.push(DebugMsg::MotionHandler(debug.motion_control.handler))
+                            .ok();
                     }
 
                     let packet = DebugPacket {
@@ -379,13 +393,13 @@ where
 
                     if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
                         uart.add_bytes(&bytes).ok();
-                        orange_led.set_high().ok();
+                        //orange_led.set_high().ok();
                     }
 
                     packet_count += 1;
                     last_packet_time = now;
                 } else {
-                    orange_led.set_low().ok();
+                    //orange_led.set_low().ok();
                 }
 
                 if now - start_time > 1000 && mouse.is_none() {

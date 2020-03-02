@@ -75,7 +75,7 @@ pub fn motion_plan(
                 out.push(Motion::Path(PathMotion::line(cell_start, cell_center)))
                     .ok();
                 out.push(Motion::Turn(TurnMotion::new(
-                    current_orientation.direction,
+                    maze_orientation.direction.into_direction(),
                     next_direction.into_direction(),
                 )))
                 .ok();
@@ -84,10 +84,10 @@ pub fn motion_plan(
             } else {
                 out.push(Motion::Path(PathMotion::corner(
                     cell_center,
-                    current_orientation.direction,
+                    maze_orientation.direction.into_direction(),
                     next_direction.into_direction(),
                     maze_config.cell_width / 2.0,
-                    maze_config.wall_width / 2.0,
+                    maze_config.wall_width,
                 )))
                 .ok();
             }

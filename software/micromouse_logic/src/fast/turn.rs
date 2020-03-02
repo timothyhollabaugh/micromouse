@@ -36,6 +36,7 @@ impl TurnMotion {
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct TurnHandlerConfig {
+    pub rad_per_sec: f32,
     pub p: f32,
     pub i: f32,
     pub d: f32,
@@ -43,7 +44,9 @@ pub struct TurnHandlerConfig {
 }
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct TurnHandlerDebug {}
+pub struct TurnHandlerDebug {
+    turn_velocity: f32,
+}
 
 pub struct TurnHandler {
     pid: PIDController,
@@ -52,7 +55,9 @@ pub struct TurnHandler {
 
 impl TurnHandler {
     pub fn new(config: &TurnHandlerConfig, time: u32) -> TurnHandler {
-        let pid = PIDController::new(config.p as f64, config.i as f64, config.d as f64);
+        let mut pid =
+            PIDController::new(config.p as f64, config.i as f64, config.d as f64);
+        pid.set_limits(-config.rad_per_sec as f64, config.rad_per_sec as f64);
         TurnHandler { pid, time }
     }
 
@@ -69,6 +74,7 @@ impl TurnHandler {
         self.pid.p_gain = config.p as f64;
         self.pid.i_gain = config.i as f64;
         self.pid.d_gain = config.d as f64;
+        self.pid.set_limits(-0.01 as f64, 0.01 as f64);
 
         let centered_direction = orientation.direction.centered_at(motion.target);
 
@@ -90,7 +96,7 @@ impl TurnHandler {
             left_target,
             right_target,
             target_direction,
-            TurnHandlerDebug {},
+            TurnHandlerDebug { turn_velocity },
         )
     }
 }
