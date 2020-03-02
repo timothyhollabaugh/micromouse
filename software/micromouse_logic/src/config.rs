@@ -127,7 +127,7 @@ pub mod mouse_2020 {
                 i: 0.0,
                 d: 0.0,
                 offset_p: 0.01,
-                velocity: 0.5,
+                velocity: 0.3,
             },
             turn: TurnHandlerConfig {
                 rad_per_sec: 0.05,

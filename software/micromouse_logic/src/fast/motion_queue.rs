@@ -1,5 +1,5 @@
 use heapless::Vec;
-use typenum::{Unsigned, U8};
+use typenum::{Unsigned, U4};
 
 use serde::{Deserialize, Serialize};
 
@@ -31,7 +31,7 @@ pub struct MotionQueueDebug {
     queue: MotionQueueBuffer,
 }
 
-pub type MotionQueueSize = U8;
+pub type MotionQueueSize = U4;
 pub type MotionQueueBuffer = Vec<Motion, MotionQueueSize>;
 
 pub struct MotionQueue {

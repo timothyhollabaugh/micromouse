@@ -371,15 +371,15 @@ where
                         msgs.push(DebugMsg::Orientation(debug.orientation.clone()))
                             .ok();
                         msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
-                        //msgs.push(DebugMsg::Slow(debug.slow)).ok();
+                        msgs.push(DebugMsg::Slow(debug.slow)).ok();
                         //msgs.push(DebugMsg::Localize(debug.localize.clone())).ok();
-                        msgs.push(DebugMsg::MotionQueue(debug.motion_queue.clone()))
-                            .ok();
+                        //msgs.push(DebugMsg::MotionQueue(debug.motion_queue.clone()))
+                        //.ok();
                         //msgs.push(DebugMsg::MotorControl(
                         //   debug.motion_control.motor_control.clone(),
                         //))
-                        msgs.push(DebugMsg::MotionHandler(debug.motion_control.handler))
-                            .ok();
+                        //msgs.push(DebugMsg::MotionHandler(debug.motion_control.handler))
+                        //.ok();
                     }
 
                     let packet = DebugPacket {
