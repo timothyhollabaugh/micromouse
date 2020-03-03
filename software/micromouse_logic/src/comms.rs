@@ -36,7 +36,7 @@ pub enum DebugMsg {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DebugPacket {
-    pub msgs: Vec<DebugMsg, U3>,
+    pub msgs: Vec<DebugMsg, U4>,
     pub battery: u16,
     pub time: u32,
     pub delta_time_sys: u32,

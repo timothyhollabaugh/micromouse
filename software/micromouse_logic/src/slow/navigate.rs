@@ -35,7 +35,7 @@ const CENTER_RIGHT: [Move; 3] = [Move::Forward, Move::Right, Move::Left];
 const LEFT: [Move; 3] = [Move::Left, Move::Forward, Move::Right];
 const RIGHT: [Move; 3] = [Move::Right, Move::Forward, Move::Left];
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct TwelvePartitionNavigateDebug {
     cells: [[u8; 16]; 16],
     next_move: Move,
@@ -124,6 +124,7 @@ impl TwelvePartitionNavigate {
         let right_blocked = right_cell == 255 || !move_options.right;
         let rear_blocked = rear_cell == 255;
 
+        /*
         let num_blocked = [front_blocked, left_blocked, right_blocked, rear_blocked]
             .iter()
             .filter(|&c| *c)
@@ -132,6 +133,7 @@ impl TwelvePartitionNavigate {
         if num_blocked == 3 {
             self.cells[ux][uy] = 255;
         }
+        */
 
         let possibilities = match (x, y) {
             (x, y) if x < 7 && y < 7 => match orientation.direction {

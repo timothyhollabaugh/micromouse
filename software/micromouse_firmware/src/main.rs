@@ -42,7 +42,7 @@ use postcard;
 use embedded_hal::blocking::i2c;
 use embedded_hal::digital::v2::{InputPin, OutputPin, ToggleableOutputPin};
 
-use typenum::consts::U1024;
+use typenum::consts::U2048;
 
 use crate::battery::Battery;
 use crate::time::Time;
@@ -351,10 +351,11 @@ where
                     _ => blue_led.set_low().ok(),
                 };
 
-                match debug.slow {
-                    Some(_) => orange_led.set_high().ok(),
-                    _ => orange_led.set_low().ok(),
-                };
+                if let Some(_) = debug.slow {
+                    orange_led.set_high().ok();
+                } else {
+                    orange_led.set_low().ok();
+                }
 
                 Some(debug)
             } else {
@@ -373,8 +374,7 @@ where
                         msgs.push(DebugMsg::Hardware(debug.hardware.clone())).ok();
                         msgs.push(DebugMsg::Slow(debug.slow)).ok();
                         //msgs.push(DebugMsg::Localize(debug.localize.clone())).ok();
-                        //msgs.push(DebugMsg::MotionQueue(debug.motion_queue.clone()))
-                        //.ok();
+                        msgs.push(DebugMsg::MotionQueue(debug.motion_queue)).ok();
                         //msgs.push(DebugMsg::MotorControl(
                         //   debug.motion_control.motor_control.clone(),
                         //))
@@ -391,7 +391,7 @@ where
                         count: packet_count,
                     };
 
-                    if let Ok(bytes) = postcard::to_vec::<U1024, _>(&packet) {
+                    if let Ok(bytes) = postcard::to_vec::<U2048, _>(&packet) {
                         uart.add_bytes(&bytes).ok();
                         //orange_led.set_high().ok();
                     }

@@ -66,7 +66,10 @@ impl Remote {
                             DebugMsg::Orientation(orientation) => {
                                 self.debug.mouse.orientation = orientation
                             }
-                            DebugMsg::Slow(slow) => self.debug.mouse.slow = slow,
+                            DebugMsg::Slow(Some(slow)) => {
+                                self.debug.mouse.slow = Some(slow)
+                            }
+                            DebugMsg::Slow(None) => {}
                             DebugMsg::MotorControl(motor_control) => {
                                 self.debug.mouse.motion_control.motor_control =
                                     motor_control

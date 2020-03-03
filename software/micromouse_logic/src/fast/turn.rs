@@ -74,7 +74,7 @@ impl TurnHandler {
         self.pid.p_gain = config.p as f64;
         self.pid.i_gain = config.i as f64;
         self.pid.d_gain = config.d as f64;
-        self.pid.set_limits(-0.01 as f64, 0.01 as f64);
+        self.pid.set_limits(-0.005 as f64, 0.005 as f64);
 
         let centered_direction = orientation.direction.centered_at(motion.target);
 

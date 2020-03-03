@@ -17,7 +17,7 @@ use crate::slow::map::{MapDebug, MoveOptions};
 use crate::slow::navigate::TwelvePartitionNavigateDebug;
 use maze::MazeConfig;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SlowDebug {
     pub map: MapDebug,
     pub move_options: MoveOptions,

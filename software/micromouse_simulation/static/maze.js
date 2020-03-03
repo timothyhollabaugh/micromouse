@@ -167,10 +167,10 @@ function MazeUi(parent, state) {
     function update(debug) {
         world.scale(px_per_mm * zoom, px_per_mm * zoom);
 
-        if (debug.config.maze) {
-            const maze = debug.config.maze;
-            for (let i = 0; i < MAZE_WIDTH; i++) {
-                for (let j = 0; j < MAZE_HEIGHT; j++) {
+        const maze = debug.config.maze;
+        for (let i = 0; i < MAZE_WIDTH; i++) {
+            for (let j = 0; j < MAZE_HEIGHT; j++) {
+                if (debug.config.maze) {
                     if (j > 0 && i < MAZE_WIDTH) {
                         let wall = maze.horizontal_walls[i][j - 1];
                         if (wall === "Closed") {
@@ -184,7 +184,7 @@ function MazeUi(parent, state) {
                         }
                     }
 
-                    if ( i > 0 && j < MAZE_HEIGHT) {
+                    if (i > 0 && j < MAZE_HEIGHT) {
                         let wall = maze.vertical_walls[i - 1][j];
                         if (wall === "Closed") {
                             self.vertical_walls[i][j].fill(wall_closed_color);
@@ -196,12 +196,12 @@ function MazeUi(parent, state) {
                             self.vertical_walls[i][j].fill(wall_err_color);
                         }
                     }
+                }
 
-                    if (debug.mouse.slow) {
-                        if (i < MAZE_WIDTH && j < MAZE_HEIGHT) {
-                            let count = debug.mouse.slow.navigate.cells[i][j];
-                            self.cells[i][j].fill({opacity: count / 10})
-                        }
+                if (debug.mouse.slow) {
+                    if (i < MAZE_WIDTH && j < MAZE_HEIGHT) {
+                        let count = debug.mouse.slow.navigate.cells[i][j];
+                        self.cells[i][j].fill({opacity: count / 10})
                     }
                 }
             }

@@ -108,7 +108,7 @@ impl Mouse {
             left_distance,
             front_distance,
             right_distance,
-            self.target_direction,
+            self.motion_queue.next_motion(),
             self.moves_completed,
         );
 
@@ -125,13 +125,14 @@ impl Mouse {
             _ => false,
         };
 
-        if front_distance < 40 && next_motion_going_forward {
+        self.moves_completed = if front_distance < 40 && next_motion_going_forward {
+            let len = self.motion_queue.motions_remaining();
             self.motion_queue.clear();
-        }
-
-        self.moves_completed = self
-            .motion_queue
-            .pop_completed(&config.motion_control.turn, orientation);
+            len
+        } else {
+            self.motion_queue
+                .pop_completed(&config.motion_control.turn, orientation)
+        };
 
         let slow_debug = if self.motion_queue.motions_remaining() == 0 {
             let (move_options, map_debug) = self.map.update(

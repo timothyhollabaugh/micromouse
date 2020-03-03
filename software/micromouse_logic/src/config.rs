@@ -17,7 +17,9 @@ pub const MAZE: MazeConfig = MazeConfig {
 pub const LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: true };
 
 pub const MAP: MapConfig = MapConfig {
-    wall_threshold: 200,
+    front_threhold: 200,
+    left_threshold: 100,
+    right_threshold: 100,
 };
 
 pub const MOTION_PLAN: MotionPlanConfig = MotionPlanConfig {};
@@ -104,8 +106,8 @@ pub mod mouse_2020 {
         right_sensor_offset_x: 26.0,
 
         front_sensor_limit: 200,
-        left_sensor_limit: 200,
-        right_sensor_limit: 200,
+        left_sensor_limit: 100,
+        right_sensor_limit: 100,
     };
 
     pub const PIDF: PidfConfig = PidfConfig {
@@ -171,8 +173,8 @@ pub mod mouse_2019 {
         right_sensor_offset_x: 30.0,
 
         front_sensor_limit: 200,
-        left_sensor_limit: 200,
-        right_sensor_limit: 200,
+        left_sensor_limit: 150,
+        right_sensor_limit: 150,
     };
 
     pub const PIDF: PidfConfig = PidfConfig {

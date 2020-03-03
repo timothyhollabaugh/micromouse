@@ -7,6 +7,7 @@ use micromouse_logic::fast::motion_queue::Motion;
 use micromouse_logic::fast::motion_queue::MotionQueueBuffer;
 use micromouse_logic::fast::motion_queue::MotionQueueDebug;
 use micromouse_logic::fast::path::PathHandlerDebug;
+use micromouse_logic::fast::turn::TurnHandlerDebug;
 use micromouse_logic::slow::navigate::TwelvePartitionNavigateDebug;
 use micromouse_logic::slow::MazeDirection;
 use micromouse_logic::slow::MazeOrientation;
@@ -23,7 +24,7 @@ fn main() {
     print_size!(Vector);
     print_size!(Direction);
     print_size!(PathHandlerDebug);
-    print_size!(PathHandlerDebug);
+    print_size!(TurnHandlerDebug);
     print_size!(MotionQueueDebug);
     print_size!(MotionQueueBuffer);
     print_size!(MotionControlDebug);

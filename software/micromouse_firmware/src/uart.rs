@@ -10,8 +10,8 @@ use stm32f4xx_hal::stm32 as stm32f405;
 use stm32f4xx_hal::stm32::Interrupt as interrupt;
 use stm32f4xx_hal::stm32::NVIC;
 
-const RX_BUFFER_LEN: usize = 1024;
-const TX_BUFFER_LEN: usize = 1024;
+const RX_BUFFER_LEN: usize = 64;
+const TX_BUFFER_LEN: usize = 2048;
 
 struct Buffer<T> {
     bytes: T,

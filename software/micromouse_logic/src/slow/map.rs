@@ -7,10 +7,12 @@ use crate::slow::maze::MazeConfig;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapConfig {
-    pub wall_threshold: u8,
+    pub front_threhold: u8,
+    pub left_threshold: u8,
+    pub right_threshold: u8,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MapDebug {
     //pub maze: Maze,
 }
@@ -48,9 +50,9 @@ impl Map {
 
         (
             MoveOptions {
-                left: left_distance >= config.wall_threshold,
-                front: front_distance >= config.wall_threshold,
-                right: right_distance >= config.wall_threshold,
+                left: left_distance >= config.left_threshold,
+                front: front_distance >= config.front_threhold,
+                right: right_distance >= config.right_threshold,
             },
             debug,
         )
