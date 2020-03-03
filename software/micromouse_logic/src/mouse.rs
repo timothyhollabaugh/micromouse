@@ -112,20 +112,41 @@ impl Mouse {
             self.moves_completed,
         );
 
-        let next_motion_going_forward = match self.motion_queue.next_motion() {
-            Some(Motion::Path(path_motion)) => {
-                match orientation.to_maze_orientation(&config.maze).direction {
-                    MazeDirection::North => path_motion.end().y > orientation.position.y,
-                    MazeDirection::South => path_motion.end().y < orientation.position.y,
-                    MazeDirection::East => path_motion.end().x > orientation.position.x,
-                    MazeDirection::West => path_motion.end().x < orientation.position.x,
+        let (motion_going_forward, motion_going_left, motion_going_right) =
+            match self.motion_queue.next_motion() {
+                Some(Motion::Path(path_motion)) => {
+                    match orientation.to_maze_orientation(&config.maze).direction {
+                        MazeDirection::North => (
+                            path_motion.end().y > orientation.position.y,
+                            path_motion.end().x < orientation.position.x,
+                            path_motion.end().x > orientation.position.x,
+                        ),
+                        MazeDirection::South => (
+                            path_motion.end().y < orientation.position.y,
+                            path_motion.end().x > orientation.position.x,
+                            path_motion.end().x < orientation.position.x,
+                        ),
+                        MazeDirection::East => (
+                            path_motion.end().x > orientation.position.x,
+                            path_motion.end().y > orientation.position.y,
+                            path_motion.end().y < orientation.position.y,
+                        ),
+                        MazeDirection::West => (
+                            path_motion.end().x < orientation.position.x,
+                            path_motion.end().y < orientation.position.y,
+                            path_motion.end().y > orientation.position.y,
+                        ),
+                    }
                 }
-            }
 
-            _ => false,
-        };
+                _ => (false, false, false),
+            };
 
-        self.moves_completed = if front_distance < 40 && next_motion_going_forward {
+        let abort_moves = (motion_going_forward && front_distance < 40)
+            || (motion_going_left && left_distance < 20)
+            || (motion_going_right && right_distance < 20);
+
+        self.moves_completed = if abort_moves {
             let len = self.motion_queue.motions_remaining();
             self.motion_queue.clear();
             len
