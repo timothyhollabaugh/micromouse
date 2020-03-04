@@ -201,7 +201,7 @@ function MazeUi(parent, state) {
                 if (debug.mouse.slow) {
                     if (i < MAZE_WIDTH && j < MAZE_HEIGHT) {
                         let count = debug.mouse.slow.navigate.cells[i][j];
-                        self.cells[i][j].fill({opacity: count / 10})
+                        self.cells[i][j].fill({opacity: count / 32})
                     }
                 }
             }
