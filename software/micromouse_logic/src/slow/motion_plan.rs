@@ -72,15 +72,15 @@ pub fn motion_plan(
                     MazeDirection::West => cell_center.offset_x(half_cell),
                 };
 
-                out.push(Motion::Path(PathMotion::line(cell_start, cell_center)))
-                    .ok();
+                //out.push(Motion::Path(PathMotion::line(cell_start, cell_center)))
+                //.ok();
                 out.push(Motion::Turn(TurnMotion::new(
                     maze_orientation.direction.into_direction(),
                     next_direction.into_direction(),
                 )))
                 .ok();
-                out.push(Motion::Path(PathMotion::line(cell_center, cell_start)))
-                    .ok();
+            //out.push(Motion::Path(PathMotion::line(cell_center, cell_start)))
+            //.ok();
             } else {
                 out.push(Motion::Path(PathMotion::corner(
                     cell_center,
