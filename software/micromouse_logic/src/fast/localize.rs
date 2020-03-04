@@ -180,7 +180,7 @@ impl Localize {
             let path_direction = motion.derivative(t).direction();
             if config.use_sensors && in_center {
                 const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
-                const FRONT_TOLERANCE: f32 = 30.0;
+                const FRONT_TOLERANCE: f32 = 45.0;
 
                 let left_distance = if left_distance <= mech.left_sensor_limit {
                     Some(

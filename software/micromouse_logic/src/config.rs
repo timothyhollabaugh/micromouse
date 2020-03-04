@@ -17,7 +17,7 @@ pub const MAZE: MazeConfig = MazeConfig {
 pub const LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: true };
 
 pub const MAP: MapConfig = MapConfig {
-    front_threhold: 200,
+    front_threhold: 150,
     left_threshold: 100,
     right_threshold: 100,
 };
