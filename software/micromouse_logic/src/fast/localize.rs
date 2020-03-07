@@ -122,6 +122,8 @@ pub struct Localize {
     left_filter: AverageFilter<U8>,
     front_filter: AverageFilter<U1>,
     right_filter: AverageFilter<U8>,
+    last_left_distance: u8,
+    last_right_distance: u8,
 }
 
 impl Localize {
@@ -137,6 +139,8 @@ impl Localize {
             left_filter: AverageFilter::new(),
             front_filter: AverageFilter::new(),
             right_filter: AverageFilter::new(),
+            last_left_distance: 0,
+            last_right_distance: 0,
         }
     }
 
@@ -147,9 +151,9 @@ impl Localize {
         config: &LocalizeConfig,
         left_encoder: i32,
         right_encoder: i32,
-        left_distance: u8,
-        front_distance: u8,
-        right_distance: u8,
+        raw_left_distance: u8,
+        raw_front_distance: u8,
+        raw_right_distance: u8,
         motion: Option<Motion>,
         moves_completed: usize,
     ) -> (Orientation, LocalizeDebug) {
@@ -182,35 +186,44 @@ impl Localize {
                 const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
                 const FRONT_TOLERANCE: f32 = 45.0;
 
-                let left_distance = if left_distance <= mech.left_sensor_limit {
+                let left_distance = if raw_left_distance <= mech.left_sensor_limit
+                    && (raw_left_distance as i16 - self.last_left_distance as i16).abs()
+                        <= 10
+                {
                     Some(
                         self.left_filter
-                            .filter(left_distance as f32 + mech.left_sensor_offset_y),
+                            .filter(raw_left_distance as f32 + mech.left_sensor_offset_y),
                     )
                 } else {
                     self.left_filter = AverageFilter::new();
                     None
                 };
+                self.last_left_distance = raw_left_distance;
 
-                let right_distance = if right_distance <= mech.right_sensor_limit {
+                let right_distance = if raw_right_distance <= mech.right_sensor_limit
+                    && (raw_right_distance as i16 - self.last_right_distance as i16).abs()
+                        <= 10
+                {
                     Some(
-                        self.right_filter
-                            .filter(right_distance as f32 + mech.right_sensor_offset_y),
+                        self.right_filter.filter(
+                            raw_right_distance as f32 + mech.right_sensor_offset_y,
+                        ),
                     )
                 } else {
                     self.right_filter = AverageFilter::new();
                     None
                 };
+                self.last_right_distance = raw_right_distance;
 
-                let front_distance = if front_distance <= mech.front_sensor_limit {
-                    Some(
-                        self.front_filter
-                            .filter(front_distance as f32 + mech.front_sensor_offset_x),
-                    )
-                } else {
-                    self.front_filter = AverageFilter::new();
-                    None
-                };
+                let front_distance =
+                    if raw_front_distance <= mech.front_sensor_limit {
+                        Some(self.front_filter.filter(
+                            raw_front_distance as f32 + mech.front_sensor_offset_x,
+                        ))
+                    } else {
+                        self.front_filter = AverageFilter::new();
+                        None
+                    };
 
                 let cell_center_x = (encoder_orientation.position.x / maze.cell_width)
                     .floor()
