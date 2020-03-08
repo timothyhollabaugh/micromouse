@@ -123,7 +123,9 @@ pub struct Localize {
     front_filter: AverageFilter<U1>,
     right_filter: AverageFilter<U8>,
     last_left_distance: u8,
+    last_left_distance_delta: i16,
     last_right_distance: u8,
+    last_right_distance_delta: i16,
 }
 
 impl Localize {
@@ -140,7 +142,9 @@ impl Localize {
             front_filter: AverageFilter::new(),
             right_filter: AverageFilter::new(),
             last_left_distance: 0,
+            last_left_distance_delta: 0,
             last_right_distance: 0,
+            last_right_distance_delta: 0,
         }
     }
 
@@ -182,13 +186,37 @@ impl Localize {
         let (orientation, sensor_debug) = if let Some(Motion::Path(motion)) = motion {
             let (t, p) = motion.closest_point(encoder_orientation.position);
             let path_direction = motion.derivative(t).direction();
-            if config.use_sensors && in_center {
+
+            if config.use_sensors
+            /* && in_center */
+            {
                 const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
                 const FRONT_TOLERANCE: f32 = 45.0;
 
+                let left_distance_delta =
+                    raw_left_distance as i16 - self.last_left_distance as i16;
+                let right_distance_delta =
+                    raw_right_distance as i16 - self.last_right_distance as i16;
+
+                let left_distance_delta2 =
+                    left_distance_delta - self.last_left_distance_delta;
+                let right_distance_delta2 =
+                    right_distance_delta - self.last_right_distance_delta;
+
+                let left_stabilized =
+                    left_distance_delta.abs() <= 10 && left_distance_delta2.abs() <= 10;
+                let right_stabilized =
+                    right_distance_delta.abs() <= 10 && right_distance_delta2.abs() <= 10;
+
+                let stabilized = left_stabilized && right_stabilized;
+
+                self.last_left_distance = raw_left_distance;
+                self.last_right_distance = raw_right_distance;
+                self.last_left_distance_delta = left_distance_delta;
+                self.last_right_distance_delta = right_distance_delta;
+
                 let left_distance = if raw_left_distance <= mech.left_sensor_limit
-                    && (raw_left_distance as i16 - self.last_left_distance as i16).abs()
-                        <= 10
+                    && stabilized
                 {
                     Some(
                         self.left_filter
@@ -198,22 +226,16 @@ impl Localize {
                     self.left_filter = AverageFilter::new();
                     None
                 };
-                self.last_left_distance = raw_left_distance;
 
-                let right_distance = if raw_right_distance <= mech.right_sensor_limit
-                    && (raw_right_distance as i16 - self.last_right_distance as i16).abs()
-                        <= 10
-                {
-                    Some(
-                        self.right_filter.filter(
+                let right_distance =
+                    if raw_right_distance <= mech.right_sensor_limit && stabilized {
+                        Some(self.right_filter.filter(
                             raw_right_distance as f32 + mech.right_sensor_offset_y,
-                        ),
-                    )
-                } else {
-                    self.right_filter = AverageFilter::new();
-                    None
-                };
-                self.last_right_distance = raw_right_distance;
+                        ))
+                    } else {
+                        self.right_filter = AverageFilter::new();
+                        None
+                    };
 
                 let front_distance =
                     if raw_front_distance <= mech.front_sensor_limit {
