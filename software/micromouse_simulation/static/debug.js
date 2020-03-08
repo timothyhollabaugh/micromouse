@@ -86,7 +86,14 @@ function Node(path, f) {
                         if (nodes[key]) {
                             nodes[key].update(state)
                         } else {
-                            let node = new Node(path + "/" + key, function(debug) { return f(debug)[key] });
+                            let node = new Node(path + "/" + key, function(debug) {
+                                let value = f(debug);
+                                if (value !== null && value.hasOwnProperty(key)) {
+                                    return value[key];
+                                } else {
+                                    return null;
+                                }
+                            });
                             node.update(state);
                             nodes[key] = node;
                             children.append(node.root);
