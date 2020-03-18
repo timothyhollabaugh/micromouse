@@ -48,6 +48,9 @@ pub struct MouseConfig {
     pub motion_plan: MotionPlanConfig,
     pub maze: MazeConfig,
     pub motion_control: MotionControlConfig,
+    pub front_sensor_abort: f32,
+    pub left_sensor_abort: f32,
+    pub right_sensor_abort: f32,
 }
 
 pub struct Mouse {
@@ -115,26 +118,33 @@ impl Mouse {
         let (motion_going_forward, motion_going_left, motion_going_right) =
             match self.motion_queue.next_motion() {
                 Some(Motion::Path(path_motion)) => {
+                    let front_abort = config.mechanical.front_sensor_offset_x
+                        + config.front_sensor_abort;
+                    let left_abort =
+                        config.mechanical.left_sensor_offset_y + config.left_sensor_abort;
+                    let right_abort = config.mechanical.right_sensor_offset_y
+                        + config.right_sensor_abort;
+
                     match orientation.to_maze_orientation(&config.maze).direction {
                         MazeDirection::North => (
-                            path_motion.end().y > orientation.position.y,
-                            path_motion.end().x < orientation.position.x,
-                            path_motion.end().x > orientation.position.x,
+                            path_motion.end().y > orientation.position.y + front_abort,
+                            path_motion.end().x < orientation.position.x - left_abort,
+                            path_motion.end().x > orientation.position.x + right_abort,
                         ),
                         MazeDirection::South => (
-                            path_motion.end().y < orientation.position.y,
-                            path_motion.end().x > orientation.position.x,
-                            path_motion.end().x < orientation.position.x,
+                            path_motion.end().y < orientation.position.y - front_abort,
+                            path_motion.end().x > orientation.position.x + left_abort,
+                            path_motion.end().x < orientation.position.x - right_abort,
                         ),
                         MazeDirection::East => (
-                            path_motion.end().x > orientation.position.x,
-                            path_motion.end().y > orientation.position.y,
-                            path_motion.end().y < orientation.position.y,
+                            path_motion.end().x > orientation.position.x + front_abort,
+                            path_motion.end().y > orientation.position.y - left_abort,
+                            path_motion.end().y < orientation.position.y + right_abort,
                         ),
                         MazeDirection::West => (
-                            path_motion.end().x < orientation.position.x,
-                            path_motion.end().y < orientation.position.y,
-                            path_motion.end().y > orientation.position.y,
+                            path_motion.end().x < orientation.position.x - front_abort,
+                            path_motion.end().y < orientation.position.y + left_abort,
+                            path_motion.end().y > orientation.position.y - right_abort,
                         ),
                     }
                 }
@@ -142,9 +152,10 @@ impl Mouse {
                 _ => (false, false, false),
             };
 
-        let abort_moves = (motion_going_forward && front_distance < 40)
-            || (motion_going_left && left_distance < 20)
-            || (motion_going_right && right_distance < 20);
+        let abort_moves = (motion_going_forward
+            && front_distance < config.front_sensor_abort as u8)
+            || (motion_going_left && left_distance < config.left_sensor_abort as u8)
+            || (motion_going_right && right_distance < config.right_sensor_abort as u8);
 
         self.moves_completed = if abort_moves {
             let len = self.motion_queue.motions_remaining();

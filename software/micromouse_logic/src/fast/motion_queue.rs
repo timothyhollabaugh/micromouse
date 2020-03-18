@@ -38,7 +38,7 @@ pub struct MotionQueue {
     queue: MotionQueueBuffer,
 }
 
-// heapless::Vec is dump and needs to be a stack
+// heapless::Vec is dumb and needs to be a stack
 impl MotionQueue {
     pub fn new() -> MotionQueue {
         MotionQueue { queue: Vec::new() }

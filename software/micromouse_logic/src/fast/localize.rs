@@ -126,6 +126,7 @@ pub struct Localize {
     last_left_distance_delta: i16,
     last_right_distance: u8,
     last_right_distance_delta: i16,
+    last_direction_moved: Direction,
 }
 
 impl Localize {
@@ -145,6 +146,7 @@ impl Localize {
             last_left_distance_delta: 0,
             last_right_distance: 0,
             last_right_distance_delta: 0,
+            last_direction_moved: orientation.direction,
         }
     }
 
@@ -337,9 +339,26 @@ impl Localize {
                     (None, None)
                 };
 
+                let position = Vector {
+                    x: maybe_x.unwrap_or(encoder_orientation.position.x),
+                    y: maybe_y.unwrap_or(encoder_orientation.position.y),
+                };
+
+                let direction_moved = (position - self.orientation.position).direction();
+
+                let direction_moved_reset = !encoder_orientation
+                    .direction
+                    .within(direction_moved, DIRECTION_WITHIN)
+                    && !encoder_orientation
+                        .direction
+                        .within(self.last_direction_moved, DIRECTION_WITHIN);
+
+                self.last_direction_moved = direction_moved;
+
                 let direction = if moves_completed > 0
                     || left_distance.map(|left| left < 20.0).unwrap_or(false)
                     || right_distance.map(|right| right < 20.0).unwrap_or(false)
+                    || direction_moved_reset
                 {
                     path_direction
                 } else {
@@ -347,10 +366,7 @@ impl Localize {
                 };
 
                 let orientation = Orientation {
-                    position: Vector {
-                        x: maybe_x.unwrap_or(encoder_orientation.position.x),
-                        y: maybe_y.unwrap_or(encoder_orientation.position.y),
-                    },
+                    position,
                     direction,
                 };
 

@@ -69,6 +69,9 @@ pub mod sim {
         motion_plan: super::MOTION_PLAN,
         localize: super::LOCALIZE,
         motion_control: MOTION_CONTROL,
+        front_sensor_abort: 50.0,
+        left_sensor_abort: 20.0,
+        right_sensor_abort: 20.0,
     };
 
     pub const MOUSE_2019: MouseConfig = MouseConfig {
@@ -78,6 +81,9 @@ pub mod sim {
         motion_plan: super::MOTION_PLAN,
         localize: super::LOCALIZE,
         motion_control: MOTION_CONTROL,
+        front_sensor_abort: 50.0,
+        left_sensor_abort: 20.0,
+        right_sensor_abort: 20.0,
     };
 }
 
@@ -111,9 +117,9 @@ pub mod mouse_2020 {
     };
 
     pub const PIDF: PidfConfig = PidfConfig {
-        p: 5000.0,
+        p: 7000.0,
         i: 0.5,
-        d: 25000.0,
+        d: 5000.0,
         f: 0.0,
     };
 
@@ -125,11 +131,11 @@ pub mod mouse_2020 {
         localize: super::LOCALIZE,
         motion_control: MotionControlConfig {
             path: PathHandlerConfig {
-                p: 0.07,
+                p: 0.08,
                 i: 0.0,
                 d: 0.0,
-                offset_p: 0.01,
-                velocity: 0.3,
+                offset_p: 0.008,
+                velocity: 0.4,
             },
             turn: TurnHandlerConfig {
                 rad_per_sec: 0.05,
@@ -145,6 +151,9 @@ pub mod mouse_2020 {
                 right_reverse: true,
             },
         },
+        front_sensor_abort: 50.0,
+        left_sensor_abort: 20.0,
+        right_sensor_abort: 20.0,
     };
 }
 
@@ -212,6 +221,9 @@ pub mod mouse_2019 {
                 right_reverse: false,
             },
         },
+        front_sensor_abort: 50.0,
+        left_sensor_abort: 20.0,
+        right_sensor_abort: 20.0,
     };
 }
 
