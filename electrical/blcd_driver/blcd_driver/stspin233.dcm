@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP STSPIN233
+D Low voltage triple half-bridge motor driver, 1.8V to 10V input, 1.3Arms output, 0.4Ω Rdson per phase (typical), QFN-16 package
+K motor driver half-bridge
+F www.st.com/resource/en/datasheet/stspin233.pdf
+$ENDCMP
+#
+#End Doc Library

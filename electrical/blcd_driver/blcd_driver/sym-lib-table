@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name bldc_driver)(type Legacy)(uri ${KIPRJMOD}/bldc_driver.lib)(options "")(descr ""))
+)
