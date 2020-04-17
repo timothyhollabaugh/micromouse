@@ -18,6 +18,7 @@ test_logic:
 build_firmware:
   stage: build
   script:
+    - rustup target add thumbv7em-none-eabihf
     - cd software/micromouse_firmware
     - cargo build --release
   artifacts:
@@ -27,6 +28,7 @@ build_firmware:
 build_simulation:
   stage: build
   script:
+    - cargo install wasm-pack
     - cd software/micromouse_simulation
     - sh ./build_wasm.sh
   artifacts:
