@@ -1,5 +1,9 @@
 image: rust:1.42
 
+cache:
+  paths:
+    - software/target
+
 test_logic:
   script:
     - cd software/micromouse_logic
