@@ -1,0 +1,6 @@
+image: rust:1.42
+
+test_logic:
+  script:
+    - cd software/micromouse_logic
+    - cargo test
