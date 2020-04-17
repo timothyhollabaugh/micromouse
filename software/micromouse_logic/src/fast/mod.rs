@@ -322,17 +322,26 @@ pub struct Orientation {
 }
 
 impl Orientation {
+    /// Update the orientation with new encoder data. The encoders will be converted from ticks to
+    /// mm and radians using the MechanicalConfig provided.
     pub fn update_from_encoders(
         self,
         config: &MechanicalConfig,
         delta_left: i32,
         delta_right: i32,
     ) -> Orientation {
+        // The change in linear (forward/backward) movement, converted to mm
         let delta_linear = config.ticks_to_mm((delta_right + delta_left) as f32 / 2.0);
+
+        // The change in angular (turning) movement, converted to radians
         let delta_angular = config.ticks_to_rads((delta_right - delta_left) as f32 / 2.0);
 
+        // Assume that the direction traveled from the last position to this one is halfway
+        // between the last direction and the current direction
         let mid_dir = f32::from(self.direction) + delta_angular / 2.0;
 
+        // Now that we have an angle and a hypotenuse, we can use trig to find the change
+        // in x and change in y
         Orientation {
             position: Vector {
                 x: self.position.x + delta_linear * F32Ext::cos(mid_dir),
