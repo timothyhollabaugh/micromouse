@@ -1,7 +1,6 @@
 image: rust:1.42
 
 stages:
-  - test
   - build
   - deploy
 
@@ -10,7 +9,7 @@ cache:
     - software/target
 
 test_logic:
-  stage: test
+  stage: build
   script:
     - cd software/micromouse_logic
     - cargo test
@@ -37,3 +36,13 @@ build_simulation:
     name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-simulation"
     paths:
       - software/micromouse_simulation/static
+
+pages:
+  stage: deploy
+  dependencies:
+    - build_simulation
+  script:
+    - cp -r software/micromouse_simulation/static public
+  artifacts:
+    paths:
+      - public
