@@ -29,9 +29,10 @@ build_firmware:
 build_simulation:
   stage: build
   script:
-    - cargo install wasm-pack
     - cd software/micromouse_simulation
-    - sh ./build_wasm.sh
+    - curl -L https://github.com/rustwasm/wasm-pack/releases/download/v0.9.1/wasm-pack-v0.9.1-x86_64-unknown-linux-musl.tar.gz > wasm-pack.tar.gz
+    - tar -xvf wasm-pack.tar.gz
+    - ./wasm-pack-v0.9.1-x86_64-unknown-linux-musl/wasm-pack build --out-dir static/pkg --target no-modules
   artifacts:
     name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-simulation"
     paths:
