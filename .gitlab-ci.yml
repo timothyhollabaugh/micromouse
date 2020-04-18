@@ -22,7 +22,7 @@ build_firmware:
     - cd software/micromouse_firmware
     - cargo build --release
   artifacts:
-    name: "$CI_COMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-firmware"
+    name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-firmware"
     paths:
      - software/target/thumbv7em-none-eabihf/release/micromouse_firmware
 
@@ -33,6 +33,6 @@ build_simulation:
     - cd software/micromouse_simulation
     - sh ./build_wasm.sh
   artifacts:
-    name: "$CI_COMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-simulation"
+    name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-simulation"
     paths:
       - software/micromouse_simulation/static
