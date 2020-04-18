@@ -1,0 +1,55 @@
+image: rust:1.42
+
+stages:
+  - build
+  - deploy
+
+test_logic:
+  stage: build
+  cache:
+    paths:
+     - software/target/debug
+  script:
+    - cd software/micromouse_logic
+    - cargo test
+
+build_firmware:
+  stage: build
+  cache:
+    paths:
+      - software/target/thumbv7em-none-eabihf/release
+  script:
+    - rustup target add thumbv7em-none-eabihf
+    - cd software/micromouse_firmware
+    - cargo build --release
+  artifacts:
+    name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-firmware"
+    paths:
+     - software/target/thumbv7em-none-eabihf/release/micromouse_firmware
+
+build_simulation:
+  stage: build
+  cache:
+    paths:
+      - software/target/wasm32-unknown-unknown/release
+  script:
+    - cd software/micromouse_simulation
+    - curl -L https://github.com/rustwasm/wasm-pack/releases/download/v0.9.1/wasm-pack-v0.9.1-x86_64-unknown-linux-musl.tar.gz > wasm-pack.tar.gz
+    - tar -xvf wasm-pack.tar.gz
+    - ./wasm-pack-v0.9.1-x86_64-unknown-linux-musl/wasm-pack build --out-dir static/pkg --target no-modules
+  artifacts:
+    name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-simulation"
+    paths:
+      - software/micromouse_simulation/static
+
+pages:
+  stage: deploy
+  dependencies:
+    - build_simulation
+  script:
+    - cp -r software/micromouse_simulation/static public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master

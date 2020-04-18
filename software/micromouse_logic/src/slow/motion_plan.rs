@@ -124,19 +124,7 @@ mod test_motion_plan {
     fn u_turn() {
         let mut expected: MotionQueueBuffer = Vec::new();
 
-        expected.push(Motion::Path(PathMotion::line(
-            Vector { x: 180.0, y: 90.0 },
-            Vector { x: 270.0, y: 90.0 },
-        )));
-
         expected.push(Motion::Turn(TurnMotion::new(DIRECTION_0, DIRECTION_PI)));
-
-        expected.push(Motion::Path(PathMotion::line(
-            Vector { x: 270.0, y: 90.0 },
-            Vector { x: 180.0, y: 90.0 },
-        )));
-
-        expected.reverse();
 
         assert_eq!(
             motion_plan(
