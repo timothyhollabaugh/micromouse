@@ -17,7 +17,7 @@ def step_motor(s, before_time, step_time, after_time):
 
     while True:
         line = s.readline()
-        print(line)
+        #print(line)
         if b',' in line and b':' in line:
             time = None
             position = None
@@ -127,19 +127,19 @@ def plot_steps(ax, times, steps, ymin, ymax):
 
 s = serial.Serial(port='/dev/ttyUSB0', baudrate=230400, timeout=1)
 
-p = step_motor(s, 100, 1500, 400)
+p = step_motor(s, 100, 500, 0)
 
 v = to_velocity(p)
 
-v_run_offset = list(map(lambda d: {'time': d['time'], 'velocity': d['velocity']},
-                 filter(lambda d: d['step'] == 1, v)))
+time_start = time_at_velocity(v, 0)
 
-v_run = list(map(lambda d: {'time': d['time'] - v_run_offset[0]['time'], 'velocity': d['velocity']}, v_run_offset))
+v_run = list(map(lambda d: {'time': d['time'] - time_start, 'velocity': d['velocity']},
+                 filter(lambda d: d['time'] >= time_start, v)))
 
 times = extract(v_run, 'time')
 velocities = extract(v_run, 'velocity')
 
-final_v = calc_final_velocity(v_run, 100)
+final_v = calc_final_velocity(v_run, 200)
 ta_v = 0.632 * final_v
 
 ta = time_at_velocity(v_run, ta_v)
@@ -147,6 +147,8 @@ ta = time_at_velocity(v_run, ta_v)
 s = control.tf('s')
 
 tf = final_v / (ta * s + 1)
+
+print(final_v, ta)
 
 step_times, step_response = control.step_response(tf, times)
 
