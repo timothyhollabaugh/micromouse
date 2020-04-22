@@ -17,7 +17,7 @@ def step_motor(s, before_time, step_time, after_time):
 
     while True:
         line = s.readline()
-        #print(line)
+        # print(line)
         if b',' in line and b':' in line:
             time = None
             position = None
@@ -30,7 +30,7 @@ def step_motor(s, before_time, step_time, after_time):
                 elif parts[0] == b'LM':
                     position = int(parts[1])
 
-            if start_time is None:
+            if start_time is None or time is None:
                 start_time = time
             else:
                 if time is not None and position is not None:
@@ -125,39 +125,75 @@ def plot_steps(ax, times, steps, ymin, ymax):
     ax.add_collection(steps2_collection)
 
 
+def filter_velocities(v):
+    time_start = time_at_velocity(v, 0)
+    v_offset = list(map(lambda d: {'time': d['time'] - time_start, 'velocity': d['velocity']},
+                        filter(lambda d: d['step'] == 1 and d['time'] >= time_start, v)))
+    return v_offset
+
+
+def calc_tf_constants(v, average_time):
+    final_v = calc_final_velocity(v, average_time)
+    ta_v = 0.632 * final_v
+    ta = time_at_velocity(v, ta_v)
+    return ta, final_v
+
+
+def calc_tf(ta, final_v):
+    s = control.tf('s')
+    tf = final_v / (ta * s + 1)
+    return tf
+
+
+def step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time):
+    p = step_motor(s, start_time, run_time, end_time)
+    v = to_velocity(p)
+    v_run = filter_velocities(v)
+
+    times = extract(v_run, 'time')
+    velocities = extract(v_run, 'velocity')
+
+    ta, final_v = calc_tf_constants(v_run, average_time)
+
+    return ta, final_v, times, velocities
+
+
+def plot_tf(ax, ta, final_v, times=None, **kwargs):
+    tf = calc_tf(ta, final_v)
+
+    print(final_v, ta)
+
+    step_times, step_response = control.step_response(tf, times)
+
+    ax.plot(step_times, step_response, linewidth=1.0, **kwargs)
+
+
+def plot_data(ax, times, velocities):
+    ax.plot(times, velocities, linewidth=1.0, color='black')
+
+
+def step(i, s, start_time, run_time, end_time, average_time):
+    print("Step: {}".format(i))
+    r = step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time)
+    print("Stepped")
+    return r
+
+
 s = serial.Serial(port='/dev/ttyUSB0', baudrate=230400, timeout=1)
 
-p = step_motor(s, 100, 500, 0)
+results = list(map(lambda i: step(i, s, start_time=100, run_time=500, end_time=900, average_time=200), range(0, 10)))
 
-v = to_velocity(p)
+fig, ax = plt.subplots()
 
-time_start = time_at_velocity(v, 0)
+for ta, final_v, times, velocities in results:
+    plot_tf(ax, ta, final_v, alpha=0.5, color="grey")
+    #plot_data(ax, times, velocities)
+    pass
 
-v_run = list(map(lambda d: {'time': d['time'] - time_start, 'velocity': d['velocity']},
-                 filter(lambda d: d['time'] >= time_start, v)))
+average_ta = sum(map(lambda r: r[0], results)) / len(results)
+average_final_v = sum(map(lambda r: r[1], results)) / len(results)
 
-times = extract(v_run, 'time')
-velocities = extract(v_run, 'velocity')
-
-final_v = calc_final_velocity(v_run, 200)
-ta_v = 0.632 * final_v
-
-ta = time_at_velocity(v_run, ta_v)
-
-s = control.tf('s')
-
-tf = final_v / (ta * s + 1)
-
-print(final_v, ta)
-
-step_times, step_response = control.step_response(tf, times)
-
-fig, ax1 = plt.subplots(1, 1)
-
-ax1.plot(times, velocities, linewidth=1.0, color='blue')
-#ax1.plot(times, list(ncycles([final_v], len(times))))
-#ax1.plot(times, list(ncycles([ta_v], len(times))))
-#ax1.axvline(ta, 0, 10, color='red')
-ax1.plot(times, step_response, linewidth=1.0, color='black')
+#fig, ax = plt.subplots()
+plot_tf(ax, average_ta, average_final_v, color="black")
 
 plt.show()
