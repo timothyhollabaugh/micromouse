@@ -2,3 +2,5 @@ pyserial
 more-itertools
 matplotlib
 numpy
+scipy
+control

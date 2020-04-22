@@ -2,6 +2,7 @@ import serial
 from more_itertools import *
 import matplotlib.pyplot as plt
 from matplotlib import collections
+import control
 
 
 def step_motor(s, before_time, step_time, after_time):
@@ -70,31 +71,55 @@ def to_velocity(motor_positions):
     return list(map(calc_velocity, windowed(motor_positions, 2)))
 
 
-def graph(ax, data, key):
-    times = list(map(lambda d: d['time'], data))
-    datas = list(map(lambda d: d[key], data))
-    steps = list(map(lambda d: d['step'], data))
+def calc_final_velocity(velocities, time):
+    """
+    Calculate the final veclocity as an average over `time` of the last velocities in the run step
+    :param velocities: A list of dictionaries with `time`, `step`, and `velocity` keys
+    :param time: How much time of samples to average over
+    :return: The average velocity as the end of the run step
+    """
+    last_time = last(velocities)['time']
+    final_velocities = list(filter(lambda d: last_time - d['time'] <= time, velocities));
+    final_average = sum(map(lambda d: d['velocity'], final_velocities)) / len(final_velocities)
+    return final_average
 
+
+def time_at_velocity(velocities, velocity):
+    """
+    Calculate the time when the velocity in `velocities` first crosses `velocity` with a rising edge
+    :param velocities: A list of dictionaries with `time` and `velocity` keys
+    :param velocity: The velocity to calculate the time of when velocities crosses it
+    :return: The time of crossing
+    """
+
+    return next(map(lambda d: d[0]['time'], filter(lambda d: d[0]['velocity'] <= velocity < d[1]['velocity'],
+                                                   windowed(velocities, 2))))
+
+
+def extract(data, key):
+    return list(map(lambda d: d[key], data))
+
+
+def plot_steps(ax, times, steps, ymin, ymax):
     steps0 = list(map(lambda s: s == 0, steps))
     steps1 = list(map(lambda s: s == 1, steps))
     steps2 = list(map(lambda s: s == 2, steps))
 
-    steps0_collection = collections.BrokenBarHCollection.span_where(times, ymin=min(datas), ymax=max(datas),
+    steps0_collection = collections.BrokenBarHCollection.span_where(times, ymin=ymin, ymax=ymax,
                                                                     where=steps0,
                                                                     facecolor='yellow',
-                                                                    alpha=0.5)
+                                                                    alpha=0.2)
 
-    steps1_collection = collections.BrokenBarHCollection.span_where(times, ymin=min(datas), ymax=max(datas),
+    steps1_collection = collections.BrokenBarHCollection.span_where(times, ymin=ymin, ymax=ymax,
                                                                     where=steps1,
                                                                     facecolor='green',
-                                                                    alpha=0.5)
+                                                                    alpha=0.2)
 
-    steps2_collection = collections.BrokenBarHCollection.span_where(times, ymin=min(datas), ymax=max(datas),
+    steps2_collection = collections.BrokenBarHCollection.span_where(times, ymin=ymin, ymax=ymax,
                                                                     where=steps2,
                                                                     facecolor='red',
-                                                                    alpha=0.5)
+                                                                    alpha=0.2)
 
-    ax.plot(times, datas)
     ax.add_collection(steps0_collection)
     ax.add_collection(steps1_collection)
     ax.add_collection(steps2_collection)
@@ -106,8 +131,33 @@ p = step_motor(s, 100, 1500, 400)
 
 v = to_velocity(p)
 
-fig, (ax1, ax2) = plt.subplots(1, 2)
-graph(ax1, v, 'velocity')
-graph(ax2, p, 'position')
+v_run = list(map(lambda d: {'time': d['time'] - v[0]['time'], 'velocity': d['velocity']},
+                 filter(lambda d: d['step'] == 1, v)))
+
+times = extract(v_run, 'time')
+velocities = extract(v_run, 'velocity')
+
+final_v = calc_final_velocity(v_run, 100)
+ta_v = 0.63 * final_v
+
+ta = time_at_velocity(v_run, ta_v)
+
+a = 1.0/ta
+
+k = final_v * a
+
+s = control.tf('s')
+
+tf = k / (s + a)
+
+step_times, step_response = control.step_response(tf, times)
+
+fig, ax1 = plt.subplots(1, 1)
+
+ax1.plot(times, velocities)
+ax1.plot(times, list(ncycles([final_v], len(times))))
+ax1.plot(times, list(ncycles([ta_v], len(times))))
+ax1.axvline(ta, 0, 10, color='red')
+ax1.plot(times, step_response, color='yellow')
 
 plt.show()
