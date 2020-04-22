@@ -1,6 +1,7 @@
 import serial
 from more_itertools import *
 import matplotlib.pyplot as plt
+from matplotlib import collections
 
 
 def step_motor(s, before_time, step_time, after_time):
@@ -74,15 +75,34 @@ def graph(ax, data, key):
     datas = list(map(lambda d: d[key], data))
     steps = list(map(lambda d: d['step'], data))
 
-    print(times)
-    print(datas)
+    steps0 = list(map(lambda s: s == 0, steps))
+    steps1 = list(map(lambda s: s == 1, steps))
+    steps2 = list(map(lambda s: s == 2, steps))
+
+    steps0_collection = collections.BrokenBarHCollection.span_where(times, ymin=min(datas), ymax=max(datas),
+                                                                    where=steps0,
+                                                                    facecolor='yellow',
+                                                                    alpha=0.5)
+
+    steps1_collection = collections.BrokenBarHCollection.span_where(times, ymin=min(datas), ymax=max(datas),
+                                                                    where=steps1,
+                                                                    facecolor='green',
+                                                                    alpha=0.5)
+
+    steps2_collection = collections.BrokenBarHCollection.span_where(times, ymin=min(datas), ymax=max(datas),
+                                                                    where=steps2,
+                                                                    facecolor='red',
+                                                                    alpha=0.5)
 
     ax.plot(times, datas)
+    ax.add_collection(steps0_collection)
+    ax.add_collection(steps1_collection)
+    ax.add_collection(steps2_collection)
 
 
 s = serial.Serial(port='/dev/ttyUSB0', baudrate=230400, timeout=1)
 
-p = step_motor(s, 100, 2000, 1000)
+p = step_motor(s, 100, 1500, 400)
 
 v = to_velocity(p)
 

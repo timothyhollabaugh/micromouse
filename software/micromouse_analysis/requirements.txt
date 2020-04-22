@@ -1,3 +1,4 @@
 pyserial
 more-itertools
 matplotlib
+numpy
