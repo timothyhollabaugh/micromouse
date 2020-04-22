@@ -129,7 +129,7 @@ where
             }
         }
 
-        if time.now() - last_time >= 10 {
+        if time.now() - last_time >= 1 {
             if time_report {
                 write!(uart, "T:{},", time.now()).ok();
             }
