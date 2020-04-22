@@ -131,33 +131,31 @@ p = step_motor(s, 100, 1500, 400)
 
 v = to_velocity(p)
 
-v_run = list(map(lambda d: {'time': d['time'] - v[0]['time'], 'velocity': d['velocity']},
+v_run_offset = list(map(lambda d: {'time': d['time'], 'velocity': d['velocity']},
                  filter(lambda d: d['step'] == 1, v)))
+
+v_run = list(map(lambda d: {'time': d['time'] - v_run_offset[0]['time'], 'velocity': d['velocity']}, v_run_offset))
 
 times = extract(v_run, 'time')
 velocities = extract(v_run, 'velocity')
 
 final_v = calc_final_velocity(v_run, 100)
-ta_v = 0.63 * final_v
+ta_v = 0.632 * final_v
 
 ta = time_at_velocity(v_run, ta_v)
 
-a = 1.0/ta
-
-k = final_v * a
-
 s = control.tf('s')
 
-tf = k / (s + a)
+tf = final_v / (ta * s + 1)
 
 step_times, step_response = control.step_response(tf, times)
 
 fig, ax1 = plt.subplots(1, 1)
 
 ax1.plot(times, velocities)
-ax1.plot(times, list(ncycles([final_v], len(times))))
-ax1.plot(times, list(ncycles([ta_v], len(times))))
-ax1.axvline(ta, 0, 10, color='red')
+#ax1.plot(times, list(ncycles([final_v], len(times))))
+#ax1.plot(times, list(ncycles([ta_v], len(times))))
+#ax1.axvline(ta, 0, 10, color='red')
 ax1.plot(times, step_response, color='yellow')
 
 plt.show()
