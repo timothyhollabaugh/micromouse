@@ -1,5 +1,6 @@
 import serial
 from more_itertools import *
+import matplotlib.pyplot as plt
 
 
 def step_motor(s, before_time, step_time, after_time):
@@ -65,15 +66,28 @@ def calc_velocity(positions):
 
 
 def to_velocity(motor_positions):
-    return map(calc_velocity, windowed(motor_positions, 2))
+    return list(map(calc_velocity, windowed(motor_positions, 2)))
+
+
+def graph(ax, data, key):
+    times = list(map(lambda d: d['time'], data))
+    datas = list(map(lambda d: d[key], data))
+    steps = list(map(lambda d: d['step'], data))
+
+    print(times)
+    print(datas)
+
+    ax.plot(times, datas)
 
 
 s = serial.Serial(port='/dev/ttyUSB0', baudrate=230400, timeout=1)
 
-p = step_motor(s, 500, 1000, 1000)
+p = step_motor(s, 100, 2000, 1000)
 
 v = to_velocity(p)
 
-print(list(v))
+fig, (ax1, ax2) = plt.subplots(1, 2)
+graph(ax1, v, 'velocity')
+graph(ax2, p, 'position')
 
-print(p)
+plt.show()
