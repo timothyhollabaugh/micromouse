@@ -154,10 +154,10 @@ step_times, step_response = control.step_response(tf, times)
 
 fig, ax1 = plt.subplots(1, 1)
 
-ax1.plot(times, velocities)
+ax1.plot(times, velocities, linewidth=1.0, color='blue')
 #ax1.plot(times, list(ncycles([final_v], len(times))))
 #ax1.plot(times, list(ncycles([ta_v], len(times))))
 #ax1.axvline(ta, 0, 10, color='red')
-ax1.plot(times, step_response, color='yellow')
+ax1.plot(times, step_response, linewidth=1.0, color='black')
 
 plt.show()
