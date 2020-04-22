@@ -1,4 +1,5 @@
 import serial
+from more_itertools import *
 
 
 def step_motor(s, before_time, step_time, after_time):
@@ -13,9 +14,10 @@ def step_motor(s, before_time, step_time, after_time):
 
     while True:
         line = s.readline()
+        print(line)
         if b',' in line and b':' in line:
             time = None
-            motor = None
+            position = None
 
             words = line.split(b',')
             for word in words:
@@ -23,13 +25,17 @@ def step_motor(s, before_time, step_time, after_time):
                 if parts[0] == b'T':
                     time = int(parts[1])
                 elif parts[0] == b'LM':
-                    motor = int(parts[1])
+                    position = int(parts[1])
 
             if start_time is None:
                 start_time = time
             else:
-                if time is not None and motor is not None:
-                    motor_positions.append((time, motor, step))
+                if time is not None and position is not None:
+                    motor_positions.append({
+                        'time': time,
+                        'position': position,
+                        'step': step,
+                    })
 
                 if step == 0 and time - start_time > before_time:
                     s.write(b'motor left set 10000\n')
@@ -47,8 +53,27 @@ def step_motor(s, before_time, step_time, after_time):
     return motor_positions
 
 
+def calc_velocity(positions):
+    current_position, next_position = positions
+    delta_time = next_position['time'] - current_position['time']
+    delta_position = next_position['position'] - current_position['position']
+    return {
+        'time': current_position['time'],
+        'step': current_position['step'],
+        'velocity': delta_position / delta_time,
+    }
+
+
+def to_velocity(motor_positions):
+    return map(calc_velocity, windowed(motor_positions, 2))
+
+
 s = serial.Serial(port='/dev/ttyUSB0', baudrate=230400, timeout=1)
 
-p = step_motor(s, 1000, 5000, 5000)
+p = step_motor(s, 500, 1000, 1000)
+
+v = to_velocity(p)
+
+print(list(v))
 
 print(p)
