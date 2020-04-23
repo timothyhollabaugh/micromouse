@@ -5,7 +5,7 @@ from matplotlib import collections
 import control
 
 
-def step_motor(s, before_time, step_time, after_time):
+def step_motor(s, before_time, step_time, after_time, gain):
     s.write(b'time report on\n')
     s.write(b'motor left report on\n')
 
@@ -46,7 +46,7 @@ def step_motor(s, before_time, step_time, after_time):
                     })
 
                 if step == 0 and time - start_time > before_time:
-                    s.write(b'motor left set 10000\n')
+                    s.write(b'motor left set %d\n' % gain)
                     start_time = time
                     step = 1
                 elif step == 1 and time - start_time > step_time:
@@ -151,8 +151,8 @@ def calc_tf(ta, final_v):
     return tf
 
 
-def step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time):
-    p = step_motor(s, start_time, run_time, end_time)
+def step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time, gain):
+    p = step_motor(s, start_time, run_time, end_time, gain)
     v = to_velocity(p)
     v_run = filter_velocities(v)
 
@@ -181,15 +181,16 @@ def plot_data(ax, times, velocities, **kwargs):
     ax.plot(times, velocities, linewidth=1.0, **kwargs)
 
 
-def step(i, s, start_time, run_time, end_time, average_time):
+def step(i, s, start_time, run_time, end_time, average_time, gain):
     print("Step: {}".format(i))
-    r = step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time)
+    r = step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time, gain)
     return r
 
 
 s = serial.Serial(port='/dev/ttyUSB0', baudrate=230400, timeout=1)
 
-results = list(map(lambda i: step(i, s, start_time=100, run_time=500, end_time=900, average_time=200), range(0, 10)))
+results = list(map(lambda i: step(i, s, start_time=100, run_time=500, end_time=900, average_time=200, gain=10000),
+                   range(0, 10)))
 
 fig, ax = plt.subplots()
 
