@@ -134,6 +134,7 @@ def filter_velocities(v):
     time_start = time_at_velocity(v, 0)
     v_offset = list(map(lambda d: {'time': d['time'] - time_start, 'velocity': d['velocity']},
                         filter(lambda d: d['step'] == 1 and d['time'] >= time_start, v)))
+
     return v_offset
 
 
@@ -166,21 +167,23 @@ def step_motor_and_calc_constants(s, start_time, run_time, end_time, average_tim
 def plot_tf(ax, ta, final_v, times=None, **kwargs):
     tf = calc_tf(ta, final_v)
 
-    print(final_v, ta)
+    if times is not None:
+        start_time = min(times)
+        end_time = max(times)
+        times = range(start_time, end_time)
 
     step_times, step_response = control.step_response(tf, times)
 
     ax.plot(step_times, step_response, linewidth=1.0, **kwargs)
 
 
-def plot_data(ax, times, velocities):
-    ax.plot(times, velocities, linewidth=1.0, color='black')
+def plot_data(ax, times, velocities, **kwargs):
+    ax.plot(times, velocities, linewidth=1.0, **kwargs)
 
 
 def step(i, s, start_time, run_time, end_time, average_time):
     print("Step: {}".format(i))
     r = step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time)
-    print("Stepped")
     return r
 
 
@@ -191,14 +194,18 @@ results = list(map(lambda i: step(i, s, start_time=100, run_time=500, end_time=9
 fig, ax = plt.subplots()
 
 for ta, final_v, times, velocities in results:
-    plot_tf(ax, ta, final_v, alpha=0.5, color="grey")
-    #plot_data(ax, times, velocities)
-    pass
+    plot_tf(ax, ta, final_v, times=times, alpha=0.5, color="grey")
+    plot_data(ax, times, velocities, color="red", alpha=0.2)
+
+final_time = max(last(map(lambda r: r[2], results)))
 
 average_ta = sum(map(lambda r: r[0], results)) / len(results)
 average_final_v = sum(map(lambda r: r[1], results)) / len(results)
 
+print("Time constant: {}".format(average_ta))
+print("Final value: {}".format(average_final_v))
+
 #fig, ax = plt.subplots()
-plot_tf(ax, average_ta, average_final_v, color="black")
+plot_tf(ax, average_ta, average_final_v, times=range(0, final_time), color="black")
 
 plt.show()
