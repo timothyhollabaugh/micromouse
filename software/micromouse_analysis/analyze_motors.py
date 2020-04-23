@@ -17,7 +17,6 @@ def step_motor(s, before_time, step_time, after_time):
 
     while True:
         line = s.readline()
-        # print(line)
         if b',' in line and b':' in line:
             time = None
             position = None
@@ -26,9 +25,15 @@ def step_motor(s, before_time, step_time, after_time):
             for word in words:
                 parts = word.split(b':')
                 if parts[0] == b'T':
-                    time = int(parts[1])
+                    try:
+                        time = int(parts[1])
+                    except ValueError:
+                        print('Error parsing {} from {}'.format(parts[1], line))
                 elif parts[0] == b'LM':
-                    position = int(parts[1])
+                    try:
+                        position = int(parts[1])
+                    except ValueError:
+                        print('Error parsing {} from {}'.format(parts[1], line))
 
             if start_time is None or time is None:
                 start_time = time
