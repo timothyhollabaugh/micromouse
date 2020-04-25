@@ -138,11 +138,11 @@ def filter_velocities(v):
     return v_offset
 
 
-def calc_tf_constants(v, average_time):
+def calc_tf_constants(v, average_time, gain):
     final_v = calc_final_velocity(v, average_time)
     ta_v = 0.632 * final_v
     ta = time_at_velocity(v, ta_v)
-    return ta, final_v
+    return ta, final_v / gain
 
 
 def calc_tf(ta, final_v):
@@ -159,12 +159,12 @@ def step_motor_and_calc_constants(s, start_time, run_time, end_time, average_tim
     times = extract(v_run, 'time')
     velocities = extract(v_run, 'velocity')
 
-    ta, final_v = calc_tf_constants(v_run, average_time)
+    ta, final_v = calc_tf_constants(v_run, average_time, gain)
 
     return ta, final_v, times, velocities
 
 
-def plot_tf(ax, ta, final_v, times=None, **kwargs):
+def plot_tf(ax, ta, final_v, gain, times=None, **kwargs):
     tf = calc_tf(ta, final_v)
 
     if times is not None:
@@ -172,7 +172,7 @@ def plot_tf(ax, ta, final_v, times=None, **kwargs):
         end_time = max(times)
         times = range(start_time, end_time)
 
-    step_times, step_response = control.step_response(tf, times)
+    step_times, step_response = control.step_response(gain * tf, times)
 
     ax.plot(step_times, step_response, linewidth=1.0, **kwargs)
 
@@ -194,7 +194,7 @@ def do_analyze(port, baud, start_time, run_time, end_time, average_time, gain, i
     fig, ax = plt.subplots()
 
     for ta, final_v, times, velocities in results:
-        plot_tf(ax, ta, final_v, times=times, alpha=0.5, color="grey")
+        plot_tf(ax, ta, final_v, gain, times=times, alpha=0.5, color="grey")
         plot_data(ax, times, velocities, color="red", alpha=0.2)
 
     final_time = max(last(map(lambda r: r[2], results)))
@@ -206,7 +206,7 @@ def do_analyze(port, baud, start_time, run_time, end_time, average_time, gain, i
     print("Final value: {}".format(average_final_v))
 
     #fig, ax = plt.subplots()
-    plot_tf(ax, average_ta, average_final_v, times=range(0, final_time), color="black")
+    plot_tf(ax, average_ta, average_final_v, gain, times=range(0, final_time), color="black")
 
     plt.show()
 
