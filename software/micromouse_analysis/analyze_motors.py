@@ -181,32 +181,35 @@ def plot_data(ax, times, velocities, **kwargs):
     ax.plot(times, velocities, linewidth=1.0, **kwargs)
 
 
-def step(i, s, start_time, run_time, end_time, average_time, gain):
-    print("Step: {}".format(i))
-    r = step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time, gain)
-    return r
+def do_analyze(port, baud, start_time, run_time, end_time, average_time, gain, iterations):
+    s = serial.Serial(port=port, baudrate=baud, timeout=1)
+
+    def step(i):
+        print("Step: {}".format(i))
+        r = step_motor_and_calc_constants(s, start_time, run_time, end_time, average_time, gain)
+        return r
+
+    results = list(map(step, range(0, iterations)))
+
+    fig, ax = plt.subplots()
+
+    for ta, final_v, times, velocities in results:
+        plot_tf(ax, ta, final_v, times=times, alpha=0.5, color="grey")
+        plot_data(ax, times, velocities, color="red", alpha=0.2)
+
+    final_time = max(last(map(lambda r: r[2], results)))
+
+    average_ta = sum(map(lambda r: r[0], results)) / len(results)
+    average_final_v = sum(map(lambda r: r[1], results)) / len(results)
+
+    print("Time constant: {}".format(average_ta))
+    print("Final value: {}".format(average_final_v))
+
+    #fig, ax = plt.subplots()
+    plot_tf(ax, average_ta, average_final_v, times=range(0, final_time), color="black")
+
+    plt.show()
 
 
-s = serial.Serial(port='/dev/ttyUSB0', baudrate=230400, timeout=1)
-
-results = list(map(lambda i: step(i, s, start_time=100, run_time=500, end_time=900, average_time=200, gain=10000),
-                   range(0, 10)))
-
-fig, ax = plt.subplots()
-
-for ta, final_v, times, velocities in results:
-    plot_tf(ax, ta, final_v, times=times, alpha=0.5, color="grey")
-    plot_data(ax, times, velocities, color="red", alpha=0.2)
-
-final_time = max(last(map(lambda r: r[2], results)))
-
-average_ta = sum(map(lambda r: r[0], results)) / len(results)
-average_final_v = sum(map(lambda r: r[1], results)) / len(results)
-
-print("Time constant: {}".format(average_ta))
-print("Final value: {}".format(average_final_v))
-
-#fig, ax = plt.subplots()
-plot_tf(ax, average_ta, average_final_v, times=range(0, final_time), color="black")
-
-plt.show()
+if __name__ == '__main__':
+    do_analyze('/dev/ttyUSB0', 230400, 100, 500, 900, 200, 10000, 10)
