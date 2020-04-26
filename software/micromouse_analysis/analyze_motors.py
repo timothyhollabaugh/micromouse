@@ -197,8 +197,6 @@ def do_analyze(port, baud, start_time, run_time, end_time, average_time, gain, i
         plot_tf(ax, ta, final_v, gain, times=times, alpha=0.5, color="grey")
         plot_data(ax, times, velocities, color="red", alpha=0.2)
 
-    final_time = max(last(map(lambda r: r[2], results)))
-
     average_ta = sum(map(lambda r: r[0], results)) / len(results)
     average_final_v = sum(map(lambda r: r[1], results)) / len(results)
 
@@ -206,7 +204,7 @@ def do_analyze(port, baud, start_time, run_time, end_time, average_time, gain, i
     print("Final value: {}".format(average_final_v))
 
     #fig, ax = plt.subplots()
-    plot_tf(ax, average_ta, average_final_v, gain, times=range(0, final_time), color="black")
+    plot_tf(ax, average_ta, average_final_v, gain, times=range(0, run_time), color="black")
 
     plt.show()
 
