@@ -44,7 +44,7 @@ pub fn main() {
 
         if debug.mouse.time > 1000 * 60 * 10 {
             println!("Timed out!");
-            exit(1);
+            break;
         }
 
         let position = debug.mouse.maze_orientation.position;

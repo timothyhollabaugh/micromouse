@@ -42,6 +42,25 @@ build_simulation:
     paths:
       - software/micromouse_simulation/static
 
+run_simulation:
+  stage: deploy
+  dependencies:
+    - build_simulation
+  cache:
+    paths:
+      - software/target/debug
+  script:
+    - cd software/micromouse_simulation
+    - cargo run --bin run_sim > results
+    - cat results | tail -n1 > metrics.txt
+  artifacts:
+    name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-debug"
+    paths:
+      - software/micromouse_simulation/out.dat
+      - software/micromouse_simulation/results
+    reports:
+      metrics: simulation/metrics.txt
+
 pages:
   stage: deploy
   dependencies:
