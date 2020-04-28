@@ -4,6 +4,10 @@ stages:
   - build
   - deploy
 
+cache:
+  paths:
+    - cache
+
 test_logic:
   stage: build
   cache:
@@ -15,9 +19,12 @@ test_logic:
 
 build_firmware:
   stage: build
-  cache:
-    paths:
-      - software/target/thumbv7em-none-eabihf/release
+  before_script:
+    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && ln -s cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p cache/git && ln -s cache/git ~/.cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source ~/.cargo/env
+    - rustc --version
   script:
     - rustup target add thumbv7em-none-eabihf
     - cd software/micromouse_firmware
@@ -29,9 +36,12 @@ build_firmware:
 
 build_simulation:
   stage: build
-  cache:
-    paths:
-      - software/target/wasm32-unknown-unknown/release
+  before_script:
+    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && ln -s cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p cache/git && ln -s cache/git ~/.cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source ~/.cargo/env
+    - rustc --version
   script:
     - cd software/micromouse_simulation
     - curl -L https://github.com/rustwasm/wasm-pack/releases/download/v0.9.1/wasm-pack-v0.9.1-x86_64-unknown-linux-musl.tar.gz > wasm-pack.tar.gz
@@ -46,9 +56,12 @@ run_simulation:
   stage: deploy
   dependencies:
     - build_simulation
-  cache:
-    paths:
-      - software/target/debug
+  before_script:
+    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && ln -s cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p cache/git && ln -s cache/git ~/.cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source ~/.cargo/env
+    - rustc --version
   script:
     - cd software/micromouse_simulation
     - cargo run --bin run_sim > results
