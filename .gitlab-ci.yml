@@ -12,8 +12,10 @@ test_logic:
   stage: build
   before_script:
     - whereis cargo
-    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
-    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
+    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
+    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
+    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
+    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
     - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
     - source /usr/local/cargo/env
     - rustc --version
@@ -24,9 +26,10 @@ test_logic:
 build_firmware:
   stage: build
   before_script:
-    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
-    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
+    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
+    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
+    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
     - source /usr/local/cargo/env
     - rustc --version
   script:
@@ -41,9 +44,10 @@ build_firmware:
 build_simulation:
   stage: build
   before_script:
-    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
-    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
+    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
+    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
+    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
     - source /usr/local/cargo/env
     - rustc --version
   script:
@@ -61,9 +65,10 @@ run_simulation:
   dependencies:
     - build_simulation
   before_script:
-    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
-    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
+    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
+    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
+    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
     - source /usr/local/cargo/env
     - rustc --version
   script:
