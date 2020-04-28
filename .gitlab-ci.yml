@@ -47,7 +47,7 @@ run_simulation:
       - software/micromouse_simulation/out.dat
       - software/micromouse_simulation/results
     reports:
-      metrics: simulation/micromouse_simulation/metrics.txt
+      metrics: software/micromouse_simulation/metrics.txt
 
 pages:
   stage: deploy
