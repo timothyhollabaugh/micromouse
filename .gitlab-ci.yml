@@ -10,9 +10,12 @@ cache:
 
 test_logic:
   stage: build
-  cache:
-    paths:
-     - software/target/debug
+  before_script:
+    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source ~/.cargo/env
+    - rustc --version
   script:
     - cd software/micromouse_logic
     - cargo test
@@ -20,9 +23,9 @@ test_logic:
 build_firmware:
   stage: build
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && ln -s cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p cache/git && ln -s cache/git ~/.cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
     - source ~/.cargo/env
     - rustc --version
   script:
@@ -37,9 +40,9 @@ build_firmware:
 build_simulation:
   stage: build
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && ln -s cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p cache/git && ln -s cache/git ~/.cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
     - source ~/.cargo/env
     - rustc --version
   script:
@@ -57,9 +60,9 @@ run_simulation:
   dependencies:
     - build_simulation
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && ln -s cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p cache/git && ln -s cache/git ~/.cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
+    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
     - source ~/.cargo/env
     - rustc --version
   script:
@@ -72,7 +75,7 @@ run_simulation:
       - software/micromouse_simulation/out.dat
       - software/micromouse_simulation/results
     reports:
-      metrics: simulation/metrics.txt
+      metrics: simulation/micromouse_simulation/metrics.txt
 
 pages:
   stage: deploy
