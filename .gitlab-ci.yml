@@ -4,34 +4,14 @@ stages:
   - build
   - deploy
 
-cache:
-  paths:
-    - cache
-
 test_logic:
   stage: build
-  before_script:
-    - whereis cargo
-    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
-    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
-    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
-    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
-    - source /usr/local/cargo/env
-    - rustc --version
   script:
     - cd software/micromouse_logic
     - cargo test
 
 build_firmware:
   stage: build
-  before_script:
-    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
-    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
-    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
-    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
-    - source /usr/local/cargo/env
-    - rustc --version
   script:
     - rustup target add thumbv7em-none-eabihf
     - cd software/micromouse_firmware
@@ -43,13 +23,6 @@ build_firmware:
 
 build_simulation:
   stage: build
-  before_script:
-    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
-    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
-    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
-    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
-    - source /usr/local/cargo/env
-    - rustc --version
   script:
     - cd software/micromouse_simulation
     - curl -L https://github.com/rustwasm/wasm-pack/releases/download/v0.9.1/wasm-pack-v0.9.1-x86_64-unknown-linux-musl.tar.gz > wasm-pack.tar.gz
@@ -64,13 +37,6 @@ run_simulation:
   stage: deploy
   dependencies:
     - build_simulation
-  before_script:
-    - rm -fr /usr/local/cargo/registry/index && mkdir -p cache/registry/index && ln -s cache/registry/index /usr/local/cargo/registry/index
-    - rm -fr /usr/local/cargo/registry/cache && mkdir -p cache/registry/cache && ln -s cache/registry/cache /usr/local/cargo/registry/cache
-    - rm -fr /usr/local/cargo/bin && mkdir -p cache/bin && ln -s cache/bin /usr/local/cargo/bin
-    - rm -fr /usr/local/cargo/git/db && mkdir -p cache/git/db && ln -s cache/git/db /usr/local/cargo/git/db
-    - source /usr/local/cargo/env
-    - rustc --version
   script:
     - cd software/micromouse_simulation
     - cargo run --bin run_sim > results
