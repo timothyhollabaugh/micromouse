@@ -11,6 +11,7 @@ cache:
 test_logic:
   stage: build
   before_script:
+    - whereis cargo
     - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
     - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
     - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
