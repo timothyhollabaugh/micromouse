@@ -12,10 +12,10 @@ test_logic:
   stage: build
   before_script:
     - whereis cargo
-    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
-    - source ~/.cargo/env
+    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
+    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source /usr/local/cargo/env
     - rustc --version
   script:
     - cd software/micromouse_logic
@@ -24,10 +24,10 @@ test_logic:
 build_firmware:
   stage: build
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
-    - source ~/.cargo/env
+    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
+    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source /usr/local/cargo/env
     - rustc --version
   script:
     - rustup target add thumbv7em-none-eabihf
@@ -41,10 +41,10 @@ build_firmware:
 build_simulation:
   stage: build
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
-    - source ~/.cargo/env
+    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
+    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source /usr/local/cargo/env
     - rustc --version
   script:
     - cd software/micromouse_simulation
@@ -61,10 +61,10 @@ run_simulation:
   dependencies:
     - build_simulation
   before_script:
-    - rm -fr ~/.cargo/registry && mkdir -p cache/registry && mkdir -p ~/.cargo  && ln -s cache/registry ~/.cargo/registry
-    - rm -fr ~/.cargo/git && mkdir -p cache/git && mkdir -p ~/.cargo && ln -s cache/git ~/.cargo/git
-    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && mkdir -p software && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
-    - source ~/.cargo/env
+    - rm -fr /usr/local/cargo/registry && mkdir -p cache/registry && ln -s cache/registry /usr/local/cargo/registry
+    - rm -fr /usr/local/cargo/git && mkdir -p cache/git && ln -s cache/git /usr/local/cargo/git
+    - rm -fr software/target && mkdir -p cache/$CI_COMMIT_REF_SLUG/target && ln -s cache/$CI_COMMIT_REF_SLUG/target software/target
+    - source /usr/local/cargo/env
     - rustc --version
   script:
     - cd software/micromouse_simulation
