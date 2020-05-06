@@ -4,3 +4,5 @@ matplotlib
 numpy
 scipy
 control
+bezier
+pint
