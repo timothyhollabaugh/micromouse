@@ -4,6 +4,7 @@ from bezier.curve import Curve
 from more_itertools import *
 import pint
 import numpy as np
+import math as m
 
 u = pint.UnitRegistry()
 u.setup_matplotlib()
@@ -46,7 +47,7 @@ def extract_units(i):
     return np.array(results_without_units) * results_with_units[0].units
 
 
-def acceleration_curve(fig, wheelbase: float, mass: float, curve, linear_velocity: float):
+def acceleration_curve(fig, wheelbase: float, wheel_radius: float, mass: float, curve, linear_velocity: float):
     ss = np.linspace(0, 1, 1000)
 
     ls = map_units(lambda t: length_at_t(curve, t), ss)
@@ -71,6 +72,14 @@ def acceleration_curve(fig, wheelbase: float, mass: float, curve, linear_velocit
     right_acc_ts = extract_units(right_acc_ts)
     right_accelerations = extract_units(right_accelerations)
 
+    left_angular_acceleration = left_accelerations / (wheel_radius / u.radian)
+    right_angular_acceleration = right_accelerations / (wheel_radius / u.radian)
+
+    rotational_inertia = mass * wheel_radius**2 / 2
+
+    left_torque = rotational_inertia * left_angular_acceleration
+    right_torque = rotational_inertia * right_angular_acceleration
+
     (ax1, ax2), (ax3, ax4) = fig.subplots(2, 2)
 
     ts.ito_base_units()
@@ -82,8 +91,15 @@ def acceleration_curve(fig, wheelbase: float, mass: float, curve, linear_velocit
     right_accelerations.ito_base_units()
     left_acc_ts.ito_base_units()
     right_acc_ts.ito_base_units()
+    left_angular_acceleration.ito_base_units()
+    right_angular_acceleration.ito_base_units()
+    left_torque.ito(u.newton * u.meter)
+    right_torque.ito(u.newton * u.meter)
 
-    ax1.plot(ss, ts)
+    print(max(left_torque))
+
+    ax1.plot(left_acc_ts, left_torque)
+    ax1.plot(right_acc_ts, right_torque)
     ax2.plot(ts, curvatures)
     ax2l = ax2.twinx()
     ax2l.plot(ts, angular_velocities)
@@ -91,18 +107,21 @@ def acceleration_curve(fig, wheelbase: float, mass: float, curve, linear_velocit
     ax4.plot(ts, right_velocities)
     ax3.plot(left_acc_ts, left_accelerations)
     ax3.plot(right_acc_ts, right_accelerations)
+    ax3l = ax3.twinx()
+    ax3l.plot(left_acc_ts, left_angular_acceleration)
+    ax3l.plot(right_acc_ts, right_angular_acceleration)
 
 
-def corner_curve(r):
+def corner_curve(r, offset):
     units = r.units
     r = r.magnitude
 
     r1 = r * 0.5
-    r2 = r * 0.333333
+    r2 = r * 0.3
 
     nodes = [
-        [0, 0, 0, r2, r1, r],
-        [r, r1, r2, 0, 0, 0]
+        [0, 0, 0, r2, r1, r + offset.to(units).magnitude],
+        [r - offset.magnitude, r1, r2, 0, 0, 0]
     ]
 
     return Curve(nodes, degree=5), units
@@ -111,10 +130,10 @@ def corner_curve(r):
 fig1, ax1 = plt.subplots(1, 1)
 fig2 = plt.figure()
 
-c = corner_curve(90 * u.mm)
+c = corner_curve(90 * u.mm, 12 * u.mm)
 
 c[0].plot(1000, ax=ax1)
 
-acceleration_curve(fig2, 72 * u.mm, 64 * u.mm, c, 0.3 * u.m / u.s)
+acceleration_curve(fig2, 72 * u.mm, 16 * u.mm, 87 * u.g, c, 0.4 * u.m / u.s)
 
 plt.show()
