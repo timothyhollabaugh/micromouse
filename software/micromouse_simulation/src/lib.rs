@@ -14,9 +14,8 @@ use simulation::Simulation;
 use simulation::SimulationConfig;
 
 use micromouse_logic::config::sim::MOUSE_2019;
-use micromouse_logic::fast::{Direction, Orientation, Vector, DIRECTION_PI_2};
-use micromouse_logic::slow::maze;
-use micromouse_logic::slow::maze::{Maze, Wall};
+use micromouse_logic::fast::{Orientation, Vector, DIRECTION_PI_2};
+use micromouse_logic::slow::maze::Maze;
 use remote::Remote;
 use remote::RemoteConfig;
 
