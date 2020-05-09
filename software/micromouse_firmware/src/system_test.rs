@@ -66,9 +66,9 @@ pub fn do_system_test<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
     mut right_motor: RightMotor,
     left_encoder: LeftEncoder,
     right_encoder: RightEncoder,
-    _front_distance: VL6180x<I2C1>,
-    _left_distance: VL6180x<I2C2>,
-    _right_distance: VL6180x<I2C3>,
+    mut front_distance: VL6180x<I2C1>,
+    mut left_distance: VL6180x<I2C2>,
+    mut right_distance: VL6180x<I2C3>,
     mut uart: Uart,
 ) -> !
 where
@@ -96,12 +96,17 @@ where
         reporting: false,
     };
 
+    let mut left_distance_report = false;
+    let mut right_distance_report = false;
+    let mut front_distance_report = false;
+
     let mut last_time = 0;
 
     loop {
         if let Some(buf) = uart.read_line().ok() {
             if let Some(line) = str::from_utf8(&buf).ok() {
-                let mut words = line.split_whitespace();
+                let mut words = line.trim().split_whitespace();
+
                 match words.next() {
                     Some("time") => match words.next() {
                         Some("report") => match words.next() {
@@ -122,6 +127,47 @@ where
                             writeln!(uart, "Unknown command: {:?}", word);
                         }
                     },
+                    Some("distance") => match words.next() {
+                        Some("left") => match words.next() {
+                            Some("report") => match words.next() {
+                                Some("on") => left_distance_report = true,
+                                Some("off") => left_distance_report = false,
+                                word => {
+                                    writeln!(uart, "Unknown command: {:?}", word);
+                                }
+                            },
+                            word => {
+                                writeln!(uart, "Unknown command: {:?}", word);
+                            }
+                        },
+                        Some("right") => match words.next() {
+                            Some("report") => match words.next() {
+                                Some("on") => right_distance_report = true,
+                                Some("off") => right_distance_report = false,
+                                word => {
+                                    writeln!(uart, "Unknown command: {:?}", word);
+                                }
+                            },
+                            word => {
+                                writeln!(uart, "Unknown command: {:?}", word);
+                            }
+                        },
+                        Some("front") => match words.next() {
+                            Some("report") => match words.next() {
+                                Some("on") => front_distance_report = true,
+                                Some("off") => front_distance_report = false,
+                                word => {
+                                    writeln!(uart, "Unknown command: {:?}", word);
+                                }
+                            },
+                            word => {
+                                writeln!(uart, "Unknown command: {:?}", word);
+                            }
+                        },
+                        word => {
+                            writeln!(uart, "Unknown command: {:?}", word);
+                        }
+                    },
                     word => {
                         writeln!(uart, "Unknown command: {:?}", word);
                     }
@@ -135,11 +181,29 @@ where
             }
 
             left_motor_command.report(&mut uart, "LM");
-            right_motor_command.report(&mut uart, "LM");
+            right_motor_command.report(&mut uart, "RM");
+
+            if left_distance_report {
+                left_distance.update();
+                write!(uart, "LD: {}", left_distance.range()).ok();
+            }
+
+            if right_distance_report {
+                right_distance.update();
+                write!(uart, "RD: {}", right_distance.range()).ok();
+            }
+
+            if front_distance_report {
+                front_distance.update();
+                write!(uart, "FD: {}", front_distance.range()).ok();
+            }
 
             if time_report
                 || left_motor_command.reporting
                 || right_motor_command.reporting
+                || left_distance_report
+                || right_distance_report
+                || front_distance_report
             {
                 uart.add_str("\n");
             }
