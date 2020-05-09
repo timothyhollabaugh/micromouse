@@ -31,7 +31,7 @@ pub const MAP: MapConfig = MapConfig {
     right_threshold: 100.0,
 };
 
-pub const MOTION_PLAN: MotionPlanConfig = MotionPlanConfig {};
+pub const MOTION_PLAN: MotionPlanConfig = MotionPlanConfig { move_offset: 12.0 };
 
 pub mod sim {
     use crate::fast::motion_control::MotionControlConfig;
