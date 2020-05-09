@@ -8,6 +8,7 @@ use micromouse_logic::fast::motion_queue::MotionQueueBuffer;
 use micromouse_logic::fast::motion_queue::MotionQueueDebug;
 use micromouse_logic::fast::path::PathHandlerDebug;
 use micromouse_logic::fast::turn::TurnHandlerDebug;
+use micromouse_logic::mouse::DistanceReading;
 use micromouse_logic::slow::navigate::TwelvePartitionNavigateDebug;
 use micromouse_logic::slow::MazeDirection;
 use micromouse_logic::slow::MazeOrientation;
@@ -29,6 +30,8 @@ fn main() {
     print_size!(MotionQueueBuffer);
     print_size!(MotionControlDebug);
     print_size!(Motion);
+    print_size!(DistanceReading);
+    print_size!(Option<DistanceReading>);
     print_size!(MazeOrientation);
     print_size!(MazeDirection);
     print_size!(MazePosition);

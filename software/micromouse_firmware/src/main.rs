@@ -183,7 +183,7 @@ where
         right_distance.update();
         write!(
             uart,
-            "{}\t {}\t {}\t {}\t {}\n",
+            "{}\t {}\t {:?}\t {:?}\t {:?}\n",
             left_encoder.count(),
             right_encoder.count(),
             left_distance.range(),

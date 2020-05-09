@@ -64,13 +64,15 @@ pub fn motion_plan(
                 .ok();
         } else {
             if next_direction.opposite() == maze_orientation.direction {
-                let half_cell = maze_config.cell_width / 2.0;
+                //let half_cell = maze_config.cell_width / 2.0;
+                /*
                 let cell_start = match maze_orientation.direction {
                     MazeDirection::North => cell_center.offset_y(-half_cell),
                     MazeDirection::South => cell_center.offset_y(half_cell),
                     MazeDirection::East => cell_center.offset_x(-half_cell),
                     MazeDirection::West => cell_center.offset_x(half_cell),
                 };
+                */
 
                 //out.push(Motion::Path(PathMotion::line(cell_start, cell_center)))
                 //.ok();
@@ -114,7 +116,6 @@ mod test_motion_plan {
     use crate::config::MAZE;
     use crate::config::MOTION_PLAN;
     use crate::fast::motion_queue::{Motion, MotionQueueBuffer};
-    use crate::fast::path::PathMotion;
     use crate::fast::turn::TurnMotion;
     use crate::fast::{Orientation, Vector, DIRECTION_0, DIRECTION_PI};
     use crate::slow::MazeDirection;
@@ -124,7 +125,9 @@ mod test_motion_plan {
     fn u_turn() {
         let mut expected: MotionQueueBuffer = Vec::new();
 
-        expected.push(Motion::Turn(TurnMotion::new(DIRECTION_0, DIRECTION_PI)));
+        expected
+            .push(Motion::Turn(TurnMotion::new(DIRECTION_0, DIRECTION_PI)))
+            .ok();
 
         assert_eq!(
             motion_plan(

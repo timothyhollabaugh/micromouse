@@ -17,6 +17,10 @@ pub struct MazeConfig {
 }
 
 impl MazeConfig {
+    pub fn center_to_wall(&self) -> f32 {
+        self.cell_width / 2.0 - self.wall_width / 2.0
+    }
+
     /// Projects the `from` orientation onto the nearest wall or post, and gives the index of it
     pub fn wall_projection(
         &self,

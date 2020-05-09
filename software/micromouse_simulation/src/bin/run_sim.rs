@@ -19,6 +19,7 @@ pub fn main() {
     let config = SimulationConfig {
         mouse: MOUSE_2019,
         millis_per_step: 10,
+        millis_per_sensor_update: 20,
         initial_orientation: Orientation {
             position: Vector {
                 x: 0.5 * 180.0,

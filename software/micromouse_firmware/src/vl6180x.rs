@@ -1,6 +1,9 @@
 use embedded_hal::blocking::i2c;
+use micromouse_logic::mouse::DistanceReading;
 
 pub const DEFAULT_ADDRESS: u8 = 0x29;
+
+const MAX_RANGE: u8 = 255;
 
 mod registers {
     #![allow(dead_code)]
@@ -82,7 +85,7 @@ where
     scaling: u8,
     ptp_offset: u8,
 
-    range: u8,
+    range: Option<DistanceReading>,
 }
 
 impl<I2C> VL6180x<I2C>
@@ -95,7 +98,7 @@ where
             address,
             scaling: 1,
             ptp_offset: 0,
-            range: 255,
+            range: None,
         }
     }
 
@@ -140,8 +143,7 @@ where
 
     pub fn init_private_registers(&mut self) {
         // Store part-to-part range offset so it can be adjusted if scaling is changed
-        self.ptp_offset =
-            self.read_u8(registers::SYSRANGE__PART_TO_PART_RANGE_OFFSET);
+        self.ptp_offset = self.read_u8(registers::SYSRANGE__PART_TO_PART_RANGE_OFFSET);
 
         if self.read_u8(registers::SYSTEM__FRESH_OUT_OF_RESET) == 1 {
             self.scaling = 1;
@@ -328,9 +330,7 @@ where
     // (readRangeSingle() also calls this function after starting a single-shot
     // range measurement)
     pub fn read_range_continuous(&mut self) -> u8 {
-        while (self.read_u8(registers::RESULT__INTERRUPT_STATUS_GPIO) & 0x04)
-            == 0
-        {}
+        while (self.read_u8(registers::RESULT__INTERRUPT_STATUS_GPIO) & 0x04) == 0 {}
 
         let range = self.read_u8(registers::RESULT__RANGE_VAL);
         self.write_u8(registers::SYSTEM__INTERRUPT_CLEAR, 0x01);
@@ -343,17 +343,20 @@ where
     }
 
     pub fn update(&mut self) {
-        if (self.read_u8(registers::RESULT__INTERRUPT_STATUS_GPIO) * 0x04) != 0
-        {
+        if (self.read_u8(registers::RESULT__INTERRUPT_STATUS_GPIO) * 0x04) != 0 {
             let range = self.read_u8(registers::RESULT__RANGE_VAL);
             self.write_u8(registers::SYSTEM__INTERRUPT_CLEAR, 0x01);
             self.start_ranging();
 
-            self.range = range;
+            self.range = if range < MAX_RANGE {
+                Some(DistanceReading::InRange(range as f32))
+            } else {
+                Some(DistanceReading::OutOfRange)
+            };
         }
     }
 
-    pub fn range(&self) -> u8 {
-        self.range
+    pub fn range(&mut self) -> Option<DistanceReading> {
+        self.range.take()
     }
 }

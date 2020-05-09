@@ -6,7 +6,7 @@ use serde::Serialize;
 use crate::slow::map::MapConfig;
 use crate::slow::maze::MazeConfig;
 
-use crate::fast::localize::LocalizeConfig;
+use crate::fast::localize::{LocalizeConfig, SideDistanceFilterConfig};
 use crate::slow::motion_plan::MotionPlanConfig;
 
 pub const MAZE: MazeConfig = MazeConfig {
@@ -14,12 +14,21 @@ pub const MAZE: MazeConfig = MazeConfig {
     wall_width: 12.0,
 };
 
-pub const LOCALIZE: LocalizeConfig = LocalizeConfig { use_sensors: true };
+pub const SIDE_FILTER: SideDistanceFilterConfig = SideDistanceFilterConfig {
+    max_delta2: 10.0,
+    max_delta: 10.0,
+};
+
+pub const LOCALIZE: LocalizeConfig = LocalizeConfig {
+    left_side_filter: SIDE_FILTER,
+    right_side_filter: SIDE_FILTER,
+    use_sensors: true,
+};
 
 pub const MAP: MapConfig = MapConfig {
-    front_threhold: 150,
-    left_threshold: 100,
-    right_threshold: 100,
+    front_threhold: 150.0,
+    left_threshold: 100.0,
+    right_threshold: 100.0,
 };
 
 pub const MOTION_PLAN: MotionPlanConfig = MotionPlanConfig {};
@@ -94,7 +103,6 @@ pub mod mouse_2020 {
     use crate::fast::path::PathHandlerConfig;
     use crate::fast::turn::TurnHandlerConfig;
     use crate::mouse::MouseConfig;
-    use core::f32::consts::FRAC_PI_8;
 
     pub const MECH: MechanicalConfig = MechanicalConfig {
         wheel_diameter: 32.0,
@@ -111,9 +119,9 @@ pub mod mouse_2020 {
         right_sensor_offset_y: 32.0,
         right_sensor_offset_x: 26.0,
 
-        front_sensor_limit: 200,
-        left_sensor_limit: 100,
-        right_sensor_limit: 100,
+        front_sensor_limit: 200.0,
+        left_sensor_limit: 100.0,
+        right_sensor_limit: 100.0,
     };
 
     pub const PIDF: PidfConfig = PidfConfig {
@@ -135,7 +143,7 @@ pub mod mouse_2020 {
                 i: 0.0,
                 d: 0.0,
                 offset_p: 0.008,
-                velocity: 0.4,
+                velocity: 0.3,
             },
             turn: TurnHandlerConfig {
                 rad_per_sec: 0.05,
@@ -164,7 +172,6 @@ pub mod mouse_2019 {
     use crate::fast::path::PathHandlerConfig;
     use crate::fast::turn::TurnHandlerConfig;
     use crate::mouse::MouseConfig;
-    use core::f32::consts::FRAC_PI_8;
 
     pub const MECH: MechanicalConfig = MechanicalConfig {
         wheel_diameter: 32.0,
@@ -181,9 +188,9 @@ pub mod mouse_2019 {
         right_sensor_offset_y: 32.0,
         right_sensor_offset_x: 30.0,
 
-        front_sensor_limit: 200,
-        left_sensor_limit: 150,
-        right_sensor_limit: 150,
+        front_sensor_limit: 200.0,
+        left_sensor_limit: 150.0,
+        right_sensor_limit: 150.0,
     };
 
     pub const PIDF: PidfConfig = PidfConfig {
@@ -264,9 +271,9 @@ pub struct MechanicalConfig {
     pub right_sensor_offset_y: f32,
     pub right_sensor_offset_x: f32,
 
-    pub front_sensor_limit: u8,
-    pub left_sensor_limit: u8,
-    pub right_sensor_limit: u8,
+    pub front_sensor_limit: f32,
+    pub left_sensor_limit: f32,
+    pub right_sensor_limit: f32,
 }
 
 impl MechanicalConfig {
