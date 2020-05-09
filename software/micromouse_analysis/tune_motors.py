@@ -12,6 +12,12 @@ def calc_motor_tf(ta: float, final_v: float):
     return tf
 
 
+def calc_delay_tf(t):
+    num, den = control.pade(t, 1)
+    tf = control.tf(num, den)
+    return tf
+
+
 def calc_pid_tf(p: float, i: float, d: float):
     s = control.tf('s')
     return p + (i / s) + (d * s)
@@ -20,19 +26,23 @@ def calc_pid_tf(p: float, i: float, d: float):
 def tune_motors(ta: float, final_v: float, target: float) -> Tuple[float, float, float]:
     motor_tf = calc_motor_tf(ta, final_v)
 
+    print(motor_tf)
+
     print(control.zero(motor_tf))
     print(control.pole(motor_tf))
 
-    # From manual tuning
-    #pid_tf = calc_pid_tf(7000, 0.5, 5000)
+    delay_tf = calc_delay_tf(10)
 
-    pid_tf = calc_pid_tf(10000, 0, 0)
+    print(delay_tf)
+
+    # From manual tuning
+    pid_tf = calc_pid_tf(4000, 5, 15000)
+
+    #pid_tf = calc_pid_tf(10000, 0, 0)
 
     print(pid_tf)
 
-    forward_tf = pid_tf * motor_tf
-
-    #system_tf = control.feedback(forward_tf)
+    forward_tf = pid_tf * delay_tf * motor_tf
 
     system_tf = forward_tf / (1 + forward_tf)
 
@@ -51,4 +61,4 @@ def tune_motors(ta: float, final_v: float, target: float) -> Tuple[float, float,
 
 
 if __name__ == '__main__':
-    tune_motors(1000, 0.0008253731343283582, 4)
+    tune_motors(44.8, 0.0008253731343283582, 4)
