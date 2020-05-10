@@ -96,6 +96,9 @@ mod test_average_filter {
 /// Configuration for a [SideDistanceFilter]
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SideDistanceFilterConfig {
+    /// The max allowed range
+    pub max_range: f32,
+
     /// The max allowed change between readings
     pub max_delta: f32,
 
@@ -129,8 +132,17 @@ impl SideDistanceFilter {
         config: &SideDistanceFilterConfig,
         raw: Option<DistanceReading>,
     ) -> Option<f32> {
-        match raw {
-            Some(DistanceReading::InRange(raw)) => {
+        let reading = if let Some(reading) = raw {
+            reading
+        } else {
+            match self.last_raw {
+                Some(r) => DistanceReading::InRange(r),
+                None => DistanceReading::OutOfRange,
+            }
+        };
+
+        match reading {
+            DistanceReading::InRange(raw) => {
                 let delta = self.last_raw.map(|last_raw| raw - last_raw);
 
                 let delta2 = self
@@ -153,7 +165,7 @@ impl SideDistanceFilter {
                 self.last_raw = Some(raw);
                 self.last_delta = delta;
 
-                if stabilized {
+                if raw < config.max_range && stabilized {
                     Some(self.average_filter.filter(raw))
                 } else {
                     self.last_raw = None;
@@ -163,14 +175,12 @@ impl SideDistanceFilter {
                 }
             }
 
-            Some(DistanceReading::OutOfRange) => {
+            DistanceReading::OutOfRange => {
                 self.last_raw = None;
                 self.last_delta = None;
                 self.average_filter = AverageFilter::new();
                 None
             }
-
-            None => None,
         }
     }
 }
@@ -185,6 +195,7 @@ mod side_distance_filter_test {
     use crate::mouse::DistanceReading;
 
     const CONFIG: SideDistanceFilterConfig = SideDistanceFilterConfig {
+        max_range: 100.0,
         max_delta: 10.0,
         max_delta2: 5.0,
     };

@@ -15,6 +15,7 @@ pub const MAZE: MazeConfig = MazeConfig {
 };
 
 pub const SIDE_FILTER: SideDistanceFilterConfig = SideDistanceFilterConfig {
+    max_range: 100.0,
     max_delta2: 10.0,
     max_delta: 10.0,
 };
