@@ -23,6 +23,7 @@ pub const SIDE_FILTER: SideDistanceFilterConfig = SideDistanceFilterConfig {
 pub const LOCALIZE: LocalizeConfig = LocalizeConfig {
     left_side_filter: SIDE_FILTER,
     right_side_filter: SIDE_FILTER,
+    front_max_range: 150.0,
     use_sensors: true,
 };
 

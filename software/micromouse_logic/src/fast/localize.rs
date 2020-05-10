@@ -298,6 +298,7 @@ pub struct LocalizeConfig {
     pub use_sensors: bool,
     pub left_side_filter: SideDistanceFilterConfig,
     pub right_side_filter: SideDistanceFilterConfig,
+    pub front_max_range: f32,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -368,7 +369,6 @@ impl Localize {
             let path_direction = motion.derivative(t).direction();
 
             const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
-            const FRONT_TOLERANCE: f32 = 45.0;
 
             let within_east = path_direction.within(DIRECTION_0, DIRECTION_WITHIN);
             let within_west = path_direction.within(DIRECTION_PI, DIRECTION_WITHIN);
@@ -402,7 +402,8 @@ impl Localize {
 
                 let front_distance = raw_front_distance
                     .value()
-                    .map(|d| d + mech.front_sensor_offset_x);
+                    .map(|d| d + mech.front_sensor_offset_x)
+                    .filter(|&d| d < config.front_max_range);
 
                 // Where are we left/right within the cell?
                 let center_offset = match (left_distance, right_distance) {
@@ -423,57 +424,32 @@ impl Localize {
                 let (maybe_x, maybe_y) = if within_east {
                     let y =
                         center_offset.map(|center_offset| cell_center_y + center_offset);
-
-                    let x = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_x + maze.center_to_wall() - front_distance)
-                        } else {
-                            None
-                        }
+                    let x = front_distance.map(|front_distance| {
+                        cell_center_x + maze.center_to_wall() - front_distance
                     });
 
                     (x, y)
                 } else if within_west {
                     let y =
                         center_offset.map(|center_offset| cell_center_y - center_offset);
-                    let x = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_x - maze.center_to_wall() + front_distance)
-                        } else {
-                            None
-                        }
+                    let x = front_distance.map(|front_distance| {
+                        cell_center_x - maze.center_to_wall() + front_distance
                     });
 
                     (x, y)
                 } else if within_north {
                     let x =
                         center_offset.map(|center_offset| cell_center_x - center_offset);
-                    let y = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_y + maze.center_to_wall() - front_distance)
-                        } else {
-                            None
-                        }
+                    let y = front_distance.map(|front_distance| {
+                        cell_center_y + maze.center_to_wall() - front_distance
                     });
 
                     (x, y)
                 } else if within_south {
                     let x =
                         center_offset.map(|center_offset| cell_center_x + center_offset);
-                    let y = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_y - maze.center_to_wall() + front_distance)
-                        } else {
-                            None
-                        }
+                    let y = front_distance.map(|front_distance| {
+                        cell_center_y - maze.center_to_wall() + front_distance
                     });
 
                     (x, y)
