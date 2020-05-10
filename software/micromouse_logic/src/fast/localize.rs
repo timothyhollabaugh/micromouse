@@ -159,7 +159,6 @@ impl SideDistanceFilter {
                 if raw < config.max_range && stabilized {
                     Some(self.average_filter.filter(raw))
                 } else {
-                    self.last_raw = None;
                     self.last_delta = None;
                     self.average_filter = AverageFilter::new();
                     None
