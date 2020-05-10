@@ -61,7 +61,7 @@ pub mod sim {
             p: 1.0,
             i: 0.0,
             d: 0.0,
-            tolerance: FRAC_PI_8 / 2.0,
+            tolerance: 0.02,
         },
         motor_control: MotorControlConfig {
             left_pidf: PIDF,
