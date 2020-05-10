@@ -352,33 +352,21 @@ impl Localize {
             self.orientation
                 .update_from_encoders(&mech, delta_left, delta_right);
 
-        //let encoder_maze_orientation = encoder_orientation.to_maze_orientation(maze);
-        //let encoder_cell_center = encoder_maze_orientation.position.center_position(maze);
-        //let tolerance = maze.cell_width / 2.0 - maze.wall_width;
-
-        /*
-        let in_center = match encoder_maze_orientation.direction {
-            MazeDirection::North | MazeDirection::South => {
-                encoder_orientation.position.y > encoder_cell_center.y - tolerance
-                    && encoder_orientation.position.y < encoder_cell_center.y + tolerance
-            }
-            MazeDirection::East | MazeDirection::West => {
-                encoder_orientation.position.x > encoder_cell_center.x - tolerance
-                    && encoder_orientation.position.x < encoder_cell_center.x + tolerance
-            }
-        };
-        */
-
         let (orientation, sensor_debug) = if let Some(Motion::Path(motion)) = motion {
             let (t, _) = motion.closest_point(encoder_orientation.position);
             let path_direction = motion.derivative(t).direction();
 
-            if config.use_sensors
-            /* && in_center */
-            {
-                const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
-                const FRONT_TOLERANCE: f32 = 45.0;
+            const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
+            const FRONT_TOLERANCE: f32 = 45.0;
 
+            let within_east = path_direction.within(DIRECTION_0, DIRECTION_WITHIN);
+            let within_west = path_direction.within(DIRECTION_PI, DIRECTION_WITHIN);
+            let within_north = path_direction.within(DIRECTION_PI_2, DIRECTION_WITHIN);
+            let within_south = path_direction.within(DIRECTION_3_PI_2, DIRECTION_WITHIN);
+
+            if config.use_sensors
+                && (within_east || within_west || within_north || within_south)
+            {
                 // Calculate maze 'constants' for this location
                 let cell_center_x = (encoder_orientation.position.x / maze.cell_width)
                     .floor()
@@ -421,9 +409,7 @@ impl Localize {
                     _ => None,
                 };
 
-                let (maybe_x, maybe_y) = if path_direction
-                    .within(DIRECTION_0, DIRECTION_WITHIN)
-                {
+                let (maybe_x, maybe_y) = if within_east {
                     let y =
                         center_offset.map(|center_offset| cell_center_y + center_offset);
 
@@ -438,7 +424,7 @@ impl Localize {
                     });
 
                     (x, y)
-                } else if path_direction.within(DIRECTION_PI, DIRECTION_WITHIN) {
+                } else if within_west {
                     let y =
                         center_offset.map(|center_offset| cell_center_y - center_offset);
                     let x = front_distance.and_then(|front_distance| {
@@ -452,7 +438,7 @@ impl Localize {
                     });
 
                     (x, y)
-                } else if path_direction.within(DIRECTION_PI_2, DIRECTION_WITHIN) {
+                } else if within_north {
                     let x =
                         center_offset.map(|center_offset| cell_center_x - center_offset);
                     let y = front_distance.and_then(|front_distance| {
@@ -466,7 +452,7 @@ impl Localize {
                     });
 
                     (x, y)
-                } else if path_direction.within(DIRECTION_3_PI_2, DIRECTION_WITHIN) {
+                } else if within_south {
                     let x =
                         center_offset.map(|center_offset| cell_center_x + center_offset);
                     let y = front_distance.and_then(|front_distance| {
