@@ -71,6 +71,10 @@ impl Map {
             if let (Some(left_distance), Some(right_distance), Some(front_distance)) =
                 (left_distance, right_distance, front_distance)
             {
+                self.left_distance = None;
+                self.right_distance = None;
+                self.front_distance = None;
+
                 Some(MoveOptions {
                     left: left_distance >= config.left_threshold,
                     front: front_distance >= config.front_threhold,
