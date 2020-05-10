@@ -68,7 +68,7 @@ impl TurnHandler {
         time: u32,
         orientation: Orientation,
         motion: TurnMotion,
-    ) -> (f32, f32, Direction, TurnHandlerDebug) {
+    ) -> (f32, f32, TurnHandlerDebug) {
         let delta_time = time - self.time;
 
         self.pid.p_gain = config.p as f64;
@@ -90,12 +90,9 @@ impl TurnHandler {
 
         self.time = time;
 
-        let target_direction = orientation.direction + turn_velocity * delta_time as f32;
-
         (
             left_target,
             right_target,
-            target_direction,
             TurnHandlerDebug { turn_velocity },
         )
     }

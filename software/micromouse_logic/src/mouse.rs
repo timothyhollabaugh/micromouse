@@ -11,6 +11,7 @@ use crate::fast::{Direction, Orientation};
 use crate::fast::motion_control::{
     MotionControl, MotionControlConfig, MotionControlDebug,
 };
+use crate::fast::path::PathMotion;
 use crate::slow::map::{Map, MapConfig};
 use crate::slow::maze::MazeConfig;
 use crate::slow::motion_plan::{motion_plan, MotionPlanConfig};
@@ -119,7 +120,6 @@ pub struct Mouse {
     last_time: u32,
     map: Map,
     navigate: TwelvePartitionNavigate,
-    target_direction: Direction,
     localize: Localize,
     motion_queue: MotionQueue,
     motion_control: MotionControl,
@@ -144,8 +144,8 @@ impl Mouse {
                 time,
                 left_encoder,
                 right_encoder,
+                orientation,
             ),
-            target_direction: orientation.direction,
             motion_queue: MotionQueue::new(),
             moves_completed: 0,
         }
@@ -279,16 +279,15 @@ impl Mouse {
             None
         };
 
-        let (left_power, right_power, target_direction, motion_debug) =
-            self.motion_control.update(
-                &config.motion_control,
-                &config.mechanical,
-                time,
-                left_encoder,
-                right_encoder,
-                self.motion_queue.next_motion(),
-                orientation,
-            );
+        let (left_power, right_power, motion_debug) = self.motion_control.update(
+            &config.motion_control,
+            &config.mechanical,
+            time,
+            left_encoder,
+            right_encoder,
+            self.motion_queue.next_motion(),
+            orientation,
+        );
 
         let hardware_debug = HardwareDebug {
             left_encoder,
@@ -312,7 +311,6 @@ impl Mouse {
         };
 
         self.last_time = time;
-        self.target_direction = target_direction;
 
         (left_power, right_power, debug)
     }

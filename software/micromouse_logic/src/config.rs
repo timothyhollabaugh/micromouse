@@ -69,6 +69,7 @@ pub mod sim {
             right_pidf: PIDF,
             right_reverse: false,
         },
+        stop_distance: 90.0,
     };
 
     pub const MOUSE_2020: MouseConfig = MouseConfig {
@@ -158,6 +159,7 @@ pub mod mouse_2020 {
                 right_pidf: PIDF,
                 right_reverse: true,
             },
+            stop_distance: 90.0,
         },
         front_sensor_abort: 50.0,
         left_sensor_abort: 20.0,
@@ -227,6 +229,7 @@ pub mod mouse_2019 {
                 right_pidf: PIDF,
                 right_reverse: false,
             },
+            stop_distance: 90.0,
         },
         front_sensor_abort: 50.0,
         left_sensor_abort: 20.0,
