@@ -422,6 +422,19 @@ impl Localize {
                     * maze.cell_width
                     + maze.cell_width / 2.0;
 
+                // Where the front sensor is
+                let front_sensor_position = encoder_orientation.position
+                    + mech.front_sensor_offset_x
+                        * encoder_orientation.direction.into_unit_vector();
+
+                let front_sensor_cell_center_x =
+                    (front_sensor_position.x / maze.cell_width).floor() * maze.cell_width
+                        + maze.cell_width / 2.0;
+
+                let front_sensor_cell_center_y =
+                    (front_sensor_position.y / maze.cell_width).floor() * maze.cell_width
+                        + maze.cell_width / 2.0;
+
                 // Where are we left/right within the cell?
                 let center_offset = match (left_distance, right_distance) {
                     (Some(left), Some(right)) => {
@@ -442,7 +455,8 @@ impl Localize {
                     let y =
                         center_offset.map(|center_offset| cell_center_y + center_offset);
                     let x = front_distance.map(|front_distance| {
-                        cell_center_x + maze.center_to_wall() - front_distance
+                        front_sensor_cell_center_x + maze.center_to_wall()
+                            - front_distance
                     });
 
                     (x, y)
@@ -450,7 +464,8 @@ impl Localize {
                     let y =
                         center_offset.map(|center_offset| cell_center_y - center_offset);
                     let x = front_distance.map(|front_distance| {
-                        cell_center_x - maze.center_to_wall() + front_distance
+                        front_sensor_cell_center_x - maze.center_to_wall()
+                            + front_distance
                     });
 
                     (x, y)
@@ -458,7 +473,8 @@ impl Localize {
                     let x =
                         center_offset.map(|center_offset| cell_center_x - center_offset);
                     let y = front_distance.map(|front_distance| {
-                        cell_center_y + maze.center_to_wall() - front_distance
+                        front_sensor_cell_center_y + maze.center_to_wall()
+                            - front_distance
                     });
 
                     (x, y)
@@ -466,7 +482,8 @@ impl Localize {
                     let x =
                         center_offset.map(|center_offset| cell_center_x + center_offset);
                     let y = front_distance.map(|front_distance| {
-                        cell_center_y - maze.center_to_wall() + front_distance
+                        front_sensor_cell_center_y - maze.center_to_wall()
+                            + front_distance
                     });
 
                     (x, y)
