@@ -130,17 +130,8 @@ impl SideDistanceFilter {
     pub fn filter(
         &mut self,
         config: &SideDistanceFilterConfig,
-        raw: Option<DistanceReading>,
+        reading: DistanceReading,
     ) -> Option<f32> {
-        let reading = if let Some(reading) = raw {
-            reading
-        } else {
-            match self.last_raw {
-                Some(r) => DistanceReading::InRange(r),
-                None => DistanceReading::OutOfRange,
-            }
-        };
-
         match reading {
             DistanceReading::InRange(raw) => {
                 let delta = self.last_raw.map(|last_raw| raw - last_raw);
@@ -323,6 +314,8 @@ pub struct Localize {
     orientation: Orientation,
     left_encoder: i32,
     right_encoder: i32,
+    raw_left_distance: Option<DistanceReading>,
+    raw_right_distance: Option<DistanceReading>,
     left_filter: SideDistanceFilter,
     right_filter: SideDistanceFilter,
     last_direction_moved: Direction,
@@ -338,6 +331,8 @@ impl Localize {
             orientation,
             left_encoder,
             right_encoder,
+            raw_left_distance: None,
+            raw_right_distance: None,
             left_filter: SideDistanceFilter::new(),
             right_filter: SideDistanceFilter::new(),
             last_direction_moved: orientation.direction,
@@ -378,6 +373,44 @@ impl Localize {
             if config.use_sensors
                 && (within_east || within_west || within_north || within_south)
             {
+                // Filter distance values
+
+                // Make sure that there are both left and right readings
+                if let Some(reading) = raw_left_distance {
+                    self.raw_left_distance = Some(reading);
+                }
+
+                if let Some(reading) = raw_right_distance {
+                    self.raw_right_distance = Some(reading);
+                }
+
+                let (left_distance, right_distance) =
+                    if let (Some(raw_left_distance), Some(raw_right_distance)) =
+                        (self.raw_left_distance, self.raw_right_distance)
+                    {
+                        self.raw_left_distance = None;
+                        self.raw_right_distance = None;
+
+                        let left_distance = self
+                            .left_filter
+                            .filter(&config.left_side_filter, raw_left_distance)
+                            .map(|d| d + mech.left_sensor_offset_y);
+
+                        let right_distance = self
+                            .right_filter
+                            .filter(&config.right_side_filter, raw_right_distance)
+                            .map(|d| d + mech.left_sensor_offset_y);
+
+                        (left_distance, right_distance)
+                    } else {
+                        (None, None)
+                    };
+
+                let front_distance = raw_front_distance
+                    .value()
+                    .map(|d| d + mech.front_sensor_offset_x)
+                    .filter(|&d| d < config.front_max_range);
+
                 // Calculate maze 'constants' for this location
                 let cell_center_x = (encoder_orientation.position.x / maze.cell_width)
                     .floor()
@@ -388,22 +421,6 @@ impl Localize {
                     .floor()
                     * maze.cell_width
                     + maze.cell_width / 2.0;
-
-                // Filter distance values
-                let left_distance = self
-                    .left_filter
-                    .filter(&config.left_side_filter, raw_left_distance)
-                    .map(|d| d + mech.left_sensor_offset_y);
-
-                let right_distance = self
-                    .right_filter
-                    .filter(&config.right_side_filter, raw_right_distance)
-                    .map(|d| d + mech.left_sensor_offset_y);
-
-                let front_distance = raw_front_distance
-                    .value()
-                    .map(|d| d + mech.front_sensor_offset_x)
-                    .filter(|&d| d < config.front_max_range);
 
                 // Where are we left/right within the cell?
                 let center_offset = match (left_distance, right_distance) {
