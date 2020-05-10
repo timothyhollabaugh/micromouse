@@ -130,7 +130,7 @@ pub mod mouse_2020 {
     pub const PIDF: PidfConfig = PidfConfig {
         p: 7000.0,
         i: 0.5,
-        d: 5000.0,
+        d: 4000.0,
         f: 0.0,
     };
 
@@ -142,7 +142,7 @@ pub mod mouse_2020 {
         localize: super::LOCALIZE,
         motion_control: MotionControlConfig {
             path: PathHandlerConfig {
-                p: 0.08,
+                p: 0.12,
                 i: 0.0,
                 d: 0.0,
                 offset_p: 0.008,
