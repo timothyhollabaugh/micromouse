@@ -42,7 +42,7 @@ pub fn motion_plan(
         // Very dumb, but it should work.
 
         // If we are not at the edge of the cell, stop and do a turn instead of a curve
-        let center_threshold = maze_config.cell_width / 4.0;
+        let center_threshold = maze_config.cell_width / 8.0;
         let do_manual_turn = match maze_orientation.direction {
             MazeDirection::North => {
                 current_orientation.position.y > cell_center.y - center_threshold
