@@ -194,7 +194,7 @@ mod side_distance_filter_test {
     fn single_in_range() {
         let mut filter = SideDistanceFilter::new();
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(1.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
             Some(1.0)
         );
     }
@@ -202,44 +202,29 @@ mod side_distance_filter_test {
     #[test]
     fn single_out_of_range() {
         let mut filter = SideDistanceFilter::new();
-        assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::OutOfRange)),
-            None
-        )
-    }
-
-    #[test]
-    fn single_none() {
-        let mut filter = SideDistanceFilter::new();
-        assert_eq!(filter.filter(&CONFIG, None), None)
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::OutOfRange), None)
     }
 
     #[test]
     fn two_in_range_out_of_range() {
         let mut filter = SideDistanceFilter::new();
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(1.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
             Some(1.0)
         );
-        assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::OutOfRange)),
-            None
-        );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::OutOfRange), None);
     }
 
     #[test]
     fn out_of_range_is_none_and_clears_average_filter() {
         let mut filter = SideDistanceFilter::new();
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(1.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
             Some(1.0)
         );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::OutOfRange), None);
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::OutOfRange)),
-            None
-        );
-        assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(3.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(3.0)),
             Some(3.0)
         );
     }
@@ -248,16 +233,13 @@ mod side_distance_filter_test {
     fn delta_too_high_is_none_and_clears_average_filter() {
         let mut filter = SideDistanceFilter::new();
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(1.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
             Some(1.0)
         );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::InRange(20.0)), None);
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(20.0))),
-            None
-        );
-        assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(3.0))),
-            Some(3.0)
+            filter.filter(&CONFIG, DistanceReading::InRange(23.0)),
+            Some(23.0)
         );
     }
 
@@ -265,19 +247,16 @@ mod side_distance_filter_test {
     fn delta2_too_high_is_none_and_clears_average_filter() {
         let mut filter = SideDistanceFilter::new();
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(1.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
             Some(1.0)
         );
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(1.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
             Some(1.0)
         );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::InRange(11.0)), None);
         assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(11.0))),
-            None
-        );
-        assert_eq!(
-            filter.filter(&CONFIG, Some(DistanceReading::InRange(3.0))),
+            filter.filter(&CONFIG, DistanceReading::InRange(3.0)),
             Some(3.0)
         );
     }
