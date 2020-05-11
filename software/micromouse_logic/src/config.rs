@@ -157,9 +157,9 @@ pub mod mouse_2020 {
             },
             motor_control: MotorControlConfig {
                 left_pidf: PIDF,
-                left_reverse: false,
+                left_reverse: true,
                 right_pidf: PIDF,
-                right_reverse: true,
+                right_reverse: false,
             },
             stop_distance: 90.0,
         },
