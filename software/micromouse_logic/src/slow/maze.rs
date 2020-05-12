@@ -6,6 +6,7 @@ use libm::F32Ext;
 use itertools::Itertools;
 
 use crate::fast::{Orientation, Vector};
+use crate::slow::{MazeDirection, MazeOrientation};
 
 pub const WIDTH: usize = 16;
 pub const HEIGHT: usize = 16;
@@ -287,7 +288,7 @@ impl Default for Wall {
 }
 
 /// An index into a maze. This will uniquely identify any wall.
-/// The indexes are 0-based, but do include the perimeter wall.
+/// The indexes are 0-based, and do include the perimeter wall.
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct WallIndex {
     /// The x index of the wall
@@ -296,8 +297,112 @@ pub struct WallIndex {
     /// The y index of the wall
     pub y: usize,
 
-    /// Whether the wall is horizontal (true), or vertical (false)
+    /// Whether the wall is horizontal or vertical
     pub direction: WallDirection,
+}
+
+impl WallIndex {
+    /// Creates a wall index for the wall that is being 'looked at' from this orientation
+    pub fn from_maze_orientation(orientation: MazeOrientation) -> WallIndex {
+        let x = orientation.position.x;
+        let y = orientation.position.y;
+        match orientation.direction {
+            MazeDirection::North => WallIndex {
+                x,
+                y: y + 1,
+                direction: WallDirection::Horizontal,
+            },
+            MazeDirection::South => WallIndex {
+                x,
+                y,
+                direction: WallDirection::Horizontal,
+            },
+            MazeDirection::East => WallIndex {
+                x: x + 1,
+                y,
+                direction: WallDirection::Vertical,
+            },
+            MazeDirection::West => WallIndex {
+                x,
+                y,
+                direction: WallDirection::Vertical,
+            },
+        }
+    }
+}
+
+#[cfg(test)]
+mod wall_index_test {
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    use pretty_assertions::assert_eq;
+
+    use super::WallIndex;
+    use crate::slow::maze::WallDirection;
+    use crate::slow::MazeDirection;
+    use crate::slow::MazeOrientation;
+    use crate::slow::MazePosition;
+
+    #[test]
+    fn north() {
+        assert_eq!(
+            WallIndex::from_maze_orientation(MazeOrientation {
+                position: MazePosition { x: 0, y: 0 },
+                direction: MazeDirection::North,
+            }),
+            WallIndex {
+                x: 0,
+                y: 1,
+                direction: WallDirection::Horizontal,
+            }
+        )
+    }
+
+    #[test]
+    fn south() {
+        assert_eq!(
+            WallIndex::from_maze_orientation(MazeOrientation {
+                position: MazePosition { x: 0, y: 0 },
+                direction: MazeDirection::South,
+            }),
+            WallIndex {
+                x: 0,
+                y: 0,
+                direction: WallDirection::Horizontal,
+            }
+        )
+    }
+
+    #[test]
+    fn east() {
+        assert_eq!(
+            WallIndex::from_maze_orientation(MazeOrientation {
+                position: MazePosition { x: 0, y: 0 },
+                direction: MazeDirection::East,
+            }),
+            WallIndex {
+                x: 1,
+                y: 0,
+                direction: WallDirection::Vertical,
+            }
+        )
+    }
+
+    #[test]
+    fn west() {
+        assert_eq!(
+            WallIndex::from_maze_orientation(MazeOrientation {
+                position: MazePosition { x: 0, y: 0 },
+                direction: MazeDirection::West,
+            }),
+            WallIndex {
+                x: 0,
+                y: 0,
+                direction: WallDirection::Vertical
+            }
+        )
+    }
 }
 
 /// Keeps track of all the walls in a maze
@@ -389,6 +494,21 @@ impl Maze {
         };
 
         (north_wall, south_wall, east_wall, west_wall)
+    }
+
+    pub fn set_wall(&mut self, index: WallIndex, wall: Wall) {
+        match index.direction {
+            WallDirection::Horizontal => {
+                if index.y > 0 && index.y < 15 {
+                    self.horizontal_walls[index.x][index.y - 1] = wall
+                }
+            }
+            WallDirection::Vertical => {
+                if index.x > 0 && index.x < 15 {
+                    self.vertical_walls[index.x - 1][index.y] = wall
+                }
+            }
+        }
     }
 
     pub fn get_wall(&self, index: WallIndex) -> Option<&Wall> {

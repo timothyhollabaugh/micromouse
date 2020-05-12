@@ -164,8 +164,8 @@ pub mod mouse_2020 {
             stop_distance: 90.0,
         },
         front_sensor_abort: 50.0,
-        left_sensor_abort: 20.0,
-        right_sensor_abort: 20.0,
+        left_sensor_abort: 10.0,
+        right_sensor_abort: 10.0,
     };
 }
 

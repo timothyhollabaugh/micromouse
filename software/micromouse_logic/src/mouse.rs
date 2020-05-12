@@ -13,7 +13,7 @@ use crate::fast::motion_control::{
 };
 use crate::fast::path::PathMotion;
 use crate::slow::map::{Map, MapConfig};
-use crate::slow::maze::MazeConfig;
+use crate::slow::maze::{Maze, MazeConfig};
 use crate::slow::motion_plan::{motion_plan, MotionPlanConfig};
 use crate::slow::navigate::TwelvePartitionNavigate;
 use crate::slow::{MazeDirection, MazeOrientation, SlowDebug};
@@ -245,6 +245,7 @@ impl Mouse {
                 &config.mechanical,
                 &config.maze,
                 &config.map,
+                orientation.to_maze_orientation(&config.maze),
                 left_distance,
                 front_distance,
                 right_distance,

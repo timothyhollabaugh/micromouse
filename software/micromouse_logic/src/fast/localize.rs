@@ -486,11 +486,12 @@ impl Localize {
                 self.last_direction_moved = direction_moved;
 
                 let direction = if moves_completed > 0
-                    || left_distance.map(|left| left < 20.0).unwrap_or(false)
-                    || right_distance.map(|right| right < 20.0).unwrap_or(false)
+                    || left_distance.map(|left| left < 10.0).unwrap_or(false)
+                    || right_distance.map(|right| right < 10.0).unwrap_or(false)
                     || direction_moved_reset
                 {
                     path_direction
+                //encoder_orientation.direction
                 } else {
                     encoder_orientation.direction
                 };
