@@ -146,6 +146,11 @@ function El(tag) {
         return self;
     }
 
+    self.onwheel = function(f) {
+        self.el.onwheel = f.bind(self);
+        return self;
+    }
+
     self.disabled = function(d) {
         if (self.el.disabled !== d) {
             self.el.disabled = d;

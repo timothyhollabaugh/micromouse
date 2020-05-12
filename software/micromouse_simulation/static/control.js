@@ -20,6 +20,16 @@ function ControlUi(parent, state) {
                         this.value(state.debugs.length-1);
                     }
                 })
+                .onwheel(function(event) {
+                    event.preventDefault();
+                    if (event.deltaY > 0) {
+                        this.el.value = parseInt(this.el.value) - 1;
+                    } else if (event.deltaY < 0) {
+                        this.el.value = parseInt(this.el.value) + 1;
+                    }
+
+                    this.el.oninput();
+                })
                 .onupdate(function(state) {
                     if (state.state === state.STATE_RUNNING) {
                         this.value(state.debugs.length);
