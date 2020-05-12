@@ -39,7 +39,7 @@ run_simulation:
     - build_simulation
   script:
     - cd software/micromouse_simulation
-    - cargo run --bin run_sim > results
+    - cargo run --bin run_sim -- mazes/APEC2017.maz > results
     - cat results | tail -n1 > metrics.txt
   artifacts:
     name: "$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-debug"

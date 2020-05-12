@@ -1,4 +1,6 @@
+use std::env;
 use std::fs::File;
+use std::io::Read;
 use std::io::Write;
 use std::process::exit;
 use std::time::{Duration, Instant};
@@ -13,8 +15,20 @@ use micromouse_logic::slow::MazeOrientation;
 use micromouse_simulation::simulation::{Simulation, SimulationConfig};
 
 pub fn main() {
-    let bytes = include_bytes!("../APEC2017.maz");
-    let maze = Maze::from_file(*bytes);
+    let args: Vec<_> = env::args().collect();
+    println!("{:?}", args);
+
+    let maze_file_name = args.get(1).expect("No maze file provided");
+
+    println!("Using maze: {}", maze_file_name);
+
+    let mut maze_file = File::open(maze_file_name).expect("Could not open maze file");
+
+    let mut file_bytes = [0; 256];
+
+    maze_file.read_exact(&mut file_bytes).unwrap();
+
+    let maze = Maze::from_file(file_bytes);
 
     let config = SimulationConfig {
         mouse: MOUSE_2019,

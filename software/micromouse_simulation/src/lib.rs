@@ -103,7 +103,7 @@ impl JsSimulation {
 
         let maze = Maze::from_walls(horizontal_walls, vertical_walls);
         */
-        let bytes = include_bytes!("APEC2017.maz");
+        let bytes = include_bytes!("../mazes/APEC2017.maz");
         let maze = Maze::from_file(*bytes);
 
         JsValue::from_serde(&SimulationConfig {
