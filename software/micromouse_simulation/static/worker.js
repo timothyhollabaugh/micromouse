@@ -139,6 +139,52 @@ function Remote(config, url, send) {
     };
 }
 
+function Dump(config, file, send) {
+    let self = this;
+
+    let remote = new wasm_bindgen.JsRemote(config);
+
+    console.log(file);
+
+    let total_bytes = file.size;
+    let read_bytes = 0;
+
+    let reader = file.stream().getReader();
+
+    let process_data = function({ done, value}) {
+        if (!done) {
+            read_bytes += value.length;
+            console.log("Parsing data: " + read_bytes + "/" + total_bytes);
+            let data = new Uint8Array(value);
+            let result = remote.update(data);
+            if ("Ok" in result) {
+                let debugs = result["Ok"];
+                debugs.forEach(function(debug) {
+                    send({name: 'debug', data: debug});
+                });
+            } else if ("Err" in result) {
+                console.log('Error reading dump file: ' + result['Err']);
+            }
+
+            reader.read().then(process_data);
+        } else {
+            console.log("Done");
+        }
+    };
+
+    reader.read().then(process_data);
+
+    self.start = function() {};
+
+    self.stop = function() {};
+
+    self.reset = function() {};
+
+    self.config = function () {};
+
+    self.disconnect = function() {};
+}
+
 async function init() {
     await wasm_bindgen('pkg/micromouse_simulation_bg.wasm');
 
@@ -161,6 +207,8 @@ async function init() {
                     handler = new Simulation(msg.data.config, function(m) { postMessage(m) });
                 } else if (msg.data.type === 'remote') {
                     handler = new Remote(msg.data.config, msg.data.options.url, function(m) { postMessage(m) });
+                } else if (msg.data.type === 'dump') {
+                    handler = new Dump(msg.data.config, msg.data.options.file, function(m) { postMessage(m) });
                 }
                 postMessage({name: 'connecting'});
             }

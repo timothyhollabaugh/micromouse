@@ -9,9 +9,11 @@ use serde::Serialize;
 
 use heapless::{ArrayLength, Vec};
 
-use typenum::{U1, U8};
+use typenum::U8;
 
 use crate::config::MechanicalConfig;
+use crate::mouse::ContainsDistanceReading;
+use crate::mouse::DistanceReading;
 use crate::slow::maze::MazeConfig;
 
 use super::{
@@ -19,7 +21,6 @@ use super::{
     DIRECTION_PI_2,
 };
 use crate::fast::motion_queue::Motion;
-use crate::slow::MazeDirection;
 
 pub struct AverageFilter<N: ArrayLength<f32>> {
     values: Vec<f32, N>,
@@ -48,7 +49,7 @@ impl<N: ArrayLength<f32>> AverageFilter<N> {
 }
 
 #[cfg(test)]
-mod test_filter {
+mod test_average_filter {
     #[allow(unused_imports)]
     use crate::test::*;
 
@@ -92,9 +93,181 @@ mod test_filter {
     }
 }
 
+/// Configuration for a [SideDistanceFilter]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SideDistanceFilterConfig {
+    /// The max allowed range
+    pub max_range: f32,
+
+    /// The max allowed change between readings
+    pub max_delta: f32,
+
+    /// The max allowed change between the change in readings
+    pub max_delta2: f32,
+}
+
+/// Filters a raw distance reading into something that makes sense
+///
+///  - Makes sure that the readings are within the max delta and second delta
+///  - Feeds through an averaging filter
+///  - Offsets from the mechanical location of the sensor to the center of the mouse
+struct SideDistanceFilter {
+    average_filter: AverageFilter<U8>,
+    last_raw: Option<f32>,
+    last_delta: Option<f32>,
+}
+
+impl SideDistanceFilter {
+    pub fn new() -> SideDistanceFilter {
+        SideDistanceFilter {
+            average_filter: AverageFilter::new(),
+            last_raw: None,
+            last_delta: None,
+        }
+    }
+
+    /// Filter the distance reading
+    pub fn filter(
+        &mut self,
+        config: &SideDistanceFilterConfig,
+        reading: DistanceReading,
+    ) -> Option<f32> {
+        match reading {
+            DistanceReading::InRange(raw) => {
+                let delta = self.last_raw.map(|last_raw| raw - last_raw);
+
+                let delta2 = self
+                    .last_delta
+                    .iter()
+                    .zip(delta.iter())
+                    .map(|(&last_delta, &delta)| delta - last_delta)
+                    .next();
+
+                let stabilized = match (delta, delta2) {
+                    (None, None) => true,
+                    (Some(delta), None) => delta.abs() <= config.max_delta,
+                    (None, Some(delta2)) => delta2.abs() <= config.max_delta2,
+                    (Some(delta), Some(delta2)) => {
+                        delta.abs() <= config.max_delta
+                            && delta2.abs() < config.max_delta2
+                    }
+                };
+
+                self.last_raw = Some(raw);
+                self.last_delta = delta;
+
+                if raw < config.max_range && stabilized {
+                    Some(self.average_filter.filter(raw))
+                } else {
+                    self.last_delta = None;
+                    self.average_filter = AverageFilter::new();
+                    None
+                }
+            }
+
+            DistanceReading::OutOfRange => {
+                self.last_raw = None;
+                self.last_delta = None;
+                self.average_filter = AverageFilter::new();
+                None
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod side_distance_filter_test {
+    #[allow(unused_imports)]
+    use crate::test::*;
+
+    use super::SideDistanceFilter;
+    use super::SideDistanceFilterConfig;
+    use crate::mouse::DistanceReading;
+
+    const CONFIG: SideDistanceFilterConfig = SideDistanceFilterConfig {
+        max_range: 100.0,
+        max_delta: 10.0,
+        max_delta2: 5.0,
+    };
+
+    #[test]
+    fn single_in_range() {
+        let mut filter = SideDistanceFilter::new();
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
+            Some(1.0)
+        );
+    }
+
+    #[test]
+    fn single_out_of_range() {
+        let mut filter = SideDistanceFilter::new();
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::OutOfRange), None)
+    }
+
+    #[test]
+    fn two_in_range_out_of_range() {
+        let mut filter = SideDistanceFilter::new();
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
+            Some(1.0)
+        );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::OutOfRange), None);
+    }
+
+    #[test]
+    fn out_of_range_is_none_and_clears_average_filter() {
+        let mut filter = SideDistanceFilter::new();
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
+            Some(1.0)
+        );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::OutOfRange), None);
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(3.0)),
+            Some(3.0)
+        );
+    }
+
+    #[test]
+    fn delta_too_high_is_none_and_clears_average_filter() {
+        let mut filter = SideDistanceFilter::new();
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
+            Some(1.0)
+        );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::InRange(20.0)), None);
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(23.0)),
+            Some(23.0)
+        );
+    }
+
+    #[test]
+    fn delta2_too_high_is_none_and_clears_average_filter() {
+        let mut filter = SideDistanceFilter::new();
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
+            Some(1.0)
+        );
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(1.0)),
+            Some(1.0)
+        );
+        assert_eq!(filter.filter(&CONFIG, DistanceReading::InRange(11.0)), None);
+        assert_eq!(
+            filter.filter(&CONFIG, DistanceReading::InRange(3.0)),
+            Some(3.0)
+        );
+    }
+}
+
 #[derive(Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LocalizeConfig {
     pub use_sensors: bool,
+    pub left_side_filter: SideDistanceFilterConfig,
+    pub right_side_filter: SideDistanceFilterConfig,
+    pub front_max_range: f32,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -119,13 +292,10 @@ pub struct Localize {
     orientation: Orientation,
     left_encoder: i32,
     right_encoder: i32,
-    left_filter: AverageFilter<U8>,
-    front_filter: AverageFilter<U1>,
-    right_filter: AverageFilter<U8>,
-    last_left_distance: u8,
-    last_left_distance_delta: i16,
-    last_right_distance: u8,
-    last_right_distance_delta: i16,
+    raw_left_distance: Option<DistanceReading>,
+    raw_right_distance: Option<DistanceReading>,
+    left_filter: SideDistanceFilter,
+    right_filter: SideDistanceFilter,
     last_direction_moved: Direction,
 }
 
@@ -139,13 +309,10 @@ impl Localize {
             orientation,
             left_encoder,
             right_encoder,
-            left_filter: AverageFilter::new(),
-            front_filter: AverageFilter::new(),
-            right_filter: AverageFilter::new(),
-            last_left_distance: 0,
-            last_left_distance_delta: 0,
-            last_right_distance: 0,
-            last_right_distance_delta: 0,
+            raw_left_distance: None,
+            raw_right_distance: None,
+            left_filter: SideDistanceFilter::new(),
+            right_filter: SideDistanceFilter::new(),
             last_direction_moved: orientation.direction,
         }
     }
@@ -157,9 +324,9 @@ impl Localize {
         config: &LocalizeConfig,
         left_encoder: i32,
         right_encoder: i32,
-        raw_left_distance: u8,
-        raw_front_distance: u8,
-        raw_right_distance: u8,
+        raw_left_distance: Option<DistanceReading>,
+        raw_front_distance: Option<DistanceReading>,
+        raw_right_distance: Option<DistanceReading>,
         motion: Option<Motion>,
         moves_completed: usize,
     ) -> (Orientation, LocalizeDebug) {
@@ -170,85 +337,59 @@ impl Localize {
             self.orientation
                 .update_from_encoders(&mech, delta_left, delta_right);
 
-        let encoder_maze_orientation = encoder_orientation.to_maze_orientation(maze);
-        let encoder_cell_center = encoder_maze_orientation.position.center_position(maze);
-        let tolerance = maze.cell_width / 2.0 - maze.wall_width;
-
-        let in_center = match encoder_maze_orientation.direction {
-            MazeDirection::North | MazeDirection::South => {
-                encoder_orientation.position.y > encoder_cell_center.y - tolerance
-                    && encoder_orientation.position.y < encoder_cell_center.y + tolerance
-            }
-            MazeDirection::East | MazeDirection::West => {
-                encoder_orientation.position.x > encoder_cell_center.x - tolerance
-                    && encoder_orientation.position.x < encoder_cell_center.x + tolerance
-            }
-        };
-
         let (orientation, sensor_debug) = if let Some(Motion::Path(motion)) = motion {
-            let (t, p) = motion.closest_point(encoder_orientation.position);
+            let (t, _) = motion.closest_point(encoder_orientation.position);
             let path_direction = motion.derivative(t).direction();
 
+            const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
+
+            let within_east = path_direction.within(DIRECTION_0, DIRECTION_WITHIN);
+            let within_west = path_direction.within(DIRECTION_PI, DIRECTION_WITHIN);
+            let within_north = path_direction.within(DIRECTION_PI_2, DIRECTION_WITHIN);
+            let within_south = path_direction.within(DIRECTION_3_PI_2, DIRECTION_WITHIN);
+
             if config.use_sensors
-            /* && in_center */
+                && (within_east || within_west || within_north || within_south)
             {
-                const DIRECTION_WITHIN: f32 = FRAC_PI_8 / 2.0;
-                const FRONT_TOLERANCE: f32 = 45.0;
+                // Filter distance values
 
-                let left_distance_delta =
-                    raw_left_distance as i16 - self.last_left_distance as i16;
-                let right_distance_delta =
-                    raw_right_distance as i16 - self.last_right_distance as i16;
+                // Make sure that there are both left and right readings
+                if let Some(reading) = raw_left_distance {
+                    self.raw_left_distance = Some(reading);
+                }
 
-                let left_distance_delta2 =
-                    left_distance_delta - self.last_left_distance_delta;
-                let right_distance_delta2 =
-                    right_distance_delta - self.last_right_distance_delta;
+                if let Some(reading) = raw_right_distance {
+                    self.raw_right_distance = Some(reading);
+                }
 
-                let left_stabilized =
-                    left_distance_delta.abs() <= 10 && left_distance_delta2.abs() <= 10;
-                let right_stabilized =
-                    right_distance_delta.abs() <= 10 && right_distance_delta2.abs() <= 10;
+                let (left_distance, right_distance) =
+                    if let (Some(raw_left_distance), Some(raw_right_distance)) =
+                        (self.raw_left_distance, self.raw_right_distance)
+                    {
+                        self.raw_left_distance = None;
+                        self.raw_right_distance = None;
 
-                let stabilized = left_stabilized && right_stabilized;
+                        let left_distance = self
+                            .left_filter
+                            .filter(&config.left_side_filter, raw_left_distance)
+                            .map(|d| d + mech.left_sensor_offset_y);
 
-                self.last_left_distance = raw_left_distance;
-                self.last_right_distance = raw_right_distance;
-                self.last_left_distance_delta = left_distance_delta;
-                self.last_right_distance_delta = right_distance_delta;
+                        let right_distance = self
+                            .right_filter
+                            .filter(&config.right_side_filter, raw_right_distance)
+                            .map(|d| d + mech.left_sensor_offset_y);
 
-                let left_distance = if raw_left_distance <= mech.left_sensor_limit
-                    && stabilized
-                {
-                    Some(
-                        self.left_filter
-                            .filter(raw_left_distance as f32 + mech.left_sensor_offset_y),
-                    )
-                } else {
-                    self.left_filter = AverageFilter::new();
-                    None
-                };
-
-                let right_distance =
-                    if raw_right_distance <= mech.right_sensor_limit && stabilized {
-                        Some(self.right_filter.filter(
-                            raw_right_distance as f32 + mech.right_sensor_offset_y,
-                        ))
+                        (left_distance, right_distance)
                     } else {
-                        self.right_filter = AverageFilter::new();
-                        None
+                        (None, None)
                     };
 
-                let front_distance =
-                    if raw_front_distance <= mech.front_sensor_limit {
-                        Some(self.front_filter.filter(
-                            raw_front_distance as f32 + mech.front_sensor_offset_x,
-                        ))
-                    } else {
-                        self.front_filter = AverageFilter::new();
-                        None
-                    };
+                let front_distance = raw_front_distance
+                    .value()
+                    .map(|d| d + mech.front_sensor_offset_x)
+                    .filter(|&d| d < config.front_max_range);
 
+                // Calculate maze 'constants' for this location
                 let cell_center_x = (encoder_orientation.position.x / maze.cell_width)
                     .floor()
                     * maze.cell_width
@@ -259,79 +400,68 @@ impl Localize {
                     * maze.cell_width
                     + maze.cell_width / 2.0;
 
-                let center_to_wall = maze.cell_width / 2.0 - maze.wall_width / 2.0;
+                // Where the front sensor is
+                let front_sensor_position = encoder_orientation.position
+                    + mech.front_sensor_offset_x
+                        * encoder_orientation.direction.into_unit_vector();
 
+                let front_sensor_cell_center_x =
+                    (front_sensor_position.x / maze.cell_width).floor() * maze.cell_width
+                        + maze.cell_width / 2.0;
+
+                let front_sensor_cell_center_y =
+                    (front_sensor_position.y / maze.cell_width).floor() * maze.cell_width
+                        + maze.cell_width / 2.0;
+
+                // Where are we left/right within the cell?
                 let center_offset = match (left_distance, right_distance) {
                     (Some(left), Some(right)) => {
                         if left + right <= maze.cell_width {
                             Some((right - left) / 2.0)
                         } else if left < right {
-                            Some(center_to_wall - left)
+                            Some(maze.center_to_wall() - left)
                         } else {
-                            Some(right - center_to_wall)
+                            Some(right - maze.center_to_wall())
                         }
                     }
-                    (None, Some(right)) => Some(right - center_to_wall),
-                    (Some(left), None) => Some(center_to_wall - left),
+                    (None, Some(right)) => Some(right - maze.center_to_wall()),
+                    (Some(left), None) => Some(maze.center_to_wall() - left),
                     _ => None,
                 };
 
-                let (maybe_x, maybe_y) = if path_direction
-                    .within(DIRECTION_0, DIRECTION_WITHIN)
-                {
+                let (maybe_x, maybe_y) = if within_east {
                     let y =
                         center_offset.map(|center_offset| cell_center_y + center_offset);
-
-                    let x = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_x + center_to_wall - front_distance)
-                        } else {
-                            None
-                        }
+                    let x = front_distance.map(|front_distance| {
+                        front_sensor_cell_center_x + maze.center_to_wall()
+                            - front_distance
                     });
 
                     (x, y)
-                } else if path_direction.within(DIRECTION_PI, DIRECTION_WITHIN) {
+                } else if within_west {
                     let y =
                         center_offset.map(|center_offset| cell_center_y - center_offset);
-                    let x = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_x - center_to_wall + front_distance)
-                        } else {
-                            None
-                        }
+                    let x = front_distance.map(|front_distance| {
+                        front_sensor_cell_center_x - maze.center_to_wall()
+                            + front_distance
                     });
 
                     (x, y)
-                } else if path_direction.within(DIRECTION_PI_2, DIRECTION_WITHIN) {
+                } else if within_north {
                     let x =
                         center_offset.map(|center_offset| cell_center_x - center_offset);
-                    let y = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_y + center_to_wall - front_distance)
-                        } else {
-                            None
-                        }
+                    let y = front_distance.map(|front_distance| {
+                        front_sensor_cell_center_y + maze.center_to_wall()
+                            - front_distance
                     });
 
                     (x, y)
-                } else if path_direction.within(DIRECTION_3_PI_2, DIRECTION_WITHIN) {
+                } else if within_south {
                     let x =
                         center_offset.map(|center_offset| cell_center_x + center_offset);
-                    let y = front_distance.and_then(|front_distance| {
-                        if front_distance
-                            < maze.cell_width - maze.wall_width / 2.0 - FRONT_TOLERANCE
-                        {
-                            Some(cell_center_y - center_to_wall + front_distance)
-                        } else {
-                            None
-                        }
+                    let y = front_distance.map(|front_distance| {
+                        front_sensor_cell_center_y - maze.center_to_wall()
+                            + front_distance
                     });
 
                     (x, y)
@@ -356,11 +486,12 @@ impl Localize {
                 self.last_direction_moved = direction_moved;
 
                 let direction = if moves_completed > 0
-                    || left_distance.map(|left| left < 20.0).unwrap_or(false)
-                    || right_distance.map(|right| right < 20.0).unwrap_or(false)
+                    || left_distance.map(|left| left < 10.0).unwrap_or(false)
+                    || right_distance.map(|right| right < 10.0).unwrap_or(false)
                     || direction_moved_reset
                 {
                     path_direction
+                //encoder_orientation.direction
                 } else {
                     encoder_orientation.direction
                 };
@@ -385,15 +516,11 @@ impl Localize {
 
                 (orientation, Some(sensor_debug))
             } else {
-                self.front_filter = AverageFilter::new();
-                self.left_filter = AverageFilter::new();
-                self.right_filter = AverageFilter::new();
                 (encoder_orientation, None)
             }
         } else {
-            self.front_filter = AverageFilter::new();
-            self.left_filter = AverageFilter::new();
-            self.right_filter = AverageFilter::new();
+            self.left_filter = SideDistanceFilter::new();
+            self.right_filter = SideDistanceFilter::new();
             (encoder_orientation, None)
         };
 

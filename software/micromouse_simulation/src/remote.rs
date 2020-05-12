@@ -43,7 +43,7 @@ impl Remote {
         RemoteConfig::default()
     }
 
-    pub fn update(&mut self, bytes: &[u8]) -> Result<Vec<RemoteDebug>, ()> {
+    pub fn update(&mut self, bytes: &[u8]) -> Result<Vec<RemoteDebug>, String> {
         let mut debugs = Vec::new();
 
         for &byte in bytes {
@@ -89,9 +89,9 @@ impl Remote {
                     debugs.push(self.debug.clone());
                 }
                 Err(postcard::Error::DeserializeUnexpectedEnd) => {}
-                Err(_e) => {
+                Err(e) => {
                     self.buf = Vec::new();
-                    return Err(());
+                    return Err(e.to_string());
                 }
             }
         }

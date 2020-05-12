@@ -238,7 +238,7 @@ impl PathHandler {
         time: u32,
         orientation: Orientation,
         segment: PathMotion,
-    ) -> (f32, f32, Direction, PathHandlerDebug) {
+    ) -> (f32, f32, PathHandlerDebug) {
         let mut debug = PathHandlerDebug::default();
 
         let delta_time = time - self.time;
@@ -315,6 +315,6 @@ impl PathHandler {
 
         self.time = time;
 
-        (target_left_velocity, target_right_velocity, tangent, debug)
+        (target_left_velocity, target_right_velocity, debug)
     }
 }

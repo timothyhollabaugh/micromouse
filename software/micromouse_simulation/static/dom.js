@@ -32,6 +32,10 @@ function a() {
     return new El('a');
 }
 
+function span() {
+    return new El('span');
+}
+
 function card() {
     let content = div().classes('card-content');
 
@@ -109,7 +113,7 @@ function El(tag) {
         return self;
     };
 
-    self.remove_class= function(c) {
+    self.remove_class = function(c) {
         self.el.classList.remove(c);
         return self;
     };
@@ -134,6 +138,16 @@ function El(tag) {
 
     self.oninput = function(f) {
         self.el.oninput = f.bind(self);
+        return self;
+    }
+
+    self.onchange = function(f) {
+        self.el.onchange = f.bind(self);
+        return self;
+    }
+
+    self.onwheel = function(f) {
+        self.el.onwheel = f.bind(self);
         return self;
     }
 

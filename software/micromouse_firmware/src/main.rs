@@ -183,7 +183,7 @@ where
         right_distance.update();
         write!(
             uart,
-            "{}\t {}\t {}\t {}\t {}\n",
+            "{}\t {}\t {:?}\t {:?}\t {:?}\n",
             left_encoder.count(),
             right_encoder.count(),
             left_distance.range(),
@@ -371,13 +371,13 @@ where
                     if let Some(debug) = debug {
                         msgs.push(DebugMsg::Orientation(debug.orientation)).ok();
                         msgs.push(DebugMsg::Hardware(debug.hardware)).ok();
-                        //msgs.push(DebugMsg::Slow(debug.slow)).ok();
+                        msgs.push(DebugMsg::Slow(debug.slow)).ok();
                         msgs.push(DebugMsg::Localize(debug.localize)).ok();
                         //msgs.push(DebugMsg::MotionQueue(debug.motion_queue)).ok();
-                        msgs.push(DebugMsg::MotorControl(
-                            debug.motion_control.motor_control,
-                        ))
-                        .ok();
+                        //msgs.push(DebugMsg::MotorControl(
+                        //debug.motion_control.motor_control,
+                        //))
+                        //.ok();
                         //msgs.push(DebugMsg::MotionHandler(debug.motion_control.handler))
                         //.ok();
                     }

@@ -112,17 +112,21 @@ impl TwelvePartitionNavigate {
             MazeDirection::West => self.get_cell(x, y + 1),
         };
 
+        /*
         let rear_cell = match orientation.direction {
             MazeDirection::North => self.get_cell(x, y - 1),
             MazeDirection::South => self.get_cell(x, y + 1),
             MazeDirection::East => self.get_cell(x - 1, y),
             MazeDirection::West => self.get_cell(x + 1, y),
         };
+         */
 
+        /*
         let front_blocked = front_cell == 255 || !move_options.front;
         let left_blocked = left_cell == 255 || !move_options.left;
         let right_blocked = right_cell == 255 || !move_options.right;
         let rear_blocked = rear_cell == 255;
+         */
 
         /*
         let num_blocked = [front_blocked, left_blocked, right_blocked, rear_blocked]

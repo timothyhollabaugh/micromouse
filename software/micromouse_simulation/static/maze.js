@@ -167,10 +167,10 @@ function MazeUi(parent, state) {
     function update(debug) {
         world.scale(px_per_mm * zoom, px_per_mm * zoom);
 
-        const maze = debug.config.maze;
+        const maze = debug?.config?.maze || debug?.mouse?.slow?.map?.maze;
         for (let i = 0; i < MAZE_WIDTH; i++) {
             for (let j = 0; j < MAZE_HEIGHT; j++) {
-                if (debug.config.maze) {
+                if (maze) {
                     if (j > 0 && i < MAZE_WIDTH) {
                         let wall = maze.horizontal_walls[i][j - 1];
                         if (wall === "Closed") {
