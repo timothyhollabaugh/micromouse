@@ -25,11 +25,13 @@ extern crate panic_halt;
 
 pub mod battery;
 pub mod motors;
+pub mod system_test;
 pub mod time;
 pub mod uart;
 pub mod vl6180x;
 
 use core::fmt::Write;
+use core::str;
 use cortex_m_rt::entry;
 use stm32f4xx_hal as stm32f4;
 use stm32f4xx_hal::prelude::*;
@@ -47,7 +49,7 @@ use typenum::consts::U2048;
 use crate::battery::Battery;
 use crate::time::Time;
 
-use crate::uart::Uart;
+use crate::uart::{Uart, RX_BUFFER_LEN};
 
 use crate::motors::{Encoder, Motor};
 
@@ -572,9 +574,10 @@ fn main() -> ! {
 
     uart.add_bytes(b"\n\nstart").ok();
 
-    do_mouse(
-        //do_sensors(
-        //do_echo(
+    //do_mouse(
+    //do_sensors(
+    //do_echo(
+    system_test::do_system_test(
         time,
         battery,
         red_led,
