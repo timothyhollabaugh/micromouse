@@ -62,8 +62,8 @@ pub fn do_system_test<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
     _orange_led: OL,
     _left_button: LB,
     _right_button: RB,
-    mut left_motor: LeftMotor,
-    mut right_motor: RightMotor,
+    left_motor: LeftMotor,
+    right_motor: RightMotor,
     left_encoder: LeftEncoder,
     right_encoder: RightEncoder,
     mut front_distance: VL6180x<I2C1>,
@@ -113,18 +113,18 @@ where
                             Some("on") => time_report = true,
                             Some("off") => time_report = false,
                             word => {
-                                writeln!(uart, "Unknown command: {:?}", word);
+                                writeln!(uart, "Unknown command: {:?}", word).ok();
                             }
                         },
                         word => {
-                            writeln!(uart, "Unknown command: {:?}", word);
+                            writeln!(uart, "Unknown command: {:?}", word).ok();
                         }
                     },
                     Some("motor") => match words.next() {
                         Some("left") => left_motor_command.parse(&mut uart, words),
                         Some("right") => right_motor_command.parse(&mut uart, words),
                         word => {
-                            writeln!(uart, "Unknown command: {:?}", word);
+                            writeln!(uart, "Unknown command: {:?}", word).ok();
                         }
                     },
                     Some("distance") => match words.next() {
@@ -133,11 +133,11 @@ where
                                 Some("on") => left_distance_report = true,
                                 Some("off") => left_distance_report = false,
                                 word => {
-                                    writeln!(uart, "Unknown command: {:?}", word);
+                                    writeln!(uart, "Unknown command: {:?}", word).ok();
                                 }
                             },
                             word => {
-                                writeln!(uart, "Unknown command: {:?}", word);
+                                writeln!(uart, "Unknown command: {:?}", word).ok();
                             }
                         },
                         Some("right") => match words.next() {
@@ -145,11 +145,11 @@ where
                                 Some("on") => right_distance_report = true,
                                 Some("off") => right_distance_report = false,
                                 word => {
-                                    writeln!(uart, "Unknown command: {:?}", word);
+                                    writeln!(uart, "Unknown command: {:?}", word).ok();
                                 }
                             },
                             word => {
-                                writeln!(uart, "Unknown command: {:?}", word);
+                                writeln!(uart, "Unknown command: {:?}", word).ok();
                             }
                         },
                         Some("front") => match words.next() {
@@ -157,19 +157,19 @@ where
                                 Some("on") => front_distance_report = true,
                                 Some("off") => front_distance_report = false,
                                 word => {
-                                    writeln!(uart, "Unknown command: {:?}", word);
+                                    writeln!(uart, "Unknown command: {:?}", word).ok();
                                 }
                             },
                             word => {
-                                writeln!(uart, "Unknown command: {:?}", word);
+                                writeln!(uart, "Unknown command: {:?}", word).ok();
                             }
                         },
                         word => {
-                            writeln!(uart, "Unknown command: {:?}", word);
+                            writeln!(uart, "Unknown command: {:?}", word).ok();
                         }
                     },
                     word => {
-                        writeln!(uart, "Unknown command: {:?}", word);
+                        writeln!(uart, "Unknown command: {:?}", word).ok();
                     }
                 }
             }
@@ -205,7 +205,7 @@ where
                 || right_distance_report
                 || front_distance_report
             {
-                uart.add_str("\n");
+                uart.add_str("\n").ok();
             }
 
             last_time = time.now();

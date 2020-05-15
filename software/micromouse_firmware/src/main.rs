@@ -30,8 +30,6 @@ pub mod time;
 pub mod uart;
 pub mod vl6180x;
 
-use core::fmt::Write;
-use core::str;
 use cortex_m_rt::entry;
 use stm32f4xx_hal as stm32f4;
 use stm32f4xx_hal::prelude::*;
@@ -49,19 +47,21 @@ use typenum::consts::U2048;
 use crate::battery::Battery;
 use crate::time::Time;
 
-use crate::uart::{Uart, RX_BUFFER_LEN};
+use crate::uart::Uart;
 
 use crate::motors::{Encoder, Motor};
 
-use micromouse_logic::comms::{DebugMsg, DebugPacket};
+#[allow(unused_imports)]
 use micromouse_logic::config::{mouse_2019, mouse_2020};
-use micromouse_logic::fast::{Orientation, Vector, DIRECTION_0, DIRECTION_PI_2};
+
+use micromouse_logic::comms::{DebugMsg, DebugPacket};
+use micromouse_logic::fast::{Orientation, Vector, DIRECTION_PI_2};
 use micromouse_logic::mouse::Mouse;
 
 use crate::motors::left::{LeftEncoder, LeftMotor};
 use crate::motors::right::{RightEncoder, RightMotor};
 use crate::vl6180x::VL6180x;
-use micromouse_logic::fast::motion_control::{MotionHandler, MotionHandlerDebug};
+use micromouse_logic::fast::motion_control::MotionHandlerDebug;
 
 // Setup the master clock out
 pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
@@ -69,167 +69,6 @@ pub fn mco2_setup(rcc: &stm32f405::RCC, gpioc: &stm32f405::GPIOC) {
     rcc.cfgr.modify(|_, w| w.mco2().sysclk());
     gpioc.moder.write(|w| w.moder9().alternate());
     gpioc.afrh.write(|w| w.afrh9().af0());
-}
-
-pub fn do_characterize<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
-    mut time: Time,
-    battery: Battery,
-    mut _red_led: RL,
-    mut green_led: GL,
-    mut blue_led: BL,
-    mut orange_led: OL,
-    _left_button: LB,
-    right_button: RB,
-    mut left_motor: LeftMotor,
-    mut _right_motor: RightMotor,
-    left_encoder: LeftEncoder,
-    _right_encoder: RightEncoder,
-    mut _front_distance: VL6180x<I2C1>,
-    _left_distance: VL6180x<I2C2>,
-    _right_distance: VL6180x<I2C3>,
-    mut uart: Uart,
-) -> !
-where
-    RL: OutputPin + ToggleableOutputPin,
-    GL: OutputPin + ToggleableOutputPin,
-    BL: OutputPin + ToggleableOutputPin,
-    OL: OutputPin + ToggleableOutputPin,
-    LB: InputPin,
-    RB: InputPin,
-    I2C1: i2c::Read + i2c::Write + i2c::WriteRead,
-    I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
-    I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
-{
-    green_led.set_high().ok();
-
-    while let Ok(false) = right_button.is_low() {}
-
-    blue_led.set_high().ok();
-
-    let mut n_steps = 16;
-
-    let mut step = 0;
-
-    let mut last_step = time.now();
-    let mut last_report = time.now();
-
-    loop {
-        let now = time.now();
-        let power = step * 10000 / n_steps;
-
-        left_motor.change_power(power);
-
-        if now - last_report > 50 {
-            orange_led.toggle().ok();
-            writeln!(
-                uart,
-                "{}\t{}\t{}\t{}",
-                time.now(),
-                battery.raw(),
-                power,
-                left_encoder.count(),
-            )
-            .ok();
-            last_report = now;
-        }
-
-        if now - last_step > 2000 {
-            if step < n_steps {
-                step += 1;
-            } else {
-                step = 0;
-
-                if n_steps > 1 {
-                    n_steps /= 2;
-                } else {
-                    n_steps = 16;
-                }
-            }
-            last_step = now;
-        }
-    }
-}
-
-pub fn do_sensors<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
-    _time: Time,
-    _battery: Battery,
-    _red_led: RL,
-    _green_led: GL,
-    _blue_led: BL,
-    _orange_led: OL,
-    _left_button: LB,
-    _right_button: RB,
-    _left_motor: LeftMotor,
-    _right_motor: RightMotor,
-    left_encoder: LeftEncoder,
-    right_encoder: RightEncoder,
-    mut front_distance: VL6180x<I2C1>,
-    mut left_distance: VL6180x<I2C2>,
-    mut right_distance: VL6180x<I2C3>,
-    mut uart: Uart,
-) -> !
-where
-    RL: OutputPin + ToggleableOutputPin,
-    GL: OutputPin + ToggleableOutputPin,
-    BL: OutputPin + ToggleableOutputPin,
-    OL: OutputPin + ToggleableOutputPin,
-    LB: InputPin,
-    RB: InputPin,
-    I2C1: i2c::Read + i2c::Write + i2c::WriteRead,
-    I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
-    I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
-{
-    loop {
-        left_distance.update();
-        front_distance.update();
-        right_distance.update();
-        write!(
-            uart,
-            "{}\t {}\t {:?}\t {:?}\t {:?}\n",
-            left_encoder.count(),
-            right_encoder.count(),
-            left_distance.range(),
-            front_distance.range(),
-            right_distance.range(),
-        )
-        .ok();
-    }
-}
-
-pub fn do_echo<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
-    _time: Time,
-    _battery: Battery,
-    _red_led: RL,
-    _green_led: GL,
-    _blue_led: BL,
-    _orange_led: OL,
-    _left_button: LB,
-    _right_button: RB,
-    _left_motor: LeftMotor,
-    _right_motor: RightMotor,
-    left_encoder: LeftEncoder,
-    right_encoder: RightEncoder,
-    mut front_distance: VL6180x<I2C1>,
-    mut left_distance: VL6180x<I2C2>,
-    mut right_distance: VL6180x<I2C3>,
-    mut uart: Uart,
-) -> !
-where
-    RL: OutputPin + ToggleableOutputPin,
-    GL: OutputPin + ToggleableOutputPin,
-    BL: OutputPin + ToggleableOutputPin,
-    OL: OutputPin + ToggleableOutputPin,
-    LB: InputPin,
-    RB: InputPin,
-    I2C1: i2c::Read + i2c::Write + i2c::WriteRead,
-    I2C2: i2c::Read + i2c::Write + i2c::WriteRead,
-    I2C3: i2c::Read + i2c::Write + i2c::WriteRead,
-{
-    loop {
-        if let Ok(byte) = uart.read_byte() {
-            uart.add_bytes(&[byte]);
-        }
-    }
 }
 
 pub fn do_mouse<RL, GL, BL, OL, LB, RB, I2C1, I2C2, I2C3>(
@@ -574,10 +413,10 @@ fn main() -> ! {
 
     uart.add_bytes(b"\n\nstart").ok();
 
-    //do_mouse(
+    do_mouse(
     //do_sensors(
     //do_echo(
-    system_test::do_system_test(
+    //system_test::do_system_test(
         time,
         battery,
         red_led,

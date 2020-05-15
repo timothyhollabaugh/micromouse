@@ -1,4 +1,4 @@
-target extended-remote :3030
+target extended-remote :3333
 
 # print demangled symbols
 set print asm-demangle on
@@ -32,7 +32,7 @@ monitor arm semihosting enable
 
 load
 
-quit
+#quit
 
 # start the process but immediately halt the processor
 #stepi

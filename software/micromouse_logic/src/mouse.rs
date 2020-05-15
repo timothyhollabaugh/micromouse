@@ -6,7 +6,7 @@ use crate::config::MechanicalConfig;
 
 use crate::fast::localize::{Localize, LocalizeConfig, LocalizeDebug};
 use crate::fast::motion_queue::{Motion, MotionQueue, MotionQueueDebug};
-use crate::fast::{Direction, Orientation};
+use crate::fast::{Direction, Orientation, Vector};
 
 use crate::fast::motion_control::{
     MotionControl, MotionControlConfig, MotionControlDebug,
