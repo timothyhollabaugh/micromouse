@@ -185,17 +185,17 @@ where
 
             if left_distance_report {
                 left_distance.update();
-                write!(uart, "LD: {}", left_distance.range()).ok();
+                write!(uart, "LD: {:?}", left_distance.range()).ok();
             }
 
             if right_distance_report {
                 right_distance.update();
-                write!(uart, "RD: {}", right_distance.range()).ok();
+                write!(uart, "RD: {:?}", right_distance.range()).ok();
             }
 
             if front_distance_report {
                 front_distance.update();
-                write!(uart, "FD: {}", front_distance.range()).ok();
+                write!(uart, "FD: {:?}", front_distance.range()).ok();
             }
 
             if time_report
