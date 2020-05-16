@@ -5,14 +5,14 @@ MEMORY
   /* These values correspond to the LM3S6965, one of the few devices QEMU can emulate */
   //FLASH : ORIGIN = 0x08000000, LENGTH = 64K
   FLASH : ORIGIN = 0x08000000, LENGTH = 1024K
-  RAM : ORIGIN = 0x20000000, LENGTH = 12K
+  RAM : ORIGIN = 0x20000000, LENGTH = 128K
 }
 
 /* This is where the call stack will be allocated. */
 /* The stack is of the full descending type. */
 /* You may want to use this variable to locate the call stack and static
    variables in different memory regions. Below is shown the default value */
-/* _stack_start = ORIGIN(RAM) + LENGTH(RAM); */
+_stack_start = ORIGIN(RAM) + LENGTH(RAM);
 
 /* You can use this symbol to customize the location of the .text section */
 /* If omitted the .text section will be placed right after the .vector_table

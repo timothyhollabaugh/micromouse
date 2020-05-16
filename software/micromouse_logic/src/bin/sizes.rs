@@ -13,6 +13,8 @@ use micromouse_logic::slow::navigate::TwelvePartitionNavigateDebug;
 use micromouse_logic::slow::MazeDirection;
 use micromouse_logic::slow::MazeOrientation;
 use micromouse_logic::slow::MazePosition;
+use micromouse_logic::slow::SlowDebug;
+use micromouse_logic::slow::map::MapDebug;
 
 macro_rules! print_size {
     ($t:ty) => {
@@ -29,6 +31,9 @@ fn main() {
     print_size!(MotionQueueDebug);
     print_size!(MotionQueueBuffer);
     print_size!(MotionControlDebug);
+    print_size!(MapDebug);
+    print_size!(SlowDebug);
+    print_size!(Option<SlowDebug>);
     print_size!(Motion);
     print_size!(DistanceReading);
     print_size!(Option<DistanceReading>);
